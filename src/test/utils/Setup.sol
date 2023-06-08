@@ -6,9 +6,6 @@ import {ExtendedTest} from "./ExtendedTest.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {Strategy} from "../../Strategy.sol";
-import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
-
 // Inherit the events so they can be checked if desired.
 import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
 
@@ -55,9 +52,6 @@ contract Setup is ExtendedTest, IEvents {
 
         // Set decimals
         decimals = asset.decimals();
-
-        // Deploy strategy and set variables
-        strategy = IStrategyInterface(setUpStrategy());
 
         // label all the used addresses for traces
         vm.label(keeper, "keeper");

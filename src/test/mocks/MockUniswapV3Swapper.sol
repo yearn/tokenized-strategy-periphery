@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {UniswapV3Swapper} from "../swappers/UniswapV3Swapper.sol";
+import {UniswapV3Swapper} from "../../swappers/UniswapV3Swapper.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 contract MockUniswapV3Swapper is BaseTokenizedStrategy, UniswapV3Swapper {
@@ -61,7 +61,7 @@ contract MockUniswapV3Swapper is BaseTokenizedStrategy, UniswapV3Swapper {
 }
 
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IUniswapV3Swapper} from "../swappers/interfaces/IUniswapV3Swapper.sol";
+import {IUniswapV3Swapper} from "../../swappers/interfaces/IUniswapV3Swapper.sol";
 
 interface IMockUniswapV3Swapper is IStrategy, IUniswapV3Swapper {
     function setMinAmountToSell(uint256 _minAmountToSell) external;

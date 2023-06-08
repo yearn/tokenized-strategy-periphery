@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {HealthCheck} from "../HealthCheck/HealthCheck.sol";
+import {HealthCheck} from "../../HealthCheck/HealthCheck.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 contract MockHealthCheck is BaseTokenizedStrategy, HealthCheck {
@@ -45,7 +45,7 @@ contract MockHealthCheck is BaseTokenizedStrategy, HealthCheck {
 }
 
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IHealthCheck} from "../HealthCheck/IHealthCheck.sol";
+import {IHealthCheck} from "../../HealthCheck/IHealthCheck.sol";
 
 interface IMockHealthCheck is IStrategy, IHealthCheck {
     function setProfitLimitRatio(uint256 _profitLimitRatio) external;
