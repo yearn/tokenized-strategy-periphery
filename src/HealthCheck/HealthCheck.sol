@@ -77,9 +77,11 @@ contract HealthCheck {
      * @param _invested The amount that will be returned during `totalInvested()`.
      * @return . Bool repersenting if the health check passed
      */
-    function _executHealthCheck(
-        uint256 _invested
-    ) internal view returns (bool) {
+    function _executHealthCheck(uint256 _invested)
+        internal
+        view
+        returns (bool)
+    {
         // Static call self to get the total assets from the implementation.
         uint256 _totalAssets = IStrategy(address(this)).totalAssets();
 

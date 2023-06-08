@@ -84,5 +84,9 @@ interface IMockUniswapV3Swapper is IStrategy, IUniswapV3Swapper {
         uint256 _minAmountOut
     ) external returns (uint256);
 
-    function setUniFees(address _token0, address _token1, uint24 _fee) external;
+    function setUniFees(
+        address _token0,
+        address _token1,
+        uint24 _fee
+    ) external;
 }

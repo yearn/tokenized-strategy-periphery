@@ -6,9 +6,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 contract MockStrategy is BaseTokenizedStrategy {
-    constructor(
-        address _asset
-    ) BaseTokenizedStrategy(_asset, "Mock Basic Strategy") {}
+    constructor(address _asset)
+        BaseTokenizedStrategy(_asset, "Mock Basic Strategy")
+    {}
 
     function _deployFunds(uint256) internal override {}
 

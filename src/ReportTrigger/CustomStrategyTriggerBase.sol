@@ -17,7 +17,9 @@ abstract contract CustomStrategyTriggerBase {
      * @param _strategy The address of the strategy to check.
      * @return . Bool repersenting if the strategy is ready to report.
      */
-    function reportTrigger(
-        address _strategy
-    ) external view virtual returns (bool);
+    function reportTrigger(address _strategy)
+        external
+        view
+        virtual
+        returns (bool);
 }

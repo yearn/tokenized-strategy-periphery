@@ -14,10 +14,10 @@ interface IVault {
 }
 
 interface IOracle {
-    function aprAfterDebtChange(
-        address _asset,
-        int256 _delta
-    ) external view returns (uint256);
+    function aprAfterDebtChange(address _asset, int256 _delta)
+        external
+        view
+        returns (uint256);
 }
 
 contract AprOacle {
@@ -26,10 +26,11 @@ contract AprOacle {
     uint256 internal constant MAX_BPS_EXTENDED = 1_000_000_000_000;
     uint256 internal constant SECONDS_PER_YEAR = 31_556_952;
 
-    function getExpectedApr(
-        address _strategy,
-        int256 _debtChange
-    ) public view returns (uint256) {
+    function getExpectedApr(address _strategy, int256 _debtChange)
+        public
+        view
+        returns (uint256)
+    {
         address oracle = oracles[_strategy];
 
         // Will revert if a oracle is not set.

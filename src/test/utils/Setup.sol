@@ -6,8 +6,11 @@ import {ExtendedTest} from "./ExtendedTest.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-// Inherit the events so they can be checked if desired.
-import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
+import {VyperDeployer} from "./VyperDeployer.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
+import {IVault} from "../../interfaces/IVault.sol";
+
+import {MockStrategy} from "../mocks/MockStrategy.sol";
 
 interface IFactory {
     function governance() external view returns (address);
@@ -17,10 +20,12 @@ interface IFactory {
     function set_protocol_fee_recipient(address) external;
 }
 
-contract Setup is ExtendedTest, IEvents {
+contract Setup is ExtendedTest {
+    VyperDeployer public vyperDeployer = new VyperDeployer();
     // Contract instancees that we will use repeatedly.
     ERC20 public asset;
-    IStrategyInterface public strategy;
+    IStrategy public mockStrategy;
+    IVault public vault;
 
     mapping(string => address) public tokenAddrs;
 
@@ -53,19 +58,42 @@ contract Setup is ExtendedTest, IEvents {
         // Set decimals
         decimals = asset.decimals();
 
+        mockStrategy = setUpStrategy();
+
+        vault = setUpVault();
+
         // label all the used addresses for traces
         vm.label(keeper, "keeper");
         vm.label(factory, "factory");
         vm.label(address(asset), "asset");
         vm.label(management, "management");
-        vm.label(address(strategy), "strategy");
+        vm.label(address(mockStrategy), "strategy");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 
-    function setUpStrategy() public returns (address) {
+    function setUpVault() public returns (IVault) {
+        bytes memory args = abi.encode(
+            address(asset),
+            "Test vault",
+            "tsVault",
+            management,
+            10 days
+        );
+
+        return
+            IVault(
+                vyperDeployer.deployContract(
+                    "lib/yearn-vaults-v3/contracts/",
+                    "VaultV3",
+                    args
+                )
+            );
+    }
+
+    function setUpStrategy() public returns (IStrategy) {
         // we save the strategy as a IStrategyInterface to give it the needed interface
-        IStrategyInterface _strategy = IStrategyInterface(
-            address(new Strategy(address(asset), "Tokenized Strategy"))
+        IStrategy _strategy = IStrategy(
+            address(new MockStrategy(address(asset)))
         );
 
         // set keeper
@@ -75,11 +103,11 @@ contract Setup is ExtendedTest, IEvents {
         // set management of the strategy
         _strategy.setManagement(management);
 
-        return address(_strategy);
+        return _strategy;
     }
 
     function depositIntoStrategy(
-        IStrategyInterface _strategy,
+        IStrategy _strategy,
         address _user,
         uint256 _amount
     ) public {
@@ -91,7 +119,7 @@ contract Setup is ExtendedTest, IEvents {
     }
 
     function mintAndDepositIntoStrategy(
-        IStrategyInterface _strategy,
+        IStrategy _strategy,
         address _user,
         uint256 _amount
     ) public {
@@ -101,7 +129,7 @@ contract Setup is ExtendedTest, IEvents {
 
     // For checking the amounts in the strategy
     function checkStrategyTotals(
-        IStrategyInterface _strategy,
+        IStrategy _strategy,
         uint256 _totalAssets,
         uint256 _totalDebt,
         uint256 _totalIdle
@@ -112,18 +140,13 @@ contract Setup is ExtendedTest, IEvents {
         assertEq(_totalAssets, _totalDebt + _totalIdle, "!Added");
     }
 
-    function airdrop(ERC20 _asset, address _to, uint256 _amount) public {
+    function airdrop(
+        ERC20 _asset,
+        address _to,
+        uint256 _amount
+    ) public {
         uint256 balanceBefore = _asset.balanceOf(_to);
         deal(address(_asset), _to, balanceBefore + _amount);
-    }
-
-    function getExpectedProtocolFee(
-        uint256 _amount,
-        uint16 _fee
-    ) public view returns (uint256) {
-        uint256 timePassed = block.timestamp - strategy.lastReport();
-
-        return (_amount * _fee * timePassed) / MAX_BPS / 31_556_952;
     }
 
     function setFees(uint16 _protocolFee, uint16 _performanceFee) public {
@@ -137,7 +160,7 @@ contract Setup is ExtendedTest, IEvents {
         IFactory(factory).set_protocol_fee_bps(_protocolFee);
 
         vm.prank(management);
-        strategy.setPerformanceFee(_performanceFee);
+        mockStrategy.setPerformanceFee(_performanceFee);
     }
 
     function _setTokenAddrs() internal {

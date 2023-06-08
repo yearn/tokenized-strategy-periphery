@@ -5,6 +5,7 @@
       "compiler-version": ["error", "0.8.18"],
       "code-complexity": "warn",
       "const-name-snakecase": "warn",
+      "func-name-mixedcase": "off",
       "function-max-lines": "warn",
       "func-visibility": ["warn", { "ignoreConstructors": true }],
       "max-line-length": ["warn", 160],

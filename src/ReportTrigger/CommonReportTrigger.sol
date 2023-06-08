@@ -4,17 +4,15 @@ pragma solidity 0.8.18;
 import {IVault} from "../interfaces/IVault.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
 interface ICustomStrategyTrigger {
     function reportTrigger(address _strategy) external view returns (bool);
 }
 
 interface ICustomVaultTrigger {
-    function reportTrigger(
-        address _vault,
-        address _strategy
-    ) external view returns (bool);
+    function reportTrigger(address _vault, address _strategy)
+        external
+        view
+        returns (bool);
 }
 
 interface IBaseFee {
@@ -33,7 +31,7 @@ interface IBaseFee {
  *  However, it is also customizable by the strategy and vaults
  *  management to allow complete customization if desired.
  */
-contract CommonReportTrigger is Ownable {
+contract CommonReportTrigger {
     /*//////////////////////////////////////////////////////////////
                             EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -64,11 +62,28 @@ contract CommonReportTrigger is Ownable {
         uint256 acceptableBaseFee
     );
 
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
+    modifier onlyOwner() {
+        _checkOwner();
+        _;
+    }
+
+    function _checkOwner() internal view virtual {
+        require(owner == msg.sender, "!owner");
+    }
+
     /*//////////////////////////////////////////////////////////////
                             STORAGE
     //////////////////////////////////////////////////////////////*/
 
     string public name = "Yearn Common Report Trigger";
+
+    // Address that can set the defualt base fee and provider
+    address public owner;
 
     // Address to retreive the current base fee on the network from.
     address public baseFeeProvider;
@@ -98,6 +113,10 @@ contract CommonReportTrigger is Ownable {
     mapping(address => mapping(address => uint256))
         public acceptableVaultBaseFee;
 
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
     /*//////////////////////////////////////////////////////////////
                         CUSTOM SETTERS
     //////////////////////////////////////////////////////////////*/
@@ -115,10 +134,9 @@ contract CommonReportTrigger is Ownable {
      * @param _strategy The address of the strategy to set the trigger for.
      * @param _trigger The address of the custom trigger contract.
      */
-    function setCustomStrategyTrigger(
-        address _strategy,
-        address _trigger
-    ) external {
+    function setCustomStrategyTrigger(address _strategy, address _trigger)
+        external
+    {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyTrigger[_strategy] = _trigger;
 
@@ -138,10 +156,9 @@ contract CommonReportTrigger is Ownable {
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
      */
-    function setCustomStrategyBaseFee(
-        address _strategy,
-        uint256 _baseFee
-    ) external {
+    function setCustomStrategyBaseFee(address _strategy, uint256 _baseFee)
+        external
+    {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         acceptableStrategyBaseFee[_strategy] = _baseFee;
 
@@ -230,9 +247,11 @@ contract CommonReportTrigger is Ownable {
      * @param _strategy The address of the strategy to check the trigger for.
      * @return . Bool repersenting if the strategy is ready to report.
      */
-    function strategyReportTrigger(
-        address _strategy
-    ) external view returns (bool) {
+    function strategyReportTrigger(address _strategy)
+        external
+        view
+        returns (bool)
+    {
         address _trigger = customStrategyTrigger[_strategy];
 
         if (_trigger != address(0)) {
@@ -282,10 +301,11 @@ contract CommonReportTrigger is Ownable {
      * @param _strategy The address of the strategy to report.
      * @return . Bool if the strategy should report to the vault.
      */
-    function vaultReportTrigger(
-        address _vault,
-        address _strategy
-    ) external view returns (bool) {
+    function vaultReportTrigger(address _vault, address _strategy)
+        external
+        view
+        returns (bool)
+    {
         address _trigger = customVaultTrigger[_vault][_strategy];
 
         if (_trigger != address(0)) {
@@ -337,11 +357,20 @@ contract CommonReportTrigger is Ownable {
      * @dev Throws if the caller is not current owner.
      * @param _newAcceptableBaseFee The acceptable network base fee.
      */
-    function setAcceptableBaseFee(
-        uint256 _newAcceptableBaseFee
-    ) external onlyOwner {
+    function setAcceptableBaseFee(uint256 _newAcceptableBaseFee)
+        external
+        onlyOwner
+    {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "ZERO ADDRESS");
+        address oldOwner = owner;
+        owner = newOwner;
+
+        emit OwnershipTransferred(oldOwner, newOwner);
     }
 }

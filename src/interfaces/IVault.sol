@@ -9,9 +9,10 @@ interface IVault {
         uint256 maxDebt;
     }
 
-    function strategies(
-        address _strategy
-    ) external view returns (StrategyParams memory);
+    function strategies(address _strategy)
+        external
+        view
+        returns (StrategyParams memory);
 
     function roles(address _address) external view returns (uint256);
 
