@@ -9,10 +9,10 @@ interface ICustomStrategyTrigger {
 }
 
 interface ICustomVaultTrigger {
-    function reportTrigger(address _vault, address _strategy)
-        external
-        view
-        returns (bool);
+    function reportTrigger(
+        address _vault,
+        address _strategy
+    ) external view returns (bool);
 }
 
 interface IBaseFee {
@@ -134,9 +134,10 @@ contract CommonReportTrigger {
      * @param _strategy The address of the strategy to set the trigger for.
      * @param _trigger The address of the custom trigger contract.
      */
-    function setCustomStrategyTrigger(address _strategy, address _trigger)
-        external
-    {
+    function setCustomStrategyTrigger(
+        address _strategy,
+        address _trigger
+    ) external {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyTrigger[_strategy] = _trigger;
 
@@ -156,9 +157,10 @@ contract CommonReportTrigger {
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
      */
-    function setCustomStrategyBaseFee(address _strategy, uint256 _baseFee)
-        external
-    {
+    function setCustomStrategyBaseFee(
+        address _strategy,
+        uint256 _baseFee
+    ) external {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         acceptableStrategyBaseFee[_strategy] = _baseFee;
 
@@ -247,11 +249,9 @@ contract CommonReportTrigger {
      * @param _strategy The address of the strategy to check the trigger for.
      * @return . Bool repersenting if the strategy is ready to report.
      */
-    function strategyReportTrigger(address _strategy)
-        external
-        view
-        returns (bool)
-    {
+    function strategyReportTrigger(
+        address _strategy
+    ) external view returns (bool) {
         address _trigger = customStrategyTrigger[_strategy];
 
         if (_trigger != address(0)) {
@@ -301,11 +301,10 @@ contract CommonReportTrigger {
      * @param _strategy The address of the strategy to report.
      * @return . Bool if the strategy should report to the vault.
      */
-    function vaultReportTrigger(address _vault, address _strategy)
-        external
-        view
-        returns (bool)
-    {
+    function vaultReportTrigger(
+        address _vault,
+        address _strategy
+    ) external view returns (bool) {
         address _trigger = customVaultTrigger[_vault][_strategy];
 
         if (_trigger != address(0)) {
@@ -357,10 +356,9 @@ contract CommonReportTrigger {
      * @dev Throws if the caller is not current owner.
      * @param _newAcceptableBaseFee The acceptable network base fee.
      */
-    function setAcceptableBaseFee(uint256 _newAcceptableBaseFee)
-        external
-        onlyOwner
-    {
+    function setAcceptableBaseFee(
+        uint256 _newAcceptableBaseFee
+    ) external onlyOwner {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);

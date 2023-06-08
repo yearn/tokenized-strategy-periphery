@@ -62,9 +62,10 @@ abstract contract TradeFactorySwapper {
         delete _rewardTokens;
     }
 
-    function _setTradeFactory(address tradeFactory_, address _tokenTo)
-        internal
-    {
+    function _setTradeFactory(
+        address tradeFactory_,
+        address _tokenTo
+    ) internal {
         if (_tradeFactory != address(0)) {
             _removeTradeFactoryPermissions();
         }

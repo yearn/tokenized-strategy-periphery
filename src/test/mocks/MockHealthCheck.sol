@@ -7,9 +7,9 @@ import {HealthCheck} from "../../HealthCheck/HealthCheck.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 contract MockHealthCheck is BaseTokenizedStrategy, HealthCheck {
-    constructor(address _asset)
-        BaseTokenizedStrategy(_asset, "Mock Health Check")
-    {}
+    constructor(
+        address _asset
+    ) BaseTokenizedStrategy(_asset, "Mock Health Check") {}
 
     function _deployFunds(uint256) internal override {}
 
@@ -27,17 +27,15 @@ contract MockHealthCheck is BaseTokenizedStrategy, HealthCheck {
         }
     }
 
-    function setProfitLimitRatio(uint256 _profitLimitRatio)
-        external
-        onlyManagement
-    {
+    function setProfitLimitRatio(
+        uint256 _profitLimitRatio
+    ) external onlyManagement {
         _setProfitLimitRatio(_profitLimitRatio);
     }
 
-    function setLossLimitRatio(uint256 _lossLimitRatio)
-        external
-        onlyManagement
-    {
+    function setLossLimitRatio(
+        uint256 _lossLimitRatio
+    ) external onlyManagement {
         _setLossLimitRatio(_lossLimitRatio);
     }
 

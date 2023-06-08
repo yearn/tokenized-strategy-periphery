@@ -31,10 +31,10 @@ contract VyperDeployer {
      * For example, the file name for "Token.vy" is "Token".
      * @return deployedAddress The address that the contract was deployed to.
      */
-    function deployContract(string memory path, string memory fileName)
-        public
-        returns (address)
-    {
+    function deployContract(
+        string memory path,
+        string memory fileName
+    ) public returns (address) {
         ///@notice create a list of strings with the commands necessary to compile Vyper contracts
         string[] memory cmds = new string[](2);
         cmds[0] = "vyper";

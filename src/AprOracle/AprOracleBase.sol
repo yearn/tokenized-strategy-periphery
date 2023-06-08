@@ -24,9 +24,8 @@ abstract contract AprOracleBase is Ownable {
      * @param _delta The difference in debt.
      * @return . The expected apr for the strategy.
      */
-    function aprAfterDebtChange(address _strategy, int256 _delta)
-        external
-        view
-        virtual
-        returns (uint256);
+    function aprAfterDebtChange(
+        address _strategy,
+        int256 _delta
+    ) external view virtual returns (uint256);
 }
