@@ -110,8 +110,7 @@ contract CommonReportTrigger {
     // custom base fee that will be used for a trigger to return true. If
     // returns 0 then the default `acceptableBaseFee` will be used.
     // vaultAddress => strategyAddress => customBaseFee.
-    mapping(address => mapping(address => uint256))
-        public customVaultBaseFee;
+    mapping(address => mapping(address => uint256)) public customVaultBaseFee;
 
     constructor(address _owner) {
         owner = _owner;
@@ -266,9 +265,7 @@ contract CommonReportTrigger {
 
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = customStrategyBaseFee[
-                _strategy
-            ];
+            uint256 customAcceptableBaseFee = customStrategyBaseFee[_strategy];
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;

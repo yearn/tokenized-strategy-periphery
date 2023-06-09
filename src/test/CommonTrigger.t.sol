@@ -176,32 +176,23 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_setCustomStrategyBaseFee(address _address, uint256 _baseFee) public {
+    function test_setCustomStrategyBaseFee(
+        address _address,
+        uint256 _baseFee
+    ) public {
         vm.assume(_address != management);
         vm.assume(_baseFee != 0);
 
-        assertEq(
-            commonTrigger.customStrategyBaseFee(address(mockStrategy)),
-            0
-        );
+        assertEq(commonTrigger.customStrategyBaseFee(address(mockStrategy)), 0);
 
         vm.expectRevert("!authorized");
         vm.prank(_address);
-        commonTrigger.setCustomStrategyBaseFee(
-            address(mockStrategy),
-            _baseFee
-        );
+        commonTrigger.setCustomStrategyBaseFee(address(mockStrategy), _baseFee);
 
-        assertEq(
-            commonTrigger.customStrategyBaseFee(address(mockStrategy)),
-            0
-        );
+        assertEq(commonTrigger.customStrategyBaseFee(address(mockStrategy)), 0);
 
         vm.prank(management);
-        commonTrigger.setCustomStrategyBaseFee(
-            address(mockStrategy),
-            _baseFee
-        );
+        commonTrigger.setCustomStrategyBaseFee(address(mockStrategy), _baseFee);
 
         assertEq(
             commonTrigger.customStrategyBaseFee(address(mockStrategy)),
@@ -209,10 +200,13 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_setCustomVaultBaseFee(address _address, uint256 _baseFee) public {
+    function test_setCustomVaultBaseFee(
+        address _address,
+        uint256 _baseFee
+    ) public {
         vm.assume(_address != management);
         vm.assume(_baseFee != 0);
-        
+
         assertEq(
             commonTrigger.customVaultBaseFee(
                 address(vault),
@@ -267,14 +261,24 @@ contract CommonTriggerTest is Setup {
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
         // Test when nothing has happened. Should be false.
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         // Deposit into the strategy.
-        mintAndDepositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
+        mintAndDepositIntoStrategy(
+            IStrategy(address(mockStrategy)),
+            user,
+            _amount
+        );
 
-        // Skip time for report 
+        // Skip time for report
         skip(mockStrategy.profitMaxUnlockTime() + 1);
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // base fee not acceptable
         // lower acceptable base fee.
@@ -282,28 +286,43 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase / 2);
 
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         currentBase = IBaseFee(baseFeeProvider).basefee_global();
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // Withdraw funds
         vm.prank(user);
         mockStrategy.redeem(_amount, user, user);
         //Should be false with total Assets = 0.
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         // Deposit back in.
         depositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // Shutdown
         vm.prank(management);
         mockStrategy.shutdownStrategy();
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
     }
 
     function test_defualtVaultTrigger(uint256 _amount) public {
@@ -320,14 +339,24 @@ contract CommonTriggerTest is Setup {
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
         // Test when nothing has happened. Should be false.
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         // Deposit into the strategy.
-        mintAndDepositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
+        mintAndDepositIntoStrategy(
+            IStrategy(address(mockStrategy)),
+            user,
+            _amount
+        );
 
-        // Skip time for report 
+        // Skip time for report
         skip(mockStrategy.profitMaxUnlockTime() + 1);
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // base fee not acceptable
         // lower acceptable base fee.
@@ -335,27 +364,42 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase / 2);
 
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         currentBase = IBaseFee(baseFeeProvider).basefee_global();
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // Withdraw funds
         vm.prank(user);
         mockStrategy.redeem(_amount, user, user);
         //Should be false with total Assets = 0.
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
 
         // Deposit back in.
         depositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), true);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            true
+        );
 
         // Shutdown
         vm.prank(management);
         mockStrategy.shutdownStrategy();
-        assertEq(commonTrigger.strategyReportTrigger(address(mockStrategy)), false);
+        assertEq(
+            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            false
+        );
     }
 }
