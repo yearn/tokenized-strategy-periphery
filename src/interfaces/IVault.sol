@@ -13,6 +13,8 @@ interface IVault {
         address _strategy
     ) external view returns (StrategyParams memory);
 
+    function set_role(address, uint256) external;
+
     function roles(address _address) external view returns (uint256);
 
     function profitMaxUnlockTime() external view returns (uint256);
