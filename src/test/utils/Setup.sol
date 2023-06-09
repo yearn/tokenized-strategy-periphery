@@ -43,7 +43,7 @@ contract Setup is ExtendedTest {
     uint256 public MAX_BPS = 10_000;
 
     // Fuzz amount
-    uint256 public maxFuzzAmount = 1e22;
+    uint256 public maxFuzzAmount = 1e24;
     uint256 public minFuzzAmount = 100_000;
 
     // Default prfot max unlock time is set for 10 days

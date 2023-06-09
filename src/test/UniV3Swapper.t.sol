@@ -10,6 +10,9 @@ contract HealthCheckTest is Setup {
 
     ERC20 public weth;
 
+    uint256 public minWethAmount = 1e8;
+    uint256 public maxWethAmount = 1e20;
+
     function setUp() public override {
         super.setUp();
 
@@ -56,7 +59,7 @@ contract HealthCheckTest is Setup {
     }
 
     function test_swapFrom_wethToAsset(uint256 amount) public {
-        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
         // Set WETH asset fees
         vm.prank(management);
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
@@ -118,7 +121,7 @@ contract HealthCheckTest is Setup {
     }
 
     function test_swapTo_assetFromWeth(uint256 amount) public {
-        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
         // Set WETH asset fees
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
 
@@ -149,7 +152,8 @@ contract HealthCheckTest is Setup {
     }
 
     function test_swapFrom_multiHop(uint256 amount) public {
-        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+        // Need to make sure we are getting enough DAI to be non 0 USDC.
+        vm.assume(amount >= 1e15 && amount <= maxFuzzAmount);
         ERC20 swapTo = ERC20(tokenAddrs["USDC"]);
         // Set fees for weth and asset
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
@@ -184,7 +188,8 @@ contract HealthCheckTest is Setup {
     }
 
     function test_swapTo_multiHop(uint256 amount) public {
-        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+        // Need to make sure we are getting enough DAI to be non 0 USDC.
+        vm.assume(amount >= 1e15 && amount <= maxFuzzAmount);
         ERC20 swapTo = ERC20(tokenAddrs["USDC"]);
         // Set fees for weth and asset
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
