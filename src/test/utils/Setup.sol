@@ -32,7 +32,9 @@ contract Setup is ExtendedTest {
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
     address public keeper = address(4);
+    address public daddy = address(69);
     address public management = address(1);
+    address public vaultManagement = address(2);
     address public performanceFeeRecipient = address(3);
 
     // Address of the real deployed Factory
@@ -63,11 +65,14 @@ contract Setup is ExtendedTest {
         vault = setUpVault();
 
         // label all the used addresses for traces
+        vm.label(daddy, "daddy");
         vm.label(keeper, "keeper");
         vm.label(factory, "factory");
+        vm.label(address(vault), "vault");
         vm.label(address(asset), "asset");
         vm.label(management, "management");
         vm.label(address(mockStrategy), "strategy");
+        vm.label(vaultManagement, "vault management");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 
@@ -80,14 +85,19 @@ contract Setup is ExtendedTest {
             10 days
         );
 
-        return
-            IVault(
-                vyperDeployer.deployContract(
-                    "lib/yearn-vaults-v3/contracts/",
-                    "VaultV3",
-                    args
-                )
-            );
+        IVault _vault = IVault(
+            vyperDeployer.deployContract(
+                "lib/yearn-vaults-v3/contracts/",
+                "VaultV3",
+                args
+            )
+        );
+
+        vm.prank(management);
+        // Give the vault manager all the roles
+        _vault.set_role(vaultManagement, 8191);
+
+        return _vault;
     }
 
     function setUpStrategy() public returns (IStrategy) {

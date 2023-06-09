@@ -99,7 +99,7 @@ contract CommonReportTrigger {
     // Mapping of a strategy address to a custom base fee that will be
     // accepted for the trigger to return true. If 0 the default
     // `acceptableBaseFee` will be used.
-    mapping(address => uint256) public acceptableStrategyBaseFee;
+    mapping(address => uint256) public customStrategyBaseFee;
 
     // Mapping of a vault adddress and one of its strategies address to a
     // custom report trigger. If address(0) the default trigger will be used.
@@ -111,7 +111,7 @@ contract CommonReportTrigger {
     // returns 0 then the default `acceptableBaseFee` will be used.
     // vaultAddress => strategyAddress => customBaseFee.
     mapping(address => mapping(address => uint256))
-        public acceptableVaultBaseFee;
+        public customVaultBaseFee;
 
     constructor(address _owner) {
         owner = _owner;
@@ -162,7 +162,7 @@ contract CommonReportTrigger {
         uint256 _baseFee
     ) external {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
-        acceptableStrategyBaseFee[_strategy] = _baseFee;
+        customStrategyBaseFee[_strategy] = _baseFee;
 
         emit UpdatedCustomStrategyBaseFee(_strategy, _baseFee);
     }
@@ -222,7 +222,7 @@ contract CommonReportTrigger {
             (IVault(_vault).roles(msg.sender) & mask) == mask,
             "!authorized"
         );
-        acceptableVaultBaseFee[_vault][_strategy] = _baseFee;
+        customVaultBaseFee[_vault][_strategy] = _baseFee;
 
         emit UpdatedCustomVaultBaseFee(_vault, _strategy, _baseFee);
     }
@@ -266,7 +266,7 @@ contract CommonReportTrigger {
 
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = acceptableStrategyBaseFee[
+            uint256 customAcceptableBaseFee = customStrategyBaseFee[
                 _strategy
             ];
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
@@ -322,7 +322,7 @@ contract CommonReportTrigger {
 
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = acceptableVaultBaseFee[_vault][
+            uint256 customAcceptableBaseFee = customVaultBaseFee[_vault][
                 _strategy
             ];
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
