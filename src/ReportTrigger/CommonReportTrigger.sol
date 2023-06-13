@@ -62,18 +62,18 @@ contract CommonReportTrigger {
         uint256 acceptableBaseFee
     );
 
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
+    event GovernanceTransferred(
+        address indexed previousGovernance,
+        address indexed newGovernance
     );
 
-    modifier onlyOwner() {
-        _checkOwner();
+    modifier onlyGovernance() {
+        _checkGovernance();
         _;
     }
 
-    function _checkOwner() internal view virtual {
-        require(owner == msg.sender, "!owner");
+    function _checkGovernance() internal view virtual {
+        require(governance == msg.sender, "!governance");
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ contract CommonReportTrigger {
     string public name = "Yearn Common Report Trigger";
 
     // Address that can set the defualt base fee and provider
-    address public owner;
+    address public governance;
 
     // Address to retreive the current base fee on the network from.
     address public baseFeeProvider;
@@ -112,8 +112,8 @@ contract CommonReportTrigger {
     // vaultAddress => strategyAddress => customBaseFee.
     mapping(address => mapping(address => uint256)) public customVaultBaseFee;
 
-    constructor(address _owner) {
-        owner = _owner;
+    constructor(address _governance) {
+        governance = _governance;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -173,6 +173,8 @@ contract CommonReportTrigger {
      * while still using this standard contract for keepers to read the
      * trigger status from.
      *
+     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     *
      * The custom trigger contract only needs to implement the `reportTrigger`
      * function to return true or false.
      *
@@ -185,8 +187,9 @@ contract CommonReportTrigger {
         address _strategy,
         address _trigger
     ) external {
-        // TODO: check that the address has a ADD_STRATEGY_MANAGER role
-        uint256 mask = 1; // << 4;
+        // Check that the address has the ADD_STRATEGY_MANAGER role on
+        // the vault. Just check their role has a 1 at the first position.
+        uint256 mask = 1;
         require(
             (IVault(_vault).roles(msg.sender) & mask) == mask,
             "!authorized"
@@ -206,6 +209,8 @@ contract CommonReportTrigger {
      *
      * This will have no effect if a custom trigger is set for the strategy.
      *
+     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     *
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
@@ -215,8 +220,9 @@ contract CommonReportTrigger {
         address _strategy,
         uint256 _baseFee
     ) external {
-        // TODO: check that the address has a ADD_STRATEGY_MANAGER role
-        uint256 mask = 1; // << 4;
+        // Check that the address has the ADD_STRATEGY_MANAGER role on
+        // the vault. Just check their role has a 1 at the first position.
+        uint256 mask = 1;
         require(
             (IVault(_vault).roles(msg.sender) & mask) == mask,
             "!authorized"
@@ -334,15 +340,17 @@ contract CommonReportTrigger {
     }
 
     /*//////////////////////////////////////////////////////////////
-                            OWNERS FUNCTIONS
+                        GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Sets the address used to pull the current network base fee.
-     * @dev Throws if the caller is not current owner.
+     * @dev Throws if the caller is not current governance.
      * @param _baseFeeProvider The network's baseFeeProvider address.
      */
-    function setBaseFeeProvider(address _baseFeeProvider) external onlyOwner {
+    function setBaseFeeProvider(
+        address _baseFeeProvider
+    ) external onlyGovernance {
         baseFeeProvider = _baseFeeProvider;
 
         emit NewBaseFeeProvider(_baseFeeProvider);
@@ -350,22 +358,29 @@ contract CommonReportTrigger {
 
     /**
      * @notice Sets the default acceptable current network base fee.
-     * @dev Throws if the caller is not current owner.
+     * @dev Throws if the caller is not current governance.
      * @param _newAcceptableBaseFee The acceptable network base fee.
      */
     function setAcceptableBaseFee(
         uint256 _newAcceptableBaseFee
-    ) external onlyOwner {
+    ) external onlyGovernance {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);
     }
 
-    function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "ZERO ADDRESS");
-        address oldOwner = owner;
-        owner = newOwner;
+    /**
+     * @notice Sets a new address as the governance of the contract.
+     * @dev Throws if the caller is not current governance.
+     * @param _newGovernance The new governance address.
+     */
+    function transferGovernance(
+        address _newGovernance
+    ) external onlyGovernance {
+        require(_newGovernance != address(0), "ZERO ADDRESS");
+        address oldGovernance = governance;
+        governance = _newGovernance;
 
-        emit OwnershipTransferred(oldOwner, newOwner);
+        emit GovernanceTransferred(oldGovernance, _newGovernance);
     }
 }

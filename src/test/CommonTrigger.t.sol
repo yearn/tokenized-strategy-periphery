@@ -23,7 +23,7 @@ contract CommonTriggerTest is Setup {
     }
 
     function test_setup() public {
-        assertEq(commonTrigger.owner(), address(daddy));
+        assertEq(commonTrigger.governance(), address(daddy));
         assertEq(commonTrigger.baseFeeProvider(), address(0));
         assertEq(commonTrigger.acceptableBaseFee(), 0);
         assertEq(
@@ -44,7 +44,7 @@ contract CommonTriggerTest is Setup {
 
         assertEq(commonTrigger.baseFeeProvider(), address(0));
 
-        vm.expectRevert("!owner");
+        vm.expectRevert("!governance");
         vm.prank(_address);
         commonTrigger.setBaseFeeProvider(baseFeeProvider);
 
@@ -65,7 +65,7 @@ contract CommonTriggerTest is Setup {
 
         assertEq(commonTrigger.acceptableBaseFee(), 0);
 
-        vm.expectRevert("!owner");
+        vm.expectRevert("!governance");
         vm.prank(_address);
         commonTrigger.setAcceptableBaseFee(_amount);
 
@@ -77,28 +77,31 @@ contract CommonTriggerTest is Setup {
         assertEq(commonTrigger.acceptableBaseFee(), _amount);
     }
 
-    function test_transferOwnership(address _caller, address _newOwner) public {
+    function test_transferGovernance(
+        address _caller,
+        address _newOwner
+    ) public {
         vm.assume(_caller != daddy);
         vm.assume(_newOwner != daddy && _newOwner != address(0));
 
-        assertEq(commonTrigger.owner(), daddy);
+        assertEq(commonTrigger.governance(), daddy);
 
-        vm.expectRevert("!owner");
+        vm.expectRevert("!governance");
         vm.prank(_caller);
-        commonTrigger.transferOwnership(_newOwner);
+        commonTrigger.transferGovernance(_newOwner);
 
-        assertEq(commonTrigger.owner(), daddy);
+        assertEq(commonTrigger.governance(), daddy);
 
         vm.expectRevert("ZERO ADDRESS");
         vm.prank(daddy);
-        commonTrigger.transferOwnership(address(0));
+        commonTrigger.transferGovernance(address(0));
 
-        assertEq(commonTrigger.owner(), daddy);
+        assertEq(commonTrigger.governance(), daddy);
 
         vm.prank(daddy);
-        commonTrigger.transferOwnership(_newOwner);
+        commonTrigger.transferGovernance(_newOwner);
 
-        assertEq(commonTrigger.owner(), _newOwner);
+        assertEq(commonTrigger.governance(), _newOwner);
     }
 
     function test_setCustomStrategyTrigger(address _address) public {
