@@ -22,6 +22,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Vyper
+        run: pip install vyper==0.3.7
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
@@ -35,5 +38,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }}
+          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }} --ffi
         id: test

@@ -340,65 +340,85 @@ contract CommonTriggerTest is Setup {
 
         // Test when nothing has happened. Should be false.
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             false
         );
 
-        // Deposit into the strategy.
-        mintAndDepositIntoStrategy(
+        // Setup strategy and give it debt through the vault.
+        addStrategyAndDebt(
+            vault,
             IStrategy(address(mockStrategy)),
             user,
             _amount
         );
 
-        // Skip time for report
-        skip(mockStrategy.profitMaxUnlockTime() + 1);
+        // Skip time for report trigger
+        skip(vault.profitMaxUnlockTime() + 1);
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             true
         );
 
-        // base fee not acceptable
         // lower acceptable base fee.
         currentBase = IBaseFee(baseFeeProvider).basefee_global();
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase / 2);
 
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             false
         );
 
+        // Reset it
         currentBase = IBaseFee(baseFeeProvider).basefee_global();
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
-
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             true
         );
 
         // Withdraw funds
-        vm.prank(user);
-        mockStrategy.redeem(_amount, user, user);
-        //Should be false with total Assets = 0.
+        addDebtToStrategy(vault, IStrategy(address(mockStrategy)), 0);
+        //Should be false with currentDebt = 0.
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             false
         );
 
         // Deposit back in.
-        depositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
+        addDebtToStrategy(vault, IStrategy(address(mockStrategy)), _amount);
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             true
         );
 
         // Shutdown
-        vm.prank(management);
-        mockStrategy.shutdownStrategy();
+        vm.prank(vaultManagement);
+        vault.shutdown_vault();
         assertEq(
-            commonTrigger.strategyReportTrigger(address(mockStrategy)),
+            commonTrigger.vaultReportTrigger(
+                address(vault),
+                address(mockStrategy)
+            ),
             false
         );
     }
