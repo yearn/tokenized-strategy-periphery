@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {Governance} from "../Governance.sol";
+import {Governance} from "../utils/Governance.sol";
 
 import {IVault} from "../interfaces/IVault.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";

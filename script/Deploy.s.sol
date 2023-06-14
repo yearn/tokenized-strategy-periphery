@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "forge-std/Script.sol";
 
+// Deploy a contract to a deterministic address with create2
 contract Deploy is Script {
 
     function run() external {
