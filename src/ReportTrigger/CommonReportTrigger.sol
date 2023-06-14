@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import {Governance} from "../Governance.sol";
+
 import {IVault} from "../interfaces/IVault.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 
@@ -31,7 +33,7 @@ interface IBaseFee {
  *  However, it is also customizable by the strategy and vaults
  *  management to allow complete customization if desired.
  */
-contract CommonReportTrigger {
+contract CommonReportTrigger is Governance {
     /*//////////////////////////////////////////////////////////////
                             EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -62,28 +64,11 @@ contract CommonReportTrigger {
         uint256 acceptableBaseFee
     );
 
-    event GovernanceTransferred(
-        address indexed previousGovernance,
-        address indexed newGovernance
-    );
-
-    modifier onlyGovernance() {
-        _checkGovernance();
-        _;
-    }
-
-    function _checkGovernance() internal view virtual {
-        require(governance == msg.sender, "!governance");
-    }
-
     /*//////////////////////////////////////////////////////////////
                             STORAGE
     //////////////////////////////////////////////////////////////*/
 
     string public name = "Yearn Common Report Trigger";
-
-    // Address that can set the defualt base fee and provider
-    address public governance;
 
     // Address to retreive the current base fee on the network from.
     address public baseFeeProvider;
@@ -112,9 +97,7 @@ contract CommonReportTrigger {
     // vaultAddress => strategyAddress => customBaseFee.
     mapping(address => mapping(address => uint256)) public customVaultBaseFee;
 
-    constructor(address _governance) {
-        governance = _governance;
-    }
+    constructor(address _governance) Governance(_governance) {}
 
     /*//////////////////////////////////////////////////////////////
                         CUSTOM SETTERS
@@ -367,20 +350,5 @@ contract CommonReportTrigger {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);
-    }
-
-    /**
-     * @notice Sets a new address as the governance of the contract.
-     * @dev Throws if the caller is not current governance.
-     * @param _newGovernance The new governance address.
-     */
-    function transferGovernance(
-        address _newGovernance
-    ) external onlyGovernance {
-        require(_newGovernance != address(0), "ZERO ADDRESS");
-        address oldGovernance = governance;
-        governance = _newGovernance;
-
-        emit GovernanceTransferred(oldGovernance, _newGovernance);
     }
 }
