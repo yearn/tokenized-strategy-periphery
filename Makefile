@@ -8,7 +8,7 @@ size  :; forge build --sizes
 # storage inspection
 inspect :; forge inspect ${contract} storage-layout --pretty
 
-FORK_URL := ${AVAX_RPC_URL} 
+FORK_URL := ${ETH_RPC_URL} 
 
 # local tests without fork
 test  :; forge test -vv --fork-url ${FORK_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --ffi
