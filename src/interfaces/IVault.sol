@@ -25,6 +25,10 @@ interface IVault {
 
     function update_debt(address, uint256) external;
 
+    function process_report(
+        address _strategy
+    ) external returns (uint256, uint256);
+
     function set_deposit_limit(uint256) external;
 
     function shutdown_vault() external;

@@ -4,17 +4,19 @@ pragma solidity 0.8.18;
 import {Governance} from "../utils/Governance.sol";
 
 import {IVault} from "../interfaces/IVault.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface ICustomStrategyTrigger {
-    function reportTrigger(address _strategy) external view returns (bool);
+    function reportTrigger(
+        address _strategy
+    ) external view returns (bool, bytes memory);
 }
 
 interface ICustomVaultTrigger {
     function reportTrigger(
         address _vault,
         address _strategy
-    ) external view returns (bool);
+    ) external view returns (bool, bytes memory);
 }
 
 interface IBaseFee {
@@ -236,35 +238,48 @@ contract CommonReportTrigger is Governance {
      *
      * @param _strategy The address of the strategy to check the trigger for.
      * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bytes with either the calldata or reason why False.
      */
     function strategyReportTrigger(
         address _strategy
-    ) external view returns (bool) {
+    ) external view returns (bool, bytes memory) {
         address _trigger = customStrategyTrigger[_strategy];
 
+        // If a custom trigger contract is set use that one.
         if (_trigger != address(0)) {
             return ICustomStrategyTrigger(_trigger).reportTrigger(_strategy);
         }
 
+        // Cache the strategy instance.
         IStrategy strategy = IStrategy(_strategy);
 
-        if (strategy.isShutdown()) return false;
+        // Don't report if the strategy is shutdown.
+        if (strategy.isShutdown()) return (false, bytes("Shutdown"));
 
-        if (strategy.totalAssets() == 0) return false;
+        // Dont't report if the strategy has no assets.
+        if (strategy.totalAssets() == 0) return (false, bytes("Zero Assets"));
 
+        // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
             uint256 customAcceptableBaseFee = customStrategyBaseFee[_strategy];
+            // Use the custom base fee if set, otherwise use the default.
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
+
+            // Dont report if the base fee is to high.
             if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
-                return false;
+                return (false, bytes("Base Fee"));
         }
 
-        return
+        return (
+            // Return true is the full profit unlock time has passed since the last report.
             block.timestamp - strategy.lastReport() >
-            strategy.profitMaxUnlockTime();
+                strategy.profitMaxUnlockTime(),
+            // Return the report function sig as the calldata.
+            abi.encodeWithSelector(strategy.report.selector)
+        );
     }
 
     /**
@@ -286,40 +301,55 @@ contract CommonReportTrigger is Governance {
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to report.
      * @return . Bool if the strategy should report to the vault.
+     * @return . Bytes with either the calldata or reason why False.
      */
     function vaultReportTrigger(
         address _vault,
         address _strategy
-    ) external view returns (bool) {
+    ) external view returns (bool, bytes memory) {
         address _trigger = customVaultTrigger[_vault][_strategy];
 
+        // If a custom trigger contract is set use that.
         if (_trigger != address(0)) {
             return
                 ICustomVaultTrigger(_trigger).reportTrigger(_vault, _strategy);
         }
 
+        // Cache the vault instance.
         IVault vault = IVault(_vault);
 
-        if (vault.shutdown()) return false;
+        // Don't report if the vault is shutdown.
+        if (vault.shutdown()) return (false, bytes("Shutdown"));
 
+        // Cache the strategy parameters.
         IVault.StrategyParams memory params = vault.strategies(_strategy);
 
-        if (params.activation == 0 || params.currentDebt == 0) return false;
+        // Don't report if the strategy is not acitve or has no funds.
+        if (params.activation == 0 || params.currentDebt == 0)
+            return (false, bytes("Not Active"));
 
+        // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
             uint256 customAcceptableBaseFee = customVaultBaseFee[_vault][
                 _strategy
             ];
+            // Use the custom base fee if set, otherwise use the default.
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
+
+            // Dont report if the base fee is to high.
             if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
-                return false;
+                return (false, bytes("Base Fee"));
         }
 
-        return
-            block.timestamp - params.lastReport > vault.profitMaxUnlockTime();
+        return (
+            // Return true is the full profit unlock time has passed since the last report.
+            block.timestamp - params.lastReport > vault.profitMaxUnlockTime(),
+            // Return the function selector and the strategy as the parameter to use.
+            abi.encodeWithSelector(vault.process_report.selector, _strategy)
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
