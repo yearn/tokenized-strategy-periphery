@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import {Governance} from "../utils/Governance.sol";
 
 import {IVault} from "../interfaces/IVault.sol";
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
+import {IStrategy} from "../interfaces/IStrategy.sol";
 
 interface ICustomStrategyTrigger {
     function reportTrigger(
