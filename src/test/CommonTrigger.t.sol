@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-import {Setup, IStrategy, IVault, console} from "./utils/Setup.sol";
+import {Setup, IStrategy, console} from "./utils/Setup.sol";
 
 import {CommonReportTrigger, IBaseFee} from "../ReportTrigger/CommonReportTrigger.sol";
 import {MockCustomStrategyTrigger} from "./mocks/MockCustomStrategyTrigger.sol";
@@ -352,7 +352,7 @@ contract CommonTriggerTest is Setup {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         bytes memory _calldata = abi.encodeWithSelector(
-            IVault.process_report.selector,
+            vault.process_report.selector,
             address(mockStrategy)
         );
         bool response;
