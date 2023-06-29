@@ -15,4 +15,8 @@ interface IStrategy {
     function isShutdown() external view returns (bool);
 
     function report() external returns (uint256, uint256);
+
+    function tend() external;
+
+    function tendTrigger() external view returns (bool);
 }
