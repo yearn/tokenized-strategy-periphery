@@ -447,4 +447,31 @@ contract CommonTriggerTest is Setup {
         assertEq(response, false);
         assertEq(data, bytes("Shutdown"));
     }
+
+    function test_tendTrigger(bool _status) public {
+        bytes memory _calldata = abi.encodeWithSelector(
+            mockStrategy.tend.selector
+        );
+
+        bool response;
+        bytes memory data;
+
+        (response, data) = commonTrigger.strategyTendTrigger(
+            address(mockStrategy)
+        );
+
+        assertEq(response, false);
+        assertEq(data, _calldata);
+
+        address(mockStrategy).call(
+            abi.encodeWithSignature("setTendStatus(bool)", _status)
+        );
+
+        (response, data) = commonTrigger.strategyTendTrigger(
+            address(mockStrategy)
+        );
+
+        assertEq(response, _status);
+        assertEq(data, _calldata);
+    }
 }
