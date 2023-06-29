@@ -51,8 +51,9 @@ abstract contract TradeFactorySwapper {
                 ERC20(_tokenFrom).safeApprove(_tradeFactory, 0);
                 ITradeFactory(_tradeFactory).disable(_tokenFrom, _tokenTo);
 
-                _rewardTokens = _rewardTokens;
+                _rewardTokens = rewardTokens_;
                 _rewardTokens.pop();
+                break;
             }
         }
     }
