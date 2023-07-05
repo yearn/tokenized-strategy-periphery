@@ -10,7 +10,3 @@
 	path = lib/tokenized-strategy
 	url = https://github.com/yearn/tokenized-strategy
 	branch = 3.0.1-beta
-[submodule "lib/yearn-vaults-v3"]
-	path = lib/yearn-vaults-v3
-	url = https://github.com/yearn/yearn-vaults-v3
-	branch = master
