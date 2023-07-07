@@ -17,7 +17,10 @@ contract HealthCheckTest is Setup {
 
         healthCheck.setKeeper(keeper);
         healthCheck.setPerformanceFeeRecipient(performanceFeeRecipient);
-        healthCheck.setManagement(management);
+        healthCheck.setPendingManagement(management);
+        // Accept mangagement.
+        vm.prank(management);
+        healthCheck.acceptManagement();
     }
 
     function test_setup_healthCheck(uint256 _amount) public {

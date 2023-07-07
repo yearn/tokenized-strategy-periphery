@@ -24,7 +24,10 @@ contract HealthCheckTest is Setup {
 
         uniV3Swapper.setKeeper(keeper);
         uniV3Swapper.setPerformanceFeeRecipient(performanceFeeRecipient);
-        uniV3Swapper.setManagement(management);
+        uniV3Swapper.setPendingManagement(management);
+        // Accept mangagement.
+        vm.prank(management);
+        uniV3Swapper.acceptManagement();
     }
 
     function test_swapFrom_assetToWeth(uint256 amount) public {

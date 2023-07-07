@@ -114,7 +114,10 @@ contract Setup is ExtendedTest {
         // set treasury
         _strategy.setPerformanceFeeRecipient(performanceFeeRecipient);
         // set management of the strategy
-        _strategy.setManagement(management);
+        _strategy.setPendingManagement(management);
+        // Accept mangagement.
+        vm.prank(management);
+        _strategy.acceptManagement();
 
         return _strategy;
     }
