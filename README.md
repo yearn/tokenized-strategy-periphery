@@ -56,7 +56,7 @@ EX:
         function _harvestAndReport() exeternal override returns (uint256) {
             ... Claim rewards
             
-            uint256 rewardBalance = rewardToken.balanceOf(address(this));
+            uint256 rewardBalance = ERC20(rewardToken).balanceOf(address(this));
             _swapFrom(rewardToken, asset, rewardBalance, minAmountOut);
             
             ... reinvest and return the '_totalAssets'
