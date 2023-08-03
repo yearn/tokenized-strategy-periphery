@@ -16,7 +16,7 @@ interface IStrategy {
  *   A strategist simply needs to inherit this contract. Set
  *   the limit ratios to the desired amounts and then call
  *   `require(_executeHealthCheck(...), "!healthcheck)` during
- *   the  `_totalInvested()` execution. If the profit or loss
+ *   the  `_harvestAndReport()` execution. If the profit or loss
  *   that would be recorded is outside the acceptable bounds
  *   the tx will revert.
  *
@@ -38,31 +38,47 @@ contract HealthCheck {
     uint256 internal constant MAX_BPS = 10_000;
 
     // Default profit limit to 100%.
-    // NOTE: If cloning this will need to be set on
-    // initialization or it will be 0 and cause reverts.
-    uint256 public profitLimitRatio = 10_000;
+    uint256 private _profitLimitRatio = 10_000;
 
     // Defaults loss limti to 0.
-    uint256 public lossLimitRatio;
+    uint256 private _lossLimitRatio;
+
+    /**
+     * @notice Returns the current profit limit ratio.
+     * @dev Use a getter function to keep the variable private.
+     * @return . The current profit limit ratio.
+     */
+    function profitLimitRatio() public view returns (uint256) {
+        return _profitLimitRatio;
+    }
+
+    /**
+     * @notice Returns the current loss limit ratio.
+     * @dev Use a getter function to keep the variable private.
+     * @return . The current loss limit ratio.
+     */
+    function lossLimitRatio() public view returns (uint256) {
+        return _lossLimitRatio;
+    }
 
     /**
      * @dev Can be used to set the profit limit ratio. Denominated
      * in basis points. I.E. 1_000 == 10%.
-     * @param _profitLimitRatio The mew profit limit ratio.
+     * @param _newProfitLimitRatio The mew profit limit ratio.
      */
-    function _setProfitLimitRatio(uint256 _profitLimitRatio) internal {
-        require(_profitLimitRatio > 0, "!zero profit");
-        profitLimitRatio = _profitLimitRatio;
+    function _setProfitLimitRatio(uint256 _newProfitLimitRatio) internal {
+        require(_newProfitLimitRatio > 0, "!zero profit");
+        _profitLimitRatio = _newProfitLimitRatio;
     }
 
     /**
      * @dev Can be used to set the loss limit ratio. Denominated
      * in basis points. I.E. 1_000 == 10%.
-     * @param _lossLimitRatio The new loss limit ratio.
+     * @param _newLossLimitRatio The new loss limit ratio.
      */
-    function _setLossLimitRatio(uint256 _lossLimitRatio) internal {
-        require(_lossLimitRatio < MAX_BPS, "!loss limit");
-        lossLimitRatio = _lossLimitRatio;
+    function _setLossLimitRatio(uint256 _newLossLimitRatio) internal {
+        require(_newLossLimitRatio < MAX_BPS, "!loss limit");
+        _lossLimitRatio = _newLossLimitRatio;
     }
 
     /**
@@ -74,23 +90,23 @@ contract HealthCheck {
      * Otherwise this could prevent reports from ever recording
      * properly.
      *
-     * @param _invested The amount that will be returned during `totalInvested()`.
+     * @param _newTotalAssets The amount that will be returned during `_harvestAndReport()`.
      * @return . Bool repersenting if the health check passed
      */
-    function _executHealthCheck(
-        uint256 _invested
+    function _executeHealthCheck(
+        uint256 _newTotalAssets
     ) internal view returns (bool) {
         // Static call self to get the total assets from the implementation.
-        uint256 _totalAssets = IStrategy(address(this)).totalAssets();
+        uint256 currentTotalAssets = IStrategy(address(this)).totalAssets();
 
-        if (_invested > _totalAssets) {
+        if (_newTotalAssets > currentTotalAssets) {
             return
-                !((_invested - _totalAssets) >
-                    (_totalAssets * profitLimitRatio) / MAX_BPS);
-        } else if (_totalAssets > _invested) {
+                !((_newTotalAssets - currentTotalAssets) >
+                    (currentTotalAssets * _profitLimitRatio) / MAX_BPS);
+        } else if (currentTotalAssets > _newTotalAssets) {
             return
-                !(_totalAssets - _invested >
-                    ((_totalAssets * lossLimitRatio) / MAX_BPS));
+                !(currentTotalAssets - _newTotalAssets >
+                    ((currentTotalAssets * _lossLimitRatio) / MAX_BPS));
         }
 
         // Nothing to check

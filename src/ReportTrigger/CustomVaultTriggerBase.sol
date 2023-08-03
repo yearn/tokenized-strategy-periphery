@@ -18,9 +18,10 @@ abstract contract CustomVaultTriggerBase {
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy that would report.
      * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bytes with either the calldata or reason why False.
      */
     function reportTrigger(
         address _vault,
         address _strategy
-    ) external view virtual returns (bool);
+    ) external view virtual returns (bool, bytes memory);
 }

@@ -6,6 +6,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 contract MockStrategy is BaseTokenizedStrategy {
+    bool public tendStatus;
+
     constructor(
         address _asset
     ) BaseTokenizedStrategy(_asset, "Mock Basic Strategy") {}
@@ -20,5 +22,13 @@ contract MockStrategy is BaseTokenizedStrategy {
         returns (uint256 _totalAssets)
     {
         _totalAssets = ERC20(asset).balanceOf(address(this));
+    }
+
+    function tendTrigger() external view override returns (bool) {
+        return tendStatus;
+    }
+
+    function setTendStatus(bool _status) external {
+        tendStatus = _status;
     }
 }

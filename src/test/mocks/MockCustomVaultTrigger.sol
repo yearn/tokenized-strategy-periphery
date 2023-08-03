@@ -9,8 +9,8 @@ contract MockCustomVaultTrigger is CustomVaultTriggerBase {
     function reportTrigger(
         address,
         address
-    ) external view override returns (bool) {
-        return triggerStatus;
+    ) external view override returns (bool, bytes memory) {
+        return (triggerStatus, bytes("Test trigger status"));
     }
 
     function setTriggerStatus(bool _status) external {

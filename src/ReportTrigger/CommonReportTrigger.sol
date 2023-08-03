@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import {Governance} from "../utils/Governance.sol";
+
 import {IVault} from "../interfaces/IVault.sol";
 import {IStrategy} from "../interfaces/IStrategy.sol";
 
 interface ICustomStrategyTrigger {
-    function reportTrigger(address _strategy) external view returns (bool);
+    function reportTrigger(
+        address _strategy
+    ) external view returns (bool, bytes memory);
 }
 
 interface ICustomVaultTrigger {
     function reportTrigger(
         address _vault,
         address _strategy
-    ) external view returns (bool);
+    ) external view returns (bool, bytes memory);
 }
 
 interface IBaseFee {
@@ -31,7 +35,7 @@ interface IBaseFee {
  *  However, it is also customizable by the strategy and vaults
  *  management to allow complete customization if desired.
  */
-contract CommonReportTrigger {
+contract CommonReportTrigger is Governance {
     /*//////////////////////////////////////////////////////////////
                             EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -62,28 +66,11 @@ contract CommonReportTrigger {
         uint256 acceptableBaseFee
     );
 
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    modifier onlyOwner() {
-        _checkOwner();
-        _;
-    }
-
-    function _checkOwner() internal view virtual {
-        require(owner == msg.sender, "!owner");
-    }
-
     /*//////////////////////////////////////////////////////////////
                             STORAGE
     //////////////////////////////////////////////////////////////*/
 
     string public name = "Yearn Common Report Trigger";
-
-    // Address that can set the defualt base fee and provider
-    address public owner;
 
     // Address to retreive the current base fee on the network from.
     address public baseFeeProvider;
@@ -112,9 +99,7 @@ contract CommonReportTrigger {
     // vaultAddress => strategyAddress => customBaseFee.
     mapping(address => mapping(address => uint256)) public customVaultBaseFee;
 
-    constructor(address _owner) {
-        owner = _owner;
-    }
+    constructor(address _governance) Governance(_governance) {}
 
     /*//////////////////////////////////////////////////////////////
                         CUSTOM SETTERS
@@ -173,6 +158,8 @@ contract CommonReportTrigger {
      * while still using this standard contract for keepers to read the
      * trigger status from.
      *
+     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     *
      * The custom trigger contract only needs to implement the `reportTrigger`
      * function to return true or false.
      *
@@ -185,8 +172,9 @@ contract CommonReportTrigger {
         address _strategy,
         address _trigger
     ) external {
-        // TODO: check that the address has a ADD_STRATEGY_MANAGER role
-        uint256 mask = 1; // << 4;
+        // Check that the address has the ADD_STRATEGY_MANAGER role on
+        // the vault. Just check their role has a 1 at the first position.
+        uint256 mask = 1;
         require(
             (IVault(_vault).roles(msg.sender) & mask) == mask,
             "!authorized"
@@ -206,6 +194,8 @@ contract CommonReportTrigger {
      *
      * This will have no effect if a custom trigger is set for the strategy.
      *
+     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     *
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
@@ -215,8 +205,9 @@ contract CommonReportTrigger {
         address _strategy,
         uint256 _baseFee
     ) external {
-        // TODO: check that the address has a ADD_STRATEGY_MANAGER role
-        uint256 mask = 1; // << 4;
+        // Check that the address has the ADD_STRATEGY_MANAGER role on
+        // the vault. Just check their role has a 1 at the first position.
+        uint256 mask = 1;
         require(
             (IVault(_vault).roles(msg.sender) & mask) == mask,
             "!authorized"
@@ -247,35 +238,48 @@ contract CommonReportTrigger {
      *
      * @param _strategy The address of the strategy to check the trigger for.
      * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bytes with either the calldata or reason why False.
      */
     function strategyReportTrigger(
         address _strategy
-    ) external view returns (bool) {
+    ) external view returns (bool, bytes memory) {
         address _trigger = customStrategyTrigger[_strategy];
 
+        // If a custom trigger contract is set use that one.
         if (_trigger != address(0)) {
             return ICustomStrategyTrigger(_trigger).reportTrigger(_strategy);
         }
 
+        // Cache the strategy instance.
         IStrategy strategy = IStrategy(_strategy);
 
-        if (strategy.isShutdown()) return false;
+        // Don't report if the strategy is shutdown.
+        if (strategy.isShutdown()) return (false, bytes("Shutdown"));
 
-        if (strategy.totalAssets() == 0) return false;
+        // Dont't report if the strategy has no assets.
+        if (strategy.totalAssets() == 0) return (false, bytes("Zero Assets"));
 
+        // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
             uint256 customAcceptableBaseFee = customStrategyBaseFee[_strategy];
+            // Use the custom base fee if set, otherwise use the default.
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
+
+            // Dont report if the base fee is to high.
             if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
-                return false;
+                return (false, bytes("Base Fee"));
         }
 
-        return
+        return (
+            // Return true is the full profit unlock time has passed since the last report.
             block.timestamp - strategy.lastReport() >
-            strategy.profitMaxUnlockTime();
+                strategy.profitMaxUnlockTime(),
+            // Return the report function sig as the calldata.
+            abi.encodeWithSelector(strategy.report.selector)
+        );
     }
 
     /**
@@ -297,52 +301,92 @@ contract CommonReportTrigger {
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to report.
      * @return . Bool if the strategy should report to the vault.
+     * @return . Bytes with either the calldata or reason why False.
      */
     function vaultReportTrigger(
         address _vault,
         address _strategy
-    ) external view returns (bool) {
+    ) external view returns (bool, bytes memory) {
         address _trigger = customVaultTrigger[_vault][_strategy];
 
+        // If a custom trigger contract is set use that.
         if (_trigger != address(0)) {
             return
                 ICustomVaultTrigger(_trigger).reportTrigger(_vault, _strategy);
         }
 
+        // Cache the vault instance.
         IVault vault = IVault(_vault);
 
-        if (vault.shutdown()) return false;
+        // Don't report if the vault is shutdown.
+        if (vault.shutdown()) return (false, bytes("Shutdown"));
 
+        // Cache the strategy parameters.
         IVault.StrategyParams memory params = vault.strategies(_strategy);
 
-        if (params.activation == 0 || params.currentDebt == 0) return false;
+        // Don't report if the strategy is not acitve or has no funds.
+        if (params.activation == 0 || params.currentDebt == 0)
+            return (false, bytes("Not Active"));
 
+        // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
             uint256 customAcceptableBaseFee = customVaultBaseFee[_vault][
                 _strategy
             ];
+            // Use the custom base fee if set, otherwise use the default.
             uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
+
+            // Dont report if the base fee is to high.
             if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
-                return false;
+                return (false, bytes("Base Fee"));
         }
 
-        return
-            block.timestamp - params.lastReport > vault.profitMaxUnlockTime();
+        return (
+            // Return true is the full profit unlock time has passed since the last report.
+            block.timestamp - params.lastReport > vault.profitMaxUnlockTime(),
+            // Return the function selector and the strategy as the parameter to use.
+            abi.encodeWithSelector(vault.process_report.selector, _strategy)
+        );
+    }
+
+    /**
+     * @notice Return whether or not a strategy should be tended by a keeper.
+     * @dev This can be used as an easy keeper integration for any strategy that
+     * implements a tendTrigger.
+     *
+     * It is expected that a strategy implement all needed checks such as
+     * isShutdown, totalAssets > 0 and base fee checks within the trigger.
+     *
+     * @param _strategy Address of the strategy to check.
+     * @return . Bool if the strategy should be tended.
+     * @return . Bytes with the calldata.
+     */
+    function strategyTendTrigger(
+        address _strategy
+    ) external view returns (bool, bytes memory) {
+        return (
+            // Return the status of the tend trigger.
+            IStrategy(_strategy).tendTrigger(),
+            // And the needed calldata either way.
+            abi.encodeWithSelector(IStrategy.tend.selector)
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
-                            OWNERS FUNCTIONS
+                        GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Sets the address used to pull the current network base fee.
-     * @dev Throws if the caller is not current owner.
+     * @dev Throws if the caller is not current governance.
      * @param _baseFeeProvider The network's baseFeeProvider address.
      */
-    function setBaseFeeProvider(address _baseFeeProvider) external onlyOwner {
+    function setBaseFeeProvider(
+        address _baseFeeProvider
+    ) external onlyGovernance {
         baseFeeProvider = _baseFeeProvider;
 
         emit NewBaseFeeProvider(_baseFeeProvider);
@@ -350,22 +394,14 @@ contract CommonReportTrigger {
 
     /**
      * @notice Sets the default acceptable current network base fee.
-     * @dev Throws if the caller is not current owner.
+     * @dev Throws if the caller is not current governance.
      * @param _newAcceptableBaseFee The acceptable network base fee.
      */
     function setAcceptableBaseFee(
         uint256 _newAcceptableBaseFee
-    ) external onlyOwner {
+    ) external onlyGovernance {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);
-    }
-
-    function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "ZERO ADDRESS");
-        address oldOwner = owner;
-        owner = newOwner;
-
-        emit OwnershipTransferred(oldOwner, newOwner);
     }
 }

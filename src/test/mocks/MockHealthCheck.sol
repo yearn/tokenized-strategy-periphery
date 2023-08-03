@@ -23,7 +23,7 @@ contract MockHealthCheck is BaseTokenizedStrategy, HealthCheck {
         _totalAssets = ERC20(asset).balanceOf(address(this));
 
         if (doHealthCheck) {
-            require(_executHealthCheck(_totalAssets), "!healthcheck");
+            require(_executeHealthCheck(_totalAssets), "!healthcheck");
         }
     }
 

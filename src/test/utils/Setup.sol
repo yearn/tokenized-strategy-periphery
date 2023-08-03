@@ -97,6 +97,9 @@ contract Setup is ExtendedTest {
         // Give the vault manager all the roles
         _vault.set_role(vaultManagement, 8191);
 
+        vm.prank(vaultManagement);
+        _vault.set_deposit_limit(type(uint256).max);
+
         return _vault;
     }
 
@@ -111,7 +114,10 @@ contract Setup is ExtendedTest {
         // set treasury
         _strategy.setPerformanceFeeRecipient(performanceFeeRecipient);
         // set management of the strategy
-        _strategy.setManagement(management);
+        _strategy.setPendingManagement(management);
+        // Accept mangagement.
+        vm.prank(management);
+        _strategy.acceptManagement();
 
         return _strategy;
     }
@@ -135,6 +141,37 @@ contract Setup is ExtendedTest {
     ) public {
         airdrop(asset, _user, _amount);
         depositIntoStrategy(_strategy, _user, _amount);
+    }
+
+    function addStrategyToVault(IVault _vault, IStrategy _strategy) public {
+        vm.prank(vaultManagement);
+        _vault.add_strategy(address(_strategy));
+
+        vm.prank(vaultManagement);
+        _vault.update_max_debt_for_strategy(
+            address(_strategy),
+            type(uint256).max
+        );
+    }
+
+    function addDebtToStrategy(
+        IVault _vault,
+        IStrategy _strategy,
+        uint256 _amount
+    ) public {
+        vm.prank(vaultManagement);
+        _vault.update_debt(address(_strategy), _amount);
+    }
+
+    function addStrategyAndDebt(
+        IVault _vault,
+        IStrategy _strategy,
+        address _user,
+        uint256 _amount
+    ) public {
+        addStrategyToVault(_vault, _strategy);
+        mintAndDepositIntoStrategy(IStrategy(address(_vault)), _user, _amount);
+        addDebtToStrategy(_vault, _strategy, _amount);
     }
 
     // For checking the amounts in the strategy

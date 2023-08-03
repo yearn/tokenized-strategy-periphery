@@ -19,5 +19,19 @@ interface IVault {
 
     function profitMaxUnlockTime() external view returns (uint256);
 
+    function add_strategy(address) external;
+
+    function update_max_debt_for_strategy(address, uint256) external;
+
+    function update_debt(address, uint256) external;
+
+    function process_report(
+        address _strategy
+    ) external returns (uint256, uint256);
+
+    function set_deposit_limit(uint256) external;
+
+    function shutdown_vault() external;
+
     function shutdown() external view returns (bool);
 }
