@@ -52,7 +52,7 @@ contract UniswapV3Swapper {
     /**
      * @dev Used to swap a specific amount of `_from` to `_to`.
      * This will check and handle all allownaces as well as not swapping
-     * unless `_amountIn` is greater than the set `minAmountToSell`
+     * unless `_amountIn` is greater than the set `_minAmountOut`
      *
      * If one of the tokens matches with the `base` token it will do only
      * one jump, otherwise will do two jumps.
@@ -173,6 +173,14 @@ contract UniswapV3Swapper {
         }
     }
 
+    /**
+     * @dev Internal safe function to make sure the contract you want to
+     * interact with has enough allowance to pull the desired tokens.
+     *
+     * @param _contract The address of the contract that will move the token.
+     * @param _token The ERC-20 token that will be getting spent.
+     * @param _amount The amount of `_token` to be spent.
+     */
     function _checkAllowance(
         address _contract,
         address _token,
