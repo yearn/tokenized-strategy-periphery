@@ -352,6 +352,29 @@ contract CommonReportTrigger is Governance {
         );
     }
 
+    /**
+     * @notice Return whether or not a strategy should be tended by a keeper.
+     * @dev This can be used as an easy keeper integration for any strategy that
+     * implements a tendTrigger.
+     *
+     * It is expected that a strategy implement all needed checks such as
+     * isShutdown, totalAssets > 0 and base fee checks within the trigger.
+     *
+     * @param _strategy Address of the strategy to check.
+     * @return . Bool if the strategy should be tended.
+     * @return . Bytes with the calldata.
+     */
+    function strategyTendTrigger(
+        address _strategy
+    ) external view returns (bool, bytes memory) {
+        return (
+            // Return the status of the tend trigger.
+            IStrategy(_strategy).tendTrigger(),
+            // And the needed calldata either way.
+            abi.encodeWithSelector(IStrategy.tend.selector)
+        );
+    }
+
     /*//////////////////////////////////////////////////////////////
                         GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
