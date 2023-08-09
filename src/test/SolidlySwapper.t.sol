@@ -47,7 +47,6 @@ contract SolidlySwapperTest is Setup {
         if (block.chainid != 137) return;
         vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
 
-        console.log("Chain ", block.chainid);
         // Send some asset to the contract
         airdrop(asset, address(solidlySwapper), amount);
 
