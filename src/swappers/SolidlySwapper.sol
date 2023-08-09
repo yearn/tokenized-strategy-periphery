@@ -25,8 +25,8 @@ contract SolidlySwapper {
     // Defualts to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    // Defualts to Uniswap V2 router on mainnet.
-    address public router = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    // Will need to set the router to use.
+    address public router;
 
     // Mapping to determine if a stable or volatile pool should be used.
     // This defaults to volatile for all pools and will need to be set
