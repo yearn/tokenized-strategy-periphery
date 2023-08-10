@@ -5,7 +5,7 @@ import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
 
 import {MockUniswapV3Swapper, IMockUniswapV3Swapper} from "./mocks/MockUniswapV3Swapper.sol";
 
-contract HealthCheckTest is Setup {
+contract UniswapV3SwapperTest is Setup {
     IMockUniswapV3Swapper public uniV3Swapper;
 
     ERC20 public weth;
