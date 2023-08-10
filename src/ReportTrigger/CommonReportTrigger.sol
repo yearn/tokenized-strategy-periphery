@@ -269,7 +269,7 @@ contract CommonReportTrigger is Governance {
                 : acceptableBaseFee;
 
             // Dont report if the base fee is to high.
-            if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
+            if (getCurrentBaseFee() > _acceptableBaseFee)
                 return (false, bytes("Base Fee"));
         }
 
@@ -340,7 +340,7 @@ contract CommonReportTrigger is Governance {
                 : acceptableBaseFee;
 
             // Dont report if the base fee is to high.
-            if (IBaseFee(baseFeeProvider).basefee_global() > _acceptableBaseFee)
+            if (getCurrentBaseFee() > _acceptableBaseFee)
                 return (false, bytes("Base Fee"));
         }
 
@@ -373,6 +373,25 @@ contract CommonReportTrigger is Governance {
             // And the needed calldata either way.
             abi.encodeWithSelector(IStrategy.tend.selector)
         );
+    }
+
+    /**
+     * @notice Returns the current base fee from the provider.
+     * @return . The current base fee for the chain.
+     */
+    function getCurrentBaseFee() public view returns (uint256) {
+        return IBaseFee(baseFeeProvider).basefee_global();
+    }
+
+    /**
+     * @notice Returns wether or not the current base fee is acceptable
+     * baseed on the default `acceptableBaseFee`.
+     * @dev Can be used in custom triggers to easily still use this contracts
+     * fee provider and acceptableBaseFee. And makes it backwards compatible to V2.
+     * @return . IF the current base fee is acceptable.
+     */
+    function isCurrentBaseFeeAcceptable() external view returns (bool) {
+        return getCurrentBaseFee() <= acceptableBaseFee;
     }
 
     /*//////////////////////////////////////////////////////////////
