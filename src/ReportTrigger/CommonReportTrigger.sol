@@ -390,7 +390,7 @@ contract CommonReportTrigger is Governance {
      * fee provider and acceptableBaseFee. And makes it backwards compatible to V2.
      * @return . IF the current base fee is acceptable.
      */
-    function isBaseFeeAcceptable() external view returns (bool) {
+    function isCurrentBaseFeeAcceptable() external view returns (bool) {
         return getCurrentBaseFee() <= acceptableBaseFee;
     }
 
