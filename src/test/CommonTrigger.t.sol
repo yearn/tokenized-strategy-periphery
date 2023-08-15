@@ -211,7 +211,7 @@ contract CommonTriggerTest is Setup {
         address _address,
         uint256 _baseFee
     ) public {
-        vm.assume(_address != management);
+        vm.assume(_address != vaultManagement);
         vm.assume(_baseFee != 0);
 
         assertEq(
