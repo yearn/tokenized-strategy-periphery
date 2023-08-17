@@ -296,7 +296,7 @@ contract CommonReportTrigger is Governance {
             block.timestamp - strategy.lastReport() >
                 strategy.profitMaxUnlockTime(),
             // Return the report function sig as the calldata.
-            abi.encodeCall(strategy.report, ())
+            abi.encodeWithSelector(strategy.report.selector)
         );
     }
 
