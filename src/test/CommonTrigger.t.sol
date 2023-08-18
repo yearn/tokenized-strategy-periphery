@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
+import "forge-std/Script.sol";
 import {Setup, IStrategy, console} from "./utils/Setup.sol";
 
 import {CommonReportTrigger, IBaseFee} from "../ReportTrigger/CommonReportTrigger.sol";
