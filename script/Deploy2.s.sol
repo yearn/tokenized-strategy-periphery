@@ -14,7 +14,7 @@ contract Deploy2 is Script {
 
         // Encode constructor arguments
         bytes memory construct = abi.encode();
-'
+        
         // Append constructor args to the bytecode
         bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
 
