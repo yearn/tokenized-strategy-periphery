@@ -415,11 +415,14 @@ contract CommonReportTrigger is Governance {
 
     /**
      * @notice Returns the current base fee from the provider.
-     * @dev Will revert if no `baseFeeProvider` is set.
+     * @dev Will return 0 if a base fee provider is not set.
      * @return . The current base fee for the chain.
      */
     function getCurrentBaseFee() public view returns (uint256) {
-        return IBaseFee(baseFeeProvider).basefee_global();
+        address _baseFeeProvider = baseFeeProvider;
+        if (_baseFeeProvider == address(0)) return 0;
+
+        return IBaseFee(_baseFeeProvider).basefee_global();
     }
 
     /**
