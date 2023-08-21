@@ -11,13 +11,13 @@ contract Deploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Encode constructor arguments
-        bytes memory construct = abi.encode("");
+        bytes memory construct = abi.encode();
 
         // Append constructor args to the bytecode
         bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
 
         // Pick an unique salt
-        uint256 salt = uint256(keccak256("v3.0.1-beta"));
+        uint256 salt = uint256(keccak256("v3.0.0"));
 
         address contractAddress = deploy(bytecode, salt);
 

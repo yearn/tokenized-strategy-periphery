@@ -13,10 +13,10 @@ contract Deploy2 is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Encode constructor arguments
-        bytes memory construct = abi.encode("");
-
+        bytes memory construct = abi.encode();
+'
         // Append constructor args to the bytecode
-        bytes memory bytecode = abi.encodePacked(vm.getCode("AprOracle.sol:AprOracle"));
+        bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
 
         // Pick an unique salt
         uint256 salt = uint256(keccak256("v3.0.0"));
@@ -26,20 +26,6 @@ contract Deploy2 is Script {
         console.log("Address is ", contractAddress);
 
         vm.stopBroadcast();
-    }
-
-    event Deployed(address addr, uint256 salt);
-
-    function deploy(bytes memory code, uint256 salt) public returns (address) {
-        address addr;
-        assembly {
-            addr := create2(0, add(code, 0x20), mload(code), salt)
-            if iszero(extcodesize(addr)) {
-                revert(0, 0)
-            }
-        }
-        emit Deployed(addr, salt);
-        return addr;
     }
 }
 
