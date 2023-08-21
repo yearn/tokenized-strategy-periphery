@@ -21,6 +21,8 @@ contract Governance {
 
     constructor(address _governance) {
         governance = _governance;
+
+        emit GovernanceTransferred(address(0), _governance);
     }
 
     /**
