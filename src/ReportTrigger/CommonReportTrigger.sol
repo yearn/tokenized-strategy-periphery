@@ -226,16 +226,6 @@ contract CommonReportTrigger is Governance {
      * @dev Will first check if a custom trigger is set. If not it will use
      * the default trigger flow.
      *
-     * This will also check if a custom acceptable base fee has been set
-     * by the strategies management.
-     *
-     * In order for the default flow to return true the strategy must:
-     *
-     *   1. Not be shutdown.
-     *   2. Have funds.
-     *   3. The current network base fee be below the `acceptableBaseFee`.
-     *   4. The time since the last report be > the strategies `profitMaxUnlockTime`.
-     *
      * @param _strategy The address of the strategy to check the trigger for.
      * @return . Bool repersenting if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
@@ -250,6 +240,33 @@ contract CommonReportTrigger is Governance {
             return ICustomStrategyTrigger(_trigger).reportTrigger(_strategy);
         }
 
+        // Return the default trigger logic.
+        return defaultStrategyReportTrigger(_strategy);
+    }
+
+    /**
+     * @notice The default trigger logic for a strategy.
+     * @dev This is kept in a seperate function so it can still
+     * be used by custom triggers even if extra checks are needed
+     * first or after.
+     *
+     * This will also check if a custom acceptable base fee has been set
+     * by the strategies management.
+     *
+     * In order for the default flow to return true the strategy must:
+     *
+     *   1. Not be shutdown.
+     *   2. Have funds.
+     *   3. The current network base fee be below the `acceptableBaseFee`.
+     *   4. The time since the last report be > the strategies `profitMaxUnlockTime`.
+     *
+     * @param _strategy The address of the strategy to check the trigger for.
+     * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bytes with either the calldata or reason why False.
+     */
+    function defaultStrategyReportTrigger(
+        address _strategy
+    ) public view returns (bool, bytes memory) {
         // Cache the strategy instance.
         IStrategy strategy = IStrategy(_strategy);
 
@@ -269,8 +286,9 @@ contract CommonReportTrigger is Governance {
                 : acceptableBaseFee;
 
             // Dont report if the base fee is to high.
-            if (getCurrentBaseFee() > _acceptableBaseFee)
-                return (false, bytes("Base Fee"));
+            if (
+                IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
+            ) return (false, bytes("Base Fee"));
         }
 
         return (
@@ -287,16 +305,6 @@ contract CommonReportTrigger is Governance {
      * a specific strategy.
      * @dev Will first check if a custom trigger is set. If not it will use
      * the default trigger flow.
-     *
-     * This will also check if a custom acceptable base fee has been set
-     * by the vault management for the `_strategy`.
-     *
-     * In order for the default flow to return true:
-     *
-     *   1. The vault must not be shutdown.
-     *   2. The strategy must be active and have debt allocated.
-     *   3. The current network base fee be below the `acceptableBaseFee`.
-     *   4. The time since the strategies last report be > the vaults `profitMaxUnlockTime`.
      *
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to report.
@@ -315,6 +323,35 @@ contract CommonReportTrigger is Governance {
                 ICustomVaultTrigger(_trigger).reportTrigger(_vault, _strategy);
         }
 
+        // return the default trigger.
+        return defaultVaultReportTrigger(_vault, _strategy);
+    }
+
+    /**
+     * @notice The default trigger logic for a vault.
+     * @dev This is kept in a seperate function so it can still
+     * be used by custom triggers even if extra checks are needed
+     * before or after.
+     *
+     * This will also check if a custom acceptable base fee has been set
+     * by the vault management for the `_strategy`.
+     *
+     * In order for the default flow to return true:
+     *
+     *   1. The vault must not be shutdown.
+     *   2. The strategy must be active and have debt allocated.
+     *   3. The current network base fee be below the `acceptableBaseFee`.
+     *   4. The time since the strategies last report be > the vaults `profitMaxUnlockTime`.
+     *
+     * @param _vault The address of the vault.
+     * @param _strategy The address of the strategy to report.
+     * @return . Bool if the strategy should report to the vault.
+     * @return . Bytes with either the calldata or reason why False.
+     */
+    function defaultVaultReportTrigger(
+        address _vault,
+        address _strategy
+    ) public view returns (bool, bytes memory) {
         // Cache the vault instance.
         IVault vault = IVault(_vault);
 
@@ -340,15 +377,16 @@ contract CommonReportTrigger is Governance {
                 : acceptableBaseFee;
 
             // Dont report if the base fee is to high.
-            if (getCurrentBaseFee() > _acceptableBaseFee)
-                return (false, bytes("Base Fee"));
+            if (
+                IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
+            ) return (false, bytes("Base Fee"));
         }
 
         return (
             // Return true is the full profit unlock time has passed since the last report.
             block.timestamp - params.lastReport > vault.profitMaxUnlockTime(),
             // Return the function selector and the strategy as the parameter to use.
-            abi.encodeWithSelector(vault.process_report.selector, _strategy)
+            abi.encodeCall(vault.process_report, _strategy)
         );
     }
 
@@ -377,10 +415,14 @@ contract CommonReportTrigger is Governance {
 
     /**
      * @notice Returns the current base fee from the provider.
+     * @dev Will return 0 if a base fee provider is not set.
      * @return . The current base fee for the chain.
      */
     function getCurrentBaseFee() public view returns (uint256) {
-        return IBaseFee(baseFeeProvider).basefee_global();
+        address _baseFeeProvider = baseFeeProvider;
+        if (_baseFeeProvider == address(0)) return 0;
+
+        return IBaseFee(_baseFeeProvider).basefee_global();
     }
 
     /**
@@ -388,10 +430,17 @@ contract CommonReportTrigger is Governance {
      * baseed on the default `acceptableBaseFee`.
      * @dev Can be used in custom triggers to easily still use this contracts
      * fee provider and acceptableBaseFee. And makes it backwards compatible to V2.
+     *
+     * Will always return `true` if no `baseFeeProvider` is set.
+     *
      * @return . IF the current base fee is acceptable.
      */
     function isCurrentBaseFeeAcceptable() external view returns (bool) {
-        return getCurrentBaseFee() <= acceptableBaseFee;
+        address _baseFeeProvider = baseFeeProvider;
+        // If no provider is set return true.
+        if (_baseFeeProvider == address(0)) return true;
+
+        return IBaseFee(baseFeeProvider).basefee_global() <= acceptableBaseFee;
     }
 
     /*//////////////////////////////////////////////////////////////

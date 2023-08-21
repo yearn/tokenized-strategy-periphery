@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Governance} from "../utils/Governance.sol";
 
-abstract contract AprOracleBase is Ownable {
+abstract contract AprOracleBase is Governance {
     string public name;
 
-    constructor(string memory _name) {
+    constructor(
+        string memory _name,
+        address _governance
+    ) Governance(_governance) {
         name = _name;
     }
 
