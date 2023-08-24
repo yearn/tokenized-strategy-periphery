@@ -26,11 +26,11 @@ contract HealthCheckTest is Setup {
     function test_setup_healthCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        // Defaults to false
+        // Defaults to true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Defaults to 100%
         assertEq(
@@ -50,11 +50,11 @@ contract HealthCheckTest is Setup {
         vm.prank(keeper);
         healthCheck.report();
 
-        // Should still be false
+        // Should still be true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Should still be 100%
         assertEq(
@@ -67,11 +67,11 @@ contract HealthCheckTest is Setup {
 
         skip(healthCheck.profitMaxUnlockTime());
 
-        // Should still be false
+        // Should still be true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Should still be 100%
         assertEq(
@@ -87,11 +87,11 @@ contract HealthCheckTest is Setup {
 
         assertGe(asset.balanceOf(user), _amount);
 
-        // Should still be false
+        // Should still be true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Should still be 100%
         assertEq(
@@ -104,11 +104,11 @@ contract HealthCheckTest is Setup {
     }
 
     function test_limits() public {
-        // Defaults to false
+        // Defaults to true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Defaults to 100%
         assertEq(
@@ -124,11 +124,11 @@ contract HealthCheckTest is Setup {
         vm.prank(management);
         healthCheck.setProfitLimitRatio(0);
 
-        // Should still be false
+        // Should still be true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Should still be 100%
         assertEq(
@@ -146,11 +146,11 @@ contract HealthCheckTest is Setup {
         vm.prank(management);
         healthCheck.setLossLimitRatio(max);
 
-        // Should still be false
+        // Should still be true
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
         // Should still be 100%
         assertEq(
@@ -162,11 +162,39 @@ contract HealthCheckTest is Setup {
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
     }
 
+    function test_reportTurnsHealtCheckBackOn(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        // deposit
+        mintAndDepositIntoStrategy(
+            IStrategy(address(healthCheck)),
+            user,
+            _amount
+        );
+
+        // Turn off HealthCheck
+        vm.prank(management);
+        healthCheck.setDoHealthCheck(false);
+
+        assertEq(
+            healthCheck.doHealthCheck(),
+            false,
+            "doHealthCheck should be false"
+        );
+
+        vm.prank(keeper);
+        healthCheck.report();
+
+        // Should be true again
+        assertEq(
+            healthCheck.doHealthCheck(),
+            true,
+            "doHealthCheck should be true"
+        );
+    }
+
     function test__normalHealthCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-        // Set do Health check to true
-        vm.prank(management);
-        healthCheck.setDoHealthCheck(true);
 
         // deposit
         mintAndDepositIntoStrategy(
@@ -210,10 +238,6 @@ contract HealthCheckTest is Setup {
     function test__toMuchProfit_reverts__increaseLimit(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        // Set do Health check to true
-        vm.prank(management);
-        healthCheck.setDoHealthCheck(true);
-
         // deposit
         mintAndDepositIntoStrategy(
             IStrategy(address(healthCheck)),
@@ -233,7 +257,7 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
 
-        vm.expectRevert("!healthcheck");
+        vm.expectRevert("healthCheck");
         vm.prank(keeper);
         healthCheck.report();
 
@@ -262,10 +286,6 @@ contract HealthCheckTest is Setup {
     function test_loss_reverts_increaseLimit(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        // Set do Health check to true
-        vm.prank(management);
-        healthCheck.setDoHealthCheck(true);
-
         // deposit
         mintAndDepositIntoStrategy(
             IStrategy(address(healthCheck)),
@@ -286,7 +306,7 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
 
-        vm.expectRevert("!healthcheck");
+        vm.expectRevert("healthCheck");
         vm.prank(keeper);
         healthCheck.report();
 
@@ -315,10 +335,6 @@ contract HealthCheckTest is Setup {
     function test_toMuchProfit_reverts_turnOffCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        // Set do Health check to true
-        vm.prank(management);
-        healthCheck.setDoHealthCheck(true);
-
         // deposit
         mintAndDepositIntoStrategy(
             IStrategy(address(healthCheck)),
@@ -338,7 +354,7 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
 
-        vm.expectRevert("!healthcheck");
+        vm.expectRevert("healthCheck");
         vm.prank(management);
         healthCheck.report();
 
@@ -359,17 +375,13 @@ contract HealthCheckTest is Setup {
 
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
     }
 
     function test_loss_reverts_turnOffCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-
-        // Set do Health check to true
-        vm.prank(management);
-        healthCheck.setDoHealthCheck(true);
 
         // deposit
         mintAndDepositIntoStrategy(
@@ -391,7 +403,7 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
 
-        vm.expectRevert("!healthcheck");
+        vm.expectRevert("healthCheck");
         vm.prank(management);
         healthCheck.report();
 
@@ -412,8 +424,8 @@ contract HealthCheckTest is Setup {
 
         assertEq(
             healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
+            true,
+            "doHealthCheck should be true"
         );
     }
 }
