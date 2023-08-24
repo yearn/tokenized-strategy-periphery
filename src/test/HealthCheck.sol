@@ -23,6 +23,20 @@ contract HealthCheckTest is Setup {
         healthCheck.acceptManagement();
     }
 
+    function test_false(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+        mintAndDepositIntoStrategy(
+            IStrategy(address(healthCheck)),
+            user,
+            _amount
+        );
+
+        vm.prank(user);
+        healthCheck.withdraw(_amount + 2, user, user, 2);
+
+        assertTrue(false);
+    }
+
     function test_setup_healthCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 

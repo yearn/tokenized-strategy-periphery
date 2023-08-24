@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import "forge-std/console.sol";
 
 /**
  *   @title Health Check
@@ -165,6 +166,65 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
                     ((currentTotalAssets * _lossLimitRatio) / MAX_BPS)),
                 "healthCheck"
             );
+        }
+    }
+
+    function _preWithdrawHealthCheck(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 maxLoss
+    ) internal virtual {}
+
+    function _postWithdrawHealthCheck(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 maxLoss
+    ) internal virtual {}
+
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external returns (uint256 shares) {
+        return withdraw(assets, receiver, owner, 0);
+    }
+
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 maxLoss
+    ) public returns (uint256 shares) {
+        _preWithdrawHealthCheck(assets, receiver, owner, maxLoss);
+
+        bytes memory result = _delegate(
+            abi.encodeWithSignature(
+                "withdraw(uint256,address,address,uint256)",
+                assets,
+                receiver,
+                owner,
+                maxLoss
+            )
+        );
+
+        _postWithdrawHealthCheck(assets, receiver, owner, maxLoss);
+
+        shares = abi.decode(result, (uint256));
+    }
+
+    function _delegate(bytes memory _calldata) internal returns (bytes memory) {
+        (bool success, bytes memory result) = tokenizedStrategyAddress
+            .delegatecall(_calldata);
+
+        if (!success) {
+            assembly {
+                let ptr := mload(0x40)
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
+            }
         }
     }
 }

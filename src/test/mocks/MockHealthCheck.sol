@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
+import "forge-std/console.sol";
 import {BaseHealthCheck} from "../../HealthCheck/BaseHealthCheck.sol";
 
 contract MockHealthCheck is BaseHealthCheck {
@@ -25,6 +25,24 @@ contract MockHealthCheck is BaseHealthCheck {
 
     function _currentDebt() internal view override returns (uint256) {
         return 0;
+    }
+
+    function _preWithdrawHealthCheck(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 maxLoss
+    ) internal override {
+        console.log("Pre check. assets is", assets);
+    }
+
+    function _postWithdrawHealthCheck(
+        uint256 assets,
+        address receiver,
+        address owner,
+        uint256 maxLoss
+    ) internal override {
+        console.log("Post check. assets is", assets);
     }
 }
 
