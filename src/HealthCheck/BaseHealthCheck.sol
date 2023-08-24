@@ -226,5 +226,7 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
                 revert(ptr, size)
             }
         }
+
+        return result;
     }
 }

@@ -32,9 +32,9 @@ contract HealthCheckTest is Setup {
         );
 
         vm.prank(user);
-        healthCheck.withdraw(_amount + 2, user, user, 2);
+        uint256 out = healthCheck.withdraw(_amount, user, user, 2);
 
-        assertTrue(false);
+        assertEq(out, _amount);
     }
 
     function test_setup_healthCheck(uint256 _amount) public {
