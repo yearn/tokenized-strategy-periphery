@@ -7,4 +7,10 @@ interface IHealthCheck {
     function profitLimitRatio() external view returns (uint256);
 
     function lossLimitRatio() external view returns (uint256);
+
+    function setProfitLimitRatio(uint256 _newProfitLimitRatio) external;
+
+    function setLossLimitRatio(uint256 _newLossLimitRatio) external;
+
+    function setDoHealthCheck(bool _doHealthCheck) external;
 }
