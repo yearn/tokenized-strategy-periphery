@@ -6,12 +6,13 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 /**
- *   @title Health Check
+ *   @title Base Health Check
  *   @author Yearn.finance
  *   @notice This contract can be inherited by any Yearn
  *   V3 strategy wishing to implement a health check during
  *   the `report` function in order to prevent any unexpected
- *   behavior from being permanently recorded.
+ *   behavior from being permanently recorded as well as the
+ *   `checkHealth` modifier.
  *
  *   A strategist simply needs to inherit this contract. Set
  *   the limit ratios to the desired amounts and then call
@@ -24,8 +25,10 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
  *   needed before reporting an unexpected loss.
  */
 abstract contract BaseHealthCheck is BaseTokenizedStrategy {
-    modifier HealthCheck() {
-        _healthCheck();
+    // Optional modifier that can be placed on any function
+    // to perform checks such as debt/ PPS before running.
+    modifier checkHealth() {
+        _checkHealth();
         _;
     }
 
@@ -120,15 +123,14 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
      * @dev This deafults to checking totalDebt but can be overriden
      * to check any important strategy specific invariants.
      */
-    function _healthCheck() internal virtual {
-        require(TokenizedStrategy.totalDebt() <= _currentDebt(), "healthCheck");
+    function _checkHealth() internal virtual {
+        require(TokenizedStrategy.totalDebt() <= _currentDebt(), "debt");
     }
 
     /**
      * @dev Return the current expected debt the strategy has for
      * the HealthCheck modifier.
      *
-     * This can be set to type(uint256).max to bypass the check.
      * @param . Estimate of the current value of the strategies debt.
      */
     function _currentDebt() internal view virtual returns (uint256);
@@ -137,12 +139,7 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
      * @dev To be called during a report to make sure the profit
      * or loss being recorded is within the acceptable bound.
      *
-     * Strategies using this healthcheck should implement either
-     * a way to bypass the check or manually up the limits if needed.
-     * Otherwise this could prevent reports from ever recording
-     * properly.
-     *
-     * @param _newTotalAssets The amount that will be returned during `_harvestAndReport()`.
+     * @param _newTotalAssets The amount that will be reported.
      */
     function _executeHealthCheck(uint256 _newTotalAssets) internal virtual {
         if (!doHealthCheck) {
