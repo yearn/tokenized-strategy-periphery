@@ -22,10 +22,6 @@ contract MockHealthCheck is BaseHealthCheck {
 
         _executeHealthCheck(_totalAssets);
     }
-
-    function _currentDebt() internal view override returns (uint256) {
-        return 0;
-    }
 }
 
 import {IBaseHealthCheck} from "../../HealthCheck/IBaseHealthCheck.sol";
