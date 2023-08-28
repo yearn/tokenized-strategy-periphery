@@ -24,7 +24,8 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
  */
 abstract contract BaseHealthCheck is BaseTokenizedStrategy {
     // Optional modifier that can be placed on any function
-    // to perform checks such as debt/ PPS before running.
+    // to perform checks such as debt/PPS before running.
+    // Must override `_checkHealth()` for this to work.
     modifier checkHealth() {
         _checkHealth();
         _;
@@ -118,20 +119,12 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
 
     /**
      * @notice Check important invariants for the strategy.
-     * @dev This deafults to checking totalDebt but can be overriden
-     * to check any important strategy specific invariants.
-     */
-    function _checkHealth() internal virtual {
-        require(TokenizedStrategy.totalDebt() <= _currentDebt(), "debt");
-    }
-
-    /**
-     * @dev Return the current expected debt the strategy has for
-     * the HealthCheck modifier.
+     * @dev This can be overriden to check any important strategy
+     *  specific invariants.
      *
-     * @param . Estimate of the current value of the strategies debt.
+     *  NOTE: Should revert if unhealthy for the modifier to work.
      */
-    function _currentDebt() internal view virtual returns (uint256);
+    function _checkHealth() internal virtual {}
 
     /**
      * @dev To be called during a report to make sure the profit

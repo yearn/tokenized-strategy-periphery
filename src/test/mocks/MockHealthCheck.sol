@@ -6,12 +6,19 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {BaseHealthCheck} from "../../HealthCheck/BaseHealthCheck.sol";
 
 contract MockHealthCheck is BaseHealthCheck {
+    bool public healthy = true;
+
     constructor(address _asset) BaseHealthCheck(_asset, "Mock Health Check") {}
 
-    function _deployFunds(uint256) internal override checkHealth {}
+    // `healthy` is already implemented in deposit limit so
+    // doesn't need to be checked again.
+    function _deployFunds(uint256) internal override {}
 
-    function _freeFunds(uint256) internal override checkHealth {}
+    // `healthy` is already implemented in withdraw limit so
+    // doesn't need to be checked again.
+    function _freeFunds(uint256) internal override {}
 
+    // Uses `checkHealth` modifier
     function _harvestAndReport()
         internal
         override
@@ -23,12 +30,41 @@ contract MockHealthCheck is BaseHealthCheck {
         _executeHealthCheck(_totalAssets);
     }
 
-    function _currentDebt() internal view override returns (uint256) {
-        return 0;
+    // Can't deposit if its not healthy
+    function availableDepositLimit(
+        address _owner
+    ) public view override returns (uint256) {
+        if (!_healthy()) return 0;
+
+        return super.availableDepositLimit(_owner);
+    }
+
+    // Can't Withdraw if not healthy.
+    function availableWithdrawLimit(
+        address _owner
+    ) public view override returns (uint256) {
+        if (!_healthy()) return 0;
+
+        return super.availableWithdrawLimit(_owner);
+    }
+
+    function _checkHealth() internal view override {
+        require(_healthy(), "unhealthy");
+    }
+
+    function _healthy() internal view returns (bool) {
+        return healthy;
+    }
+
+    function setHealthy(bool _health) external {
+        healthy = _health;
     }
 }
 
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IHealthCheck} from "../../HealthCheck/IHealthCheck.sol";
+import {IBaseHealthCheck} from "../../HealthCheck/IBaseHealthCheck.sol";
 
-interface IMockHealthCheck is IStrategy, IHealthCheck {}
+interface IMockHealthCheck is IBaseHealthCheck {
+    function healthy() external view returns (bool);
+
+    function setHealthy(bool _health) external;
+}
