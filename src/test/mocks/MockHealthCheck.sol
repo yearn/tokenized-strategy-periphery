@@ -28,7 +28,6 @@ contract MockHealthCheck is BaseHealthCheck {
     }
 }
 
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IHealthCheck} from "../../HealthCheck/IHealthCheck.sol";
+import {IBaseHealthCheck} from "../../HealthCheck/IBaseHealthCheck.sol";
 
-interface IMockHealthCheck is IStrategy, IHealthCheck {}
+interface IMockHealthCheck is IBaseHealthCheck {}

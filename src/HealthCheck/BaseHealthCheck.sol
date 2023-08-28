@@ -131,7 +131,7 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
      *
      * @param . Estimate of the current value of the strategies debt.
      */
-    function _currentDebt() internal view virtual returns (uint256);
+    function _currentDebt() internal view virtual returns (uint256) {}
 
     /**
      * @dev To be called during a report to make sure the profit

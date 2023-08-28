@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-interface IHealthCheck {
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
+
+interface IBaseHealthCheck is IStrategy {
     function doHealthCheck() external view returns (bool);
 
     function profitLimitRatio() external view returns (uint256);
