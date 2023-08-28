@@ -428,4 +428,55 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
     }
+
+    function test__checkHealthModifier(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        // deposit
+        mintAndDepositIntoStrategy(
+            IStrategy(address(healthCheck)),
+            user,
+            _amount
+        );
+
+        assertEq(healthCheck.healthy(), true);
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+        assertEq(healthCheck.availableWithdrawLimit(user), type(uint256).max);
+
+        healthCheck.setHealthy(false);
+
+        assertEq(healthCheck.healthy(), false);
+        assertEq(healthCheck.availableDepositLimit(user), 0);
+        assertEq(healthCheck.availableWithdrawLimit(user), 0);
+
+        vm.expectRevert("unhealthy");
+        vm.prank(keeper);
+        healthCheck.report();
+
+        healthCheck.setHealthy(true);
+
+        assertEq(healthCheck.healthy(), true);
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+        assertEq(healthCheck.availableWithdrawLimit(user), type(uint256).max);
+
+        vm.prank(keeper);
+        (uint256 realProfit, ) = healthCheck.report();
+
+        // Make sure we reported the correct profit
+        assertEq(0, realProfit, "Reported profit mismatch");
+
+        // Healtch Check should still be on
+        assertEq(
+            healthCheck.doHealthCheck(),
+            true,
+            "doHealthCheck should be true"
+        );
+
+        skip(healthCheck.profitMaxUnlockTime());
+
+        vm.prank(user);
+        healthCheck.redeem(_amount, user, user);
+
+        assertGe(asset.balanceOf(user), _amount);
+    }
 }

@@ -24,7 +24,8 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
  */
 abstract contract BaseHealthCheck is BaseTokenizedStrategy {
     // Optional modifier that can be placed on any function
-    // to perform checks such as debt/ PPS before running.
+    // to perform checks such as debt/PPS before running.
+    // Must override `_checkHealth()` for this to work.
     modifier checkHealth() {
         _checkHealth();
         _;
@@ -118,7 +119,10 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
 
     /**
      * @notice Check important invariants for the strategy.
-     * @dev This can be overriden to check any important strategy specific invariants.
+     * @dev This can be overriden to check any important strategy
+     *  specific invariants.
+     *
+     *  NOTE: Should revert if unhealthy for the modifier to work.
      */
     function _checkHealth() internal virtual {}
 
