@@ -8,14 +8,14 @@ import {BaseHealthCheck} from "../../HealthCheck/BaseHealthCheck.sol";
 contract MockHealthCheck is BaseHealthCheck {
     constructor(address _asset) BaseHealthCheck(_asset, "Mock Health Check") {}
 
-    function _deployFunds(uint256) internal override HealthCheck {}
+    function _deployFunds(uint256) internal override checkHealth {}
 
-    function _freeFunds(uint256) internal override HealthCheck {}
+    function _freeFunds(uint256) internal override checkHealth {}
 
     function _harvestAndReport()
         internal
         override
-        HealthCheck
+        checkHealth
         returns (uint256 _totalAssets)
     {
         _totalAssets = ERC20(asset).balanceOf(address(this));
