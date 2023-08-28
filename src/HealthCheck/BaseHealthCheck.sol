@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 
 /**
@@ -22,7 +20,7 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
  *
  *   The healthcheck does not prevent a strategy from reporting
  *   losses, but rather can make sure manual intervention is
- *   needed before reporting an unexpected loss.
+ *   needed before reporting an unexpected loss or profit.
  */
 abstract contract BaseHealthCheck is BaseTokenizedStrategy {
     // Optional modifier that can be placed on any function
