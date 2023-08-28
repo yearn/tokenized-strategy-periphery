@@ -53,7 +53,7 @@ EX:
         
         ...
         
-        function _harvestAndReport() exeternal override returns (uint256) {
+        function _harvestAndReport() internal override returns (uint256) {
             ... Claim rewards
             
             uint256 rewardBalance = ERC20(rewardToken).balanceOf(address(this));
@@ -102,4 +102,4 @@ The goal of the APR oracle to is to return the expected current APY the strategy
 ## Report Triggers
 The default use of the Tokenized Strategies and V3 Vaults is for report cycles to be based off of the individual `maxProfitUnlockTime`. The triggers are an easy way for keepers to monitor the status of each strategy and know when `report` should be called on each.
 
-However, if a strategist wants to implement a custom trigger for their strategy or vault you can use the simple `CustomTriggerBase` contracts to inherit the proper interface. Then return the expected APY repersented as 1e18 (1e17 == 10%).
+However, if a strategist wants to implement a custom trigger for their strategy or vault you can use the simple `CustomTriggerBase` contracts to inherit the proper interface. Then return the expected APY represented as 1e18 (1e17 == 10%).
