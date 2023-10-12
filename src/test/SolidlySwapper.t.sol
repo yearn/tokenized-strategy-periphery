@@ -38,7 +38,7 @@ contract SolidlySwapperTest is Setup {
 
         solidlySwapper.setBase(0x40379a439D4F6795B6fc9aa5687dB461677A2dBa);
         solidlySwapper.setRouter(0x06374F57991CDc836E5A318569A910FE6456D230);
-        // Accept mangagement.
+        // Accept management.
         vm.prank(management);
         solidlySwapper.acceptManagement();
     }

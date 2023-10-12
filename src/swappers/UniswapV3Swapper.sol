@@ -12,7 +12,7 @@ import {ISwapRouter} from "../interfaces/Uniswap/V3/ISwapRouter.sol";
  *   strategy that would like to use Uniswap V3 for swaps. It hold all needed
  *   logic to perform both exact input and exact output swaps.
  *
- *   The global addres variables defualt to the ETH mainnet addresses but
+ *   The global address variables default to the ETH mainnet addresses but
  *   remain settable by the inheriting contract to allow for customization
  *   based on needs or chain its used on.
  *
@@ -23,10 +23,10 @@ import {ISwapRouter} from "../interfaces/Uniswap/V3/ISwapRouter.sol";
 contract UniswapV3Swapper {
     // Optional Variable to be set to not sell dust.
     uint256 public minAmountToSell;
-    // Defualts to WETH on mainnet.
+    // Defaults to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    // Defualts to Uniswap V3 router on mainnet.
+    // Defaults to Uniswap V3 router on mainnet.
     address public router = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
 
     // Fees for the Uni V3 pools. Each fee should get set each way in
@@ -35,10 +35,10 @@ contract UniswapV3Swapper {
     mapping(address => mapping(address => uint24)) public uniFees;
 
     /**
-     * @dev All fess will defualt to 0 on creation. A strategist will need
+     * @dev All fess will default to 0 on creation. A strategist will need
      * To set the mapping for the tokens expected to swap. This function
      * is to help set the mapping. It can be called internally during
-     * intialization, through permisioned functions etc.
+     * initialization, through permissioned functions etc.
      */
     function _setUniFees(
         address _token0,
@@ -51,7 +51,7 @@ contract UniswapV3Swapper {
 
     /**
      * @dev Used to swap a specific amount of `_from` to `_to`.
-     * This will check and handle all allownaces as well as not swapping
+     * This will check and handle all allowances as well as not swapping
      * unless `_amountIn` is greater than the set `_minAmountOut`
      *
      * If one of the tokens matches with the `base` token it will do only
@@ -114,7 +114,7 @@ contract UniswapV3Swapper {
      * @dev Used to swap a specific amount of `_to` from `_from` unless
      * it takes more than `_maxAmountFrom`.
      *
-     * This will check and handle all allownaces as well as not swapping
+     * This will check and handle all allowances as well as not swapping
      * unless `_maxAmountFrom` is greater than the set `minAmountToSell`
      *
      * If one of the tokens matches with the `base` token it will do only
@@ -127,7 +127,7 @@ contract UniswapV3Swapper {
      * @param _to The token we are swapping to.
      * @param _amountTo The amount of `_to` we need out.
      * @param _maxAmountFrom The max of `_from` we will swap.
-     * @return _amountIn The actual amouont of `_from` swapped.
+     * @return _amountIn The actual amount of `_from` swapped.
      */
     function _swapTo(
         address _from,

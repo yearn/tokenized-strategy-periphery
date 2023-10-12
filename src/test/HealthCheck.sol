@@ -18,7 +18,7 @@ contract HealthCheckTest is Setup {
         healthCheck.setKeeper(keeper);
         healthCheck.setPerformanceFeeRecipient(performanceFeeRecipient);
         healthCheck.setPendingManagement(management);
-        // Accept mangagement.
+        // Accept management.
         vm.prank(management);
         healthCheck.acceptManagement();
     }
@@ -162,7 +162,7 @@ contract HealthCheckTest is Setup {
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
     }
 
-    function test_reportTurnsHealtCheckBackOn(uint256 _amount) public {
+    function test_reportTurnsHealthCheckBackOn(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
@@ -220,7 +220,7 @@ contract HealthCheckTest is Setup {
         // Make sure we reported the correct profit
         assertEq(profit, realProfit, "Reported profit mismatch");
 
-        // Healtch Check should still be on
+        // Health Check should still be on
         assertEq(
             healthCheck.doHealthCheck(),
             true,
@@ -465,7 +465,7 @@ contract HealthCheckTest is Setup {
         // Make sure we reported the correct profit
         assertEq(0, realProfit, "Reported profit mismatch");
 
-        // Healtch Check should still be on
+        // Health Check should still be on
         assertEq(
             healthCheck.doHealthCheck(),
             true,

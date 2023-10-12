@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
-contract MockStrategy is BaseTokenizedStrategy {
+contract MockStrategy is BaseStrategy {
     bool public tendStatus;
 
     constructor(
         address _asset
-    ) BaseTokenizedStrategy(_asset, "Mock Basic Strategy") {}
+    ) BaseStrategy(_asset, "Mock Basic Strategy") {}
 
     function _deployFunds(uint256) internal override {}
 
@@ -24,7 +23,7 @@ contract MockStrategy is BaseTokenizedStrategy {
         _totalAssets = ERC20(asset).balanceOf(address(this));
     }
 
-    function tendTrigger() external view override returns (bool) {
+    function _tendTrigger() internal view override returns (bool) {
         return tendStatus;
     }
 

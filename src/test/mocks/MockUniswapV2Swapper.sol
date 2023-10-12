@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import {UniswapV2Swapper} from "../../swappers/UniswapV2Swapper.sol";
-import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
-contract MockUniswapV2Swapper is BaseTokenizedStrategy, UniswapV2Swapper {
-    constructor(address _asset) BaseTokenizedStrategy(_asset, "Mock Uni V3") {}
+contract MockUniswapV2Swapper is BaseStrategy, UniswapV2Swapper {
+    constructor(address _asset) BaseStrategy(_asset, "Mock Uni V3") {}
 
     function _deployFunds(uint256) internal override {}
 

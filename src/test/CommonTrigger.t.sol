@@ -8,10 +8,6 @@ import {CommonReportTrigger, IBaseFee} from "../ReportTrigger/CommonReportTrigge
 import {MockCustomStrategyTrigger} from "./mocks/MockCustomStrategyTrigger.sol";
 import {MockCustomVaultTrigger} from "./mocks/MockCustomVaultTrigger.sol";
 
-interface IStrategys {
-    function report() external returns (uint256, uint256);
-}
-
 contract CommonTriggerTest is Setup {
     CommonReportTrigger public commonTrigger;
     MockCustomStrategyTrigger public customStrategyTrigger;
@@ -255,7 +251,7 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_defualtStrategyTrigger(uint256 _amount) public {
+    function test_defaultStrategyTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         bytes memory _calldata = abi.encodeWithSelector(
@@ -349,9 +345,9 @@ contract CommonTriggerTest is Setup {
         assertEq(data, bytes("Shutdown"));
     }
 
-    function test_defualtVaultTrigger(uint256 _amount) public {
+    function test_defaultVaultTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-
+        vault = setUpVault();
         bytes memory _calldata = abi.encodeWithSelector(
             vault.process_report.selector,
             address(mockStrategy)
@@ -437,6 +433,9 @@ contract CommonTriggerTest is Setup {
         );
         assertEq(response, true);
         assertEq(data, _calldata);
+
+        vm.prank(management);
+        vault.add_role(vaultManagement, vaultConstants.DEPOSIT_LIMIT_MANAGER());
 
         // Shutdown
         vm.prank(vaultManagement);

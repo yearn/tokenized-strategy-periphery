@@ -27,7 +27,7 @@ contract UniswapV2SwapperTest is Setup {
         uniV2Swapper.setPerformanceFeeRecipient(performanceFeeRecipient);
         uniV2Swapper.setPendingManagement(management);
 
-        // Accept mangagement.
+        // Accept management.
         vm.prank(management);
         uniV2Swapper.acceptManagement();
     }

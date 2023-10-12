@@ -25,7 +25,7 @@ contract UniswapV3SwapperTest is Setup {
         uniV3Swapper.setKeeper(keeper);
         uniV3Swapper.setPerformanceFeeRecipient(performanceFeeRecipient);
         uniV3Swapper.setPendingManagement(management);
-        // Accept mangagement.
+        // Accept management.
         vm.prank(management);
         uniV3Swapper.acceptManagement();
     }

@@ -16,7 +16,7 @@ contract Governance {
         require(governance == msg.sender, "!governance");
     }
 
-    // Address that can set the defualt base fee and provider
+    // Address that can set the default base fee and provider
     address public governance;
 
     constructor(address _governance) {
