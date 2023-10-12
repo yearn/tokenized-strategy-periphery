@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
 /**
  *   @title Base Health Check
@@ -22,15 +22,7 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
  *   losses, but rather can make sure manual intervention is
  *   needed before reporting an unexpected loss or profit.
  */
-abstract contract BaseHealthCheck is BaseTokenizedStrategy {
-    // Optional modifier that can be placed on any function
-    // to perform checks such as debt/PPS before running.
-    // Must override `_checkHealth()` for this to work.
-    modifier checkHealth() {
-        _checkHealth();
-        _;
-    }
-
+abstract contract BaseHealthCheck is BaseStrategy {
     // Can be used to determine if a healthcheck should be called.
     // Defaults to true;
     bool public doHealthCheck = true;
@@ -46,7 +38,7 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
     constructor(
         address _asset,
         string memory _name
-    ) BaseTokenizedStrategy(_asset, _name) {}
+    ) BaseStrategy(_asset, _name) {}
 
     /**
      * @notice Returns the current profit limit ratio.
@@ -118,15 +110,6 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
     }
 
     /**
-     * @notice Check important invariants for the strategy.
-     * @dev This can be overriden to check any important strategy
-     *  specific invariants.
-     *
-     *  NOTE: Should revert if unhealthy for the modifier to work.
-     */
-    function _checkHealth() internal virtual {}
-
-    /**
      * @dev To be called during a report to make sure the profit
      * or loss being recorded is within the acceptable bound.
      *
@@ -138,7 +121,7 @@ abstract contract BaseHealthCheck is BaseTokenizedStrategy {
             return;
         }
 
-        // Get the curent total assets from the implementation.
+        // Get the current total assets from the implementation.
         uint256 currentTotalAssets = TokenizedStrategy.totalAssets();
 
         if (_newTotalAssets > currentTotalAssets) {

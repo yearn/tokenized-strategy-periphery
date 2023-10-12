@@ -1,17 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {IStrategy} from "../interfaces/IStrategy.sol";
-
-interface IVault {
-    function totalAssets() external view returns (uint256);
-
-    function profitUnlockingRate() external view returns (uint256);
-
-    function fullProfitUnlockDate() external view returns (uint256);
-
-    function convertToAssets(uint256) external view returns (uint256);
-}
+import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface IOracle {
     function aprAfterDebtChange(
@@ -30,7 +21,7 @@ interface IOracle {
  *  based on the current profit unlocking rate. As well as the
  *  expected APR given some change in totalAssets.
  *
- *  This can also be used to retreive the expexted APR a strategy
+ *  This can also be used to retrieve the expected APR a strategy
  *  is making, thats yet to be reported, if a strategy specific
  *  oracle has been added.
  *
@@ -41,7 +32,7 @@ contract AprOracle {
     // Mapping of a strategy to its specific apr oracle.
     mapping(address => address) public oracles;
 
-    // Used to get the Current and Expexted APRS.
+    // Used to get the Current and Expected APR'S.
     uint256 internal constant MAX_BPS_EXTENDED = 1_000_000_000_000;
     uint256 internal constant SECONDS_PER_YEAR = 31_556_952;
 
@@ -50,15 +41,15 @@ contract AprOracle {
      * @dev Will revert if an oracle has not been set for that strategy.
      *
      * This will be different than the {getExpectedApr()} which returns
-     * the current APR bassed off of previously reported profits that
+     * the current APR based off of previously reported profits that
      * are currently unlocking.
      *
-     * This will return the APR the stratey is currently earning that
+     * This will return the APR the strategy is currently earning that
      * has yet to be reported.
      *
      * @param _strategy Address of the strategy to check.
      * @param _debtChange Positive or negative change in debt.
-     * @return . The expected APR it will be earning repersented as 1e18.
+     * @return . The expected APR it will be earning represented as 1e18.
      */
     function getStrategyApr(
         address _strategy,
@@ -122,7 +113,7 @@ contract AprOracle {
      * Will return 0 if there is no profit unlocking or no assets.
      *
      * This can be used to predict the change in current apr given some
-     * deposit or withdra to the vault.
+     * deposit or withdraw to the vault.
      *
      * @param _vault The address of the vault or strategy.
      * @param _delta The positive or negative change in `totalAssets`.

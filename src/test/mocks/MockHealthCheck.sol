@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import {BaseHealthCheck} from "../../HealthCheck/BaseHealthCheck.sol";
+import {BaseHealthCheck, ERC20} from "../../HealthCheck/BaseHealthCheck.sol";
 
 contract MockHealthCheck is BaseHealthCheck {
     bool public healthy = true;
@@ -22,10 +20,11 @@ contract MockHealthCheck is BaseHealthCheck {
     function _harvestAndReport()
         internal
         override
-        checkHealth
         returns (uint256 _totalAssets)
     {
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        require(_healthy(), "unhealthy");
+
+        _totalAssets = asset.balanceOf(address(this));
 
         _executeHealthCheck(_totalAssets);
     }
@@ -46,10 +45,6 @@ contract MockHealthCheck is BaseHealthCheck {
         if (!_healthy()) return 0;
 
         return super.availableWithdrawLimit(_owner);
-    }
-
-    function _checkHealth() internal view override {
-        require(_healthy(), "unhealthy");
     }
 
     function _healthy() internal view returns (bool) {

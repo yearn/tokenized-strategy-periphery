@@ -12,22 +12,22 @@ import {IUniswapV2Router02} from "../interfaces/Uniswap/V2/IUniswapV2Router02.so
  *   strategy that would like to use Uniswap V2 for swaps. It holds all needed
  *   logic to perform exact input swaps.
  *
- *   The global addres variables defualt to the ETH mainnet addresses but
+ *   The global address variables default to the ETH mainnet addresses but
  *   remain settable by the inheriting contract to allow for customization
  *   based on needs or chain its used on.
  */
 contract UniswapV2Swapper {
     // Optional Variable to be set to not sell dust.
     uint256 public minAmountToSell;
-    // Defualts to WETH on mainnet.
+    // Defaults to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    // Defualts to Uniswap V2 router on mainnet.
+    // Defaults to Uniswap V2 router on mainnet.
     address public router = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     /**
      * @dev Used to swap a specific amount of `_from` to `_to`.
-     * This will check and handle all allownaces as well as not swapping
+     * This will check and handle all allowances as well as not swapping
      * unless `_amountIn` is greater than the set `_minAmountToSell`
      *
      * If one of the tokens matches with the `base` token it will do only

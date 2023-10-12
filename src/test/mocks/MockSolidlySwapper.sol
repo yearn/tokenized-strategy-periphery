@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 import {SolidlySwapper} from "../../swappers/SolidlySwapper.sol";
-import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
-contract MockSolidlySwapper is BaseTokenizedStrategy, SolidlySwapper {
-    constructor(address _asset) BaseTokenizedStrategy(_asset, "Mock Uni V3") {}
+contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
+    constructor(address _asset) BaseStrategy(_asset, "Mock Uni V3") {}
 
     function _deployFunds(uint256) internal override {}
 
@@ -18,7 +16,7 @@ contract MockSolidlySwapper is BaseTokenizedStrategy, SolidlySwapper {
         override
         returns (uint256 _totalAssets)
     {
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        _totalAssets = asset.balanceOf(address(this));
     }
 
     function setMinAmountToSell(uint256 _minAmountToSell) external {

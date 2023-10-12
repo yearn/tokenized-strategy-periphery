@@ -8,26 +8,24 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import {VyperDeployer} from "./VyperDeployer.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IVault} from "../../interfaces/IVault.sol";
+import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
+import {VaultConstants, Roles} from "@yearn-vaults/interfaces/VaultConstants.sol";
+import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
-
-interface IFactory {
-    function governance() external view returns (address);
-
-    function set_protocol_fee_bps(uint16) external;
-
-    function set_protocol_fee_recipient(address) external;
-}
+import {Governance} from "../../utils/Governance.sol";
 
 contract Setup is ExtendedTest {
     VyperDeployer public vyperDeployer = new VyperDeployer();
-    // Contract instancees that we will use repeatedly.
+
+    // Contract instances that we will use repeatedly.
     ERC20 public asset;
     IStrategy public mockStrategy;
-    IVault public vault;
 
-    mapping(string => address) public tokenAddrs;
+    // Vault contracts to test with.
+    IVault public vault;
+    IVaultFactory public vaultFactory;
+    VaultConstants public vaultConstants = new VaultConstants();
 
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
@@ -37,8 +35,7 @@ contract Setup is ExtendedTest {
     address public vaultManagement = address(2);
     address public performanceFeeRecipient = address(3);
 
-    // Address of the real deployed Factory
-    address public factory = 0x85E2861b3b1a70c90D28DfEc30CE6E07550d83e9;
+    mapping(string => address) public tokenAddrs;
 
     // Integer variables that will be used repeatedly.
     uint256 public decimals;
@@ -48,7 +45,7 @@ contract Setup is ExtendedTest {
     uint256 public maxFuzzAmount = 1e24;
     uint256 public minFuzzAmount = 100_000;
 
-    // Default prfot max unlock time is set for 10 days
+    // Default profit max unlock time is set for 10 days
     uint256 public profitMaxUnlockTime = 10 days;
 
     function setUp() public virtual {
@@ -62,17 +59,16 @@ contract Setup is ExtendedTest {
 
         mockStrategy = setUpStrategy();
 
-        vault = setUpVault();
+        vaultFactory = IVaultFactory(mockStrategy.FACTORY());
 
         // label all the used addresses for traces
         vm.label(daddy, "daddy");
         vm.label(keeper, "keeper");
-        vm.label(factory, "factory");
-        vm.label(address(vault), "vault");
         vm.label(address(asset), "asset");
         vm.label(management, "management");
         vm.label(address(mockStrategy), "strategy");
         vm.label(vaultManagement, "vault management");
+        vm.label(address(vaultFactory), " vault factory");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 
@@ -95,7 +91,7 @@ contract Setup is ExtendedTest {
 
         vm.prank(management);
         // Give the vault manager all the roles
-        _vault.set_role(vaultManagement, 8191);
+        _vault.set_role(vaultManagement, 16383);
 
         vm.prank(vaultManagement);
         _vault.set_deposit_limit(type(uint256).max);
@@ -115,7 +111,7 @@ contract Setup is ExtendedTest {
         _strategy.setPerformanceFeeRecipient(performanceFeeRecipient);
         // set management of the strategy
         _strategy.setPendingManagement(management);
-        // Accept mangagement.
+        // Accept management.
         vm.prank(management);
         _strategy.acceptManagement();
 
@@ -193,14 +189,14 @@ contract Setup is ExtendedTest {
     }
 
     function setFees(uint16 _protocolFee, uint16 _performanceFee) public {
-        address gov = IFactory(factory).governance();
+        address gov = Governance(address(vaultFactory)).governance();
 
         // Need to make sure there is a protocol fee recipient to set the fee.
         vm.prank(gov);
-        IFactory(factory).set_protocol_fee_recipient(gov);
+        vaultFactory.set_protocol_fee_recipient(gov);
 
         vm.prank(gov);
-        IFactory(factory).set_protocol_fee_bps(_protocolFee);
+        vaultFactory.set_protocol_fee_bps(_protocolFee);
 
         vm.prank(management);
         mockStrategy.setPerformanceFee(_performanceFee);

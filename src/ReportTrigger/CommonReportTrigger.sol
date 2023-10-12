@@ -3,8 +3,8 @@ pragma solidity 0.8.18;
 
 import {Governance} from "../utils/Governance.sol";
 
-import {IVault} from "../interfaces/IVault.sol";
-import {IStrategy} from "../interfaces/IStrategy.sol";
+import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface ICustomStrategyTrigger {
     function reportTrigger(
@@ -72,7 +72,7 @@ contract CommonReportTrigger is Governance {
 
     string public name = "Yearn Common Report Trigger";
 
-    // Address to retreive the current base fee on the network from.
+    // Address to retrieve the current base fee on the network from.
     address public baseFeeProvider;
 
     // Default base fee the trigger will accept for a trigger to return `true`.
@@ -88,7 +88,7 @@ contract CommonReportTrigger is Governance {
     // `acceptableBaseFee` will be used.
     mapping(address => uint256) public customStrategyBaseFee;
 
-    // Mapping of a vault adddress and one of its strategies address to a
+    // Mapping of a vault address and one of its strategies address to a
     // custom report trigger. If address(0) the default trigger will be used.
     // vaultAddress => strategyAddress => customTriggerContract.
     mapping(address => mapping(address => address)) public customVaultTrigger;
@@ -227,7 +227,7 @@ contract CommonReportTrigger is Governance {
      * the default trigger flow.
      *
      * @param _strategy The address of the strategy to check the trigger for.
-     * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
     function strategyReportTrigger(
@@ -246,7 +246,7 @@ contract CommonReportTrigger is Governance {
 
     /**
      * @notice The default trigger logic for a strategy.
-     * @dev This is kept in a seperate function so it can still
+     * @dev This is kept in a separate function so it can still
      * be used by custom triggers even if extra checks are needed
      * first or after.
      *
@@ -261,7 +261,7 @@ contract CommonReportTrigger is Governance {
      *   4. The time since the last report be > the strategies `profitMaxUnlockTime`.
      *
      * @param _strategy The address of the strategy to check the trigger for.
-     * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
     function defaultStrategyReportTrigger(
@@ -273,7 +273,7 @@ contract CommonReportTrigger is Governance {
         // Don't report if the strategy is shutdown.
         if (strategy.isShutdown()) return (false, bytes("Shutdown"));
 
-        // Dont't report if the strategy has no assets.
+        // Don't report if the strategy has no assets.
         if (strategy.totalAssets() == 0) return (false, bytes("Zero Assets"));
 
         // Check if a `baseFeeProvider` is set.
@@ -285,7 +285,7 @@ contract CommonReportTrigger is Governance {
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
 
-            // Dont report if the base fee is to high.
+            // Don't report if the base fee is to high.
             if (
                 IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
             ) return (false, bytes("Base Fee"));
@@ -329,7 +329,7 @@ contract CommonReportTrigger is Governance {
 
     /**
      * @notice The default trigger logic for a vault.
-     * @dev This is kept in a seperate function so it can still
+     * @dev This is kept in a separate function so it can still
      * be used by custom triggers even if extra checks are needed
      * before or after.
      *
@@ -361,8 +361,8 @@ contract CommonReportTrigger is Governance {
         // Cache the strategy parameters.
         IVault.StrategyParams memory params = vault.strategies(_strategy);
 
-        // Don't report if the strategy is not acitve or has no funds.
-        if (params.activation == 0 || params.currentDebt == 0)
+        // Don't report if the strategy is not active or has no funds.
+        if (params.activation == 0 || params.current_debt == 0)
             return (false, bytes("Not Active"));
 
         // Check if a `baseFeeProvider` is set.
@@ -376,7 +376,7 @@ contract CommonReportTrigger is Governance {
                 ? customAcceptableBaseFee
                 : acceptableBaseFee;
 
-            // Dont report if the base fee is to high.
+            // Don't report if the base fee is to high.
             if (
                 IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
             ) return (false, bytes("Base Fee"));
@@ -384,7 +384,7 @@ contract CommonReportTrigger is Governance {
 
         return (
             // Return true is the full profit unlock time has passed since the last report.
-            block.timestamp - params.lastReport > vault.profitMaxUnlockTime(),
+            block.timestamp - params.last_report > vault.profitMaxUnlockTime(),
             // Return the function selector and the strategy as the parameter to use.
             abi.encodeCall(vault.process_report, _strategy)
         );
@@ -405,12 +405,8 @@ contract CommonReportTrigger is Governance {
     function strategyTendTrigger(
         address _strategy
     ) external view returns (bool, bytes memory) {
-        return (
-            // Return the status of the tend trigger.
-            IStrategy(_strategy).tendTrigger(),
-            // And the needed calldata either way.
-            abi.encodeWithSelector(IStrategy.tend.selector)
-        );
+        // Return the status of the tend trigger.
+        return IStrategy(_strategy).tendTrigger();
     }
 
     /**
@@ -427,7 +423,7 @@ contract CommonReportTrigger is Governance {
 
     /**
      * @notice Returns wether or not the current base fee is acceptable
-     * baseed on the default `acceptableBaseFee`.
+     * based on the default `acceptableBaseFee`.
      * @dev Can be used in custom triggers to easily still use this contracts
      * fee provider and acceptableBaseFee. And makes it backwards compatible to V2.
      *

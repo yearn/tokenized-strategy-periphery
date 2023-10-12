@@ -10,14 +10,14 @@ abstract contract CustomVaultTriggerBase {
      * @notice Returns if a strategy should report any accrued profits/losses
      * to a vault.
      * @dev This can be used to implement a custom trigger if the default
-     * flow is not desired by a vaults managent.
+     * flow is not desired by a vaults management.
      *
      * Should complete any needed checks and then return `true` if the strategy
      * should report and `false` if not.
      *
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy that would report.
-     * @return . Bool repersenting if the strategy is ready to report.
+     * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
     function reportTrigger(

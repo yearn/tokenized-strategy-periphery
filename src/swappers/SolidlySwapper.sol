@@ -12,7 +12,7 @@ import {ISolidly} from "../interfaces/Solidly/ISolidly.sol";
  *   strategy that would like to use a Solidly fork for swaps. It holds all needed
  *   logic to perform exact input swaps.
  *
- *   The global addres variables defualt to the ETH mainnet addresses but
+ *   The global address variables default to the ETH mainnet addresses but
  *   remain settable by the inheriting contract to allow for customization
  *   based on needs or chain its used on.
  *
@@ -22,7 +22,7 @@ import {ISolidly} from "../interfaces/Solidly/ISolidly.sol";
 contract SolidlySwapper {
     // Optional Variable to be set to not sell dust.
     uint256 public minAmountToSell;
-    // Defualts to WETH on mainnet.
+    // Defaults to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     // Will need to set the router to use.
@@ -34,10 +34,10 @@ contract SolidlySwapper {
     mapping(address => mapping(address => bool)) public stable;
 
     /**
-     * @dev Internal funciton to set the `stable` mapping for any
+     * @dev Internal function to set the `stable` mapping for any
      * pair of tokens if a the route should go through a stable pool.
      * This function is to help set the mapping. It can be called
-     * internally during intialization, through permisioned functions etc.
+     * internally during initialization, through permissioned functions etc.
      */
     function _setStable(
         address _token0,
@@ -50,7 +50,7 @@ contract SolidlySwapper {
 
     /**
      * @dev Used to swap a specific amount of `_from` to `_to`.
-     * This will check and handle all allownaces as well as not swapping
+     * This will check and handle all allowances as well as not swapping
      * unless `_amountIn` is greater than the set `_minAmountToSell`
      *
      * If one of the tokens matches with the `base` token it will do only

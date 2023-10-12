@@ -8,10 +8,6 @@ import {CommonReportTrigger, IBaseFee} from "../ReportTrigger/CommonReportTrigge
 import {MockCustomStrategyTrigger} from "./mocks/MockCustomStrategyTrigger.sol";
 import {MockCustomVaultTrigger} from "./mocks/MockCustomVaultTrigger.sol";
 
-interface IStrategys {
-    function report() external returns (uint256, uint256);
-}
-
 contract CommonTriggerTest is Setup {
     CommonReportTrigger public commonTrigger;
     MockCustomStrategyTrigger public customStrategyTrigger;
@@ -28,6 +24,9 @@ contract CommonTriggerTest is Setup {
     }
 
     function test_setup() public {
+        // Deploy a vault.
+        vault = setUpVault();
+
         assertEq(commonTrigger.governance(), address(daddy));
         assertEq(commonTrigger.baseFeeProvider(), address(0));
         assertEq(commonTrigger.acceptableBaseFee(), 0);
@@ -144,6 +143,9 @@ contract CommonTriggerTest is Setup {
     function test_setCustomVaultTrigger(address _address) public {
         vm.assume(_address != vaultManagement);
 
+        // Deploy a vault.
+        vault = setUpVault();
+
         assertEq(
             commonTrigger.customVaultTrigger(
                 address(vault),
@@ -215,6 +217,9 @@ contract CommonTriggerTest is Setup {
         vm.assume(_address != vaultManagement);
         vm.assume(_baseFee != 0);
 
+        // Deploy a vault.
+        vault = setUpVault();
+
         assertEq(
             commonTrigger.customVaultBaseFee(
                 address(vault),
@@ -255,7 +260,7 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_defualtStrategyTrigger(uint256 _amount) public {
+    function test_defaultStrategyTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         bytes memory _calldata = abi.encodeWithSelector(
@@ -349,8 +354,11 @@ contract CommonTriggerTest is Setup {
         assertEq(data, bytes("Shutdown"));
     }
 
-    function test_defualtVaultTrigger(uint256 _amount) public {
+    function test_defaultVaultTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        // Deploy a vault.
+        vault = setUpVault();
 
         bytes memory _calldata = abi.encodeWithSelector(
             vault.process_report.selector,
