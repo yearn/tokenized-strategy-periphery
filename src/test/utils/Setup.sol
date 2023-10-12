@@ -17,7 +17,7 @@ import {Governance} from "../../utils/Governance.sol";
 
 contract Setup is ExtendedTest {
     VyperDeployer public vyperDeployer = new VyperDeployer();
-    
+
     // Contract instances that we will use repeatedly.
     ERC20 public asset;
     IStrategy public mockStrategy;
@@ -88,13 +88,6 @@ contract Setup is ExtendedTest {
                 args
             )
         );
-
-        vm.prank(management);
-        // Give the vault manager all the roles
-        _vault.add_role(vaultManagement, vaultConstants.ALL());
-
-        vm.prank(vaultManagement);
-        _vault.set_deposit_limit(type(uint256).max);
 
         return _vault;
     }

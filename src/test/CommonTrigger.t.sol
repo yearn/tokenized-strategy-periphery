@@ -26,7 +26,7 @@ contract CommonTriggerTest is Setup {
     function test_setup() public {
         // Deploy a vault.
         vault = setUpVault();
-        
+
         assertEq(commonTrigger.governance(), address(daddy));
         assertEq(commonTrigger.baseFeeProvider(), address(0));
         assertEq(commonTrigger.acceptableBaseFee(), 0);
@@ -359,7 +359,14 @@ contract CommonTriggerTest is Setup {
 
         // Deploy a vault.
         vault = setUpVault();
-        
+
+        vm.prank(management);
+        // Give the vault manager all the roles
+        vault.add_role(vaultManagement, 16383);
+
+        vm.prank(vaultManagement);
+        vault.set_deposit_limit(type(uint256).max);
+
         bytes memory _calldata = abi.encodeWithSelector(
             vault.process_report.selector,
             address(mockStrategy)

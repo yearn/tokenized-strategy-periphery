@@ -20,9 +20,10 @@ contract MockHealthCheck is BaseHealthCheck {
     function _harvestAndReport()
         internal
         override
-        checkHealth
         returns (uint256 _totalAssets)
     {
+        require(_healthy(), "unhealthy");
+
         _totalAssets = ERC20(asset).balanceOf(address(this));
 
         _executeHealthCheck(_totalAssets);
@@ -44,10 +45,6 @@ contract MockHealthCheck is BaseHealthCheck {
         if (!_healthy()) return 0;
 
         return super.availableWithdrawLimit(_owner);
-    }
-
-    function _checkHealth() internal view override {
-        require(_healthy(), "unhealthy");
     }
 
     function _healthy() internal view returns (bool) {

@@ -23,14 +23,6 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
  *   needed before reporting an unexpected loss or profit.
  */
 abstract contract BaseHealthCheck is BaseStrategy {
-    // Optional modifier that can be placed on any function
-    // to perform checks such as debt/PPS before running.
-    // Must override `_checkHealth()` for this to work.
-    modifier checkHealth() {
-        _checkHealth();
-        _;
-    }
-
     // Can be used to determine if a healthcheck should be called.
     // Defaults to true;
     bool public doHealthCheck = true;
@@ -116,15 +108,6 @@ abstract contract BaseHealthCheck is BaseStrategy {
     function setDoHealthCheck(bool _doHealthCheck) public onlyManagement {
         doHealthCheck = _doHealthCheck;
     }
-
-    /**
-     * @notice Check important invariants for the strategy.
-     * @dev This can be overridden to check any important strategy
-     *  specific invariants.
-     *
-     *  NOTE: Should revert if unhealthy for the modifier to work.
-     */
-    function _checkHealth() internal virtual {}
 
     /**
      * @dev To be called during a report to make sure the profit
