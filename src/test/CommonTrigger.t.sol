@@ -24,6 +24,9 @@ contract CommonTriggerTest is Setup {
     }
 
     function test_setup() public {
+        // Deploy a vault.
+        vault = setUpVault();
+        
         assertEq(commonTrigger.governance(), address(daddy));
         assertEq(commonTrigger.baseFeeProvider(), address(0));
         assertEq(commonTrigger.acceptableBaseFee(), 0);
@@ -140,6 +143,9 @@ contract CommonTriggerTest is Setup {
     function test_setCustomVaultTrigger(address _address) public {
         vm.assume(_address != vaultManagement);
 
+        // Deploy a vault.
+        vault = setUpVault();
+
         assertEq(
             commonTrigger.customVaultTrigger(
                 address(vault),
@@ -210,6 +216,9 @@ contract CommonTriggerTest is Setup {
     ) public {
         vm.assume(_address != vaultManagement);
         vm.assume(_baseFee != 0);
+
+        // Deploy a vault.
+        vault = setUpVault();
 
         assertEq(
             commonTrigger.customVaultBaseFee(
@@ -347,7 +356,10 @@ contract CommonTriggerTest is Setup {
 
     function test_defaultVaultTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        // Deploy a vault.
         vault = setUpVault();
+        
         bytes memory _calldata = abi.encodeWithSelector(
             vault.process_report.selector,
             address(mockStrategy)
@@ -433,9 +445,6 @@ contract CommonTriggerTest is Setup {
         );
         assertEq(response, true);
         assertEq(data, _calldata);
-
-        vm.prank(management);
-        vault.add_role(vaultManagement, vaultConstants.DEPOSIT_LIMIT_MANAGER());
 
         // Shutdown
         vm.prank(vaultManagement);

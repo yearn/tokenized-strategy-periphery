@@ -61,12 +61,9 @@ contract Setup is ExtendedTest {
 
         vaultFactory = IVaultFactory(mockStrategy.FACTORY());
 
-        //vault = setUpVault();
-
         // label all the used addresses for traces
         vm.label(daddy, "daddy");
         vm.label(keeper, "keeper");
-        vm.label(address(vault), "vault");
         vm.label(address(asset), "asset");
         vm.label(management, "management");
         vm.label(address(mockStrategy), "strategy");
@@ -94,7 +91,7 @@ contract Setup is ExtendedTest {
 
         vm.prank(management);
         // Give the vault manager all the roles
-        _vault.add_role(vaultManagement, vaultConstants.DEPOSIT_LIMIT_MANAGER());
+        _vault.add_role(vaultManagement, vaultConstants.ALL());
 
         vm.prank(vaultManagement);
         _vault.set_deposit_limit(type(uint256).max);
