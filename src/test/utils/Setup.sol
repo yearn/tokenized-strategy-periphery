@@ -89,6 +89,14 @@ contract Setup is ExtendedTest {
             )
         );
 
+        vm.prank(management);
+        // Give the vault manager all the roles
+        vault.add_role(vaultManagement, 16383);
+
+        vm.prank(vaultManagement);
+        vault.set_deposit_limit(type(uint256).max);
+
+
         return _vault;
     }
 
