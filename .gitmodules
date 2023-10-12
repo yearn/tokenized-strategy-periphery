@@ -6,11 +6,3 @@
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 	branch = v4.8.2
-[submodule "lib/yearn-vaults-v3"]
-	path = lib/yearn-vaults-v3
-	url = https://github.com/yearn/yearn-vaults-v3
-	branch = v3.0.0
-[submodule "lib/tokenized-strategy"]
-	path = lib/tokenized-strategy
-	url = https://github.com/yearn/tokenized-strategy
-	branch = v3.0.0
