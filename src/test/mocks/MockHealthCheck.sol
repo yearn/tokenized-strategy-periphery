@@ -24,7 +24,7 @@ contract MockHealthCheck is BaseHealthCheck {
     {
         require(_healthy(), "unhealthy");
 
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        _totalAssets = asset.balanceOf(address(this));
 
         _executeHealthCheck(_totalAssets);
     }

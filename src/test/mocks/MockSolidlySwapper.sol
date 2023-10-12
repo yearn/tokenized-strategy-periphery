@@ -16,7 +16,7 @@ contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
         override
         returns (uint256 _totalAssets)
     {
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        _totalAssets = asset.balanceOf(address(this));
     }
 
     function setMinAmountToSell(uint256 _minAmountToSell) external {

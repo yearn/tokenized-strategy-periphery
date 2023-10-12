@@ -17,7 +17,7 @@ contract MockStrategy is BaseStrategy {
         override
         returns (uint256 _totalAssets)
     {
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        _totalAssets = asset.balanceOf(address(this));
     }
 
     function _tendTrigger() internal view override returns (bool) {
