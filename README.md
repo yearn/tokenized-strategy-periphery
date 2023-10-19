@@ -47,6 +47,8 @@ This can be done permissionlessly if the most recent contract has not yet been d
 
 1. Add your deployers Private key under PRIVATE_KEY in your .env file.
      - NOTE: make sure to add `0x` to the beginning of the key.
+2. Enter what contract you want to deploy on line 9
+    `ContractFile.sol:ContractName`
 2. Run the deployment script
     ```sh
     forge script script/Deploy.s.sol:Deploy --broadcast --rpc-url YOUR_RPC
