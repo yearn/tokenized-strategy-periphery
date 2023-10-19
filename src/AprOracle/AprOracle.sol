@@ -128,6 +128,9 @@ contract AprOracle {
         // Need the total assets in the vault post delta.
         uint256 assets = uint256(int256(vault.totalAssets()) + _delta);
 
+        // If the full profit has already been unlocked.
+        if(vault.fullProfitUnlockDate() < block.timestamp) return 0;
+
         // No apr if there are no assets.
         if (assets == 0) return 0;
 

@@ -356,7 +356,7 @@ contract CommonReportTrigger is Governance {
         IVault vault = IVault(_vault);
 
         // Don't report if the vault is shutdown.
-        if (vault.shutdown()) return (false, bytes("Shutdown"));
+        if (vault.isShutdown()) return (false, bytes("Shutdown"));
 
         // Cache the strategy parameters.
         IVault.StrategyParams memory params = vault.strategies(_strategy);
