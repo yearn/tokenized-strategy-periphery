@@ -126,7 +126,7 @@ contract AprOracle {
         IVault vault = IVault(_vault);
 
         // Check if the full profit has already been unlocked.
-        if(vault.fullProfitUnlockDate() <= block.timestamp) return 0;
+        if (vault.fullProfitUnlockDate() <= block.timestamp) return 0;
 
         // Need the total assets in the vault post delta.
         uint256 assets = uint256(int256(vault.totalAssets()) + _delta);
