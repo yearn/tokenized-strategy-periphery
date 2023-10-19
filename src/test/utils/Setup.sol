@@ -13,7 +13,6 @@ import {VaultConstants, Roles} from "@yearn-vaults/interfaces/VaultConstants.sol
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
-import {Governance} from "../../utils/Governance.sol";
 
 contract Setup is ExtendedTest {
     VyperDeployer public vyperDeployer = new VyperDeployer();
@@ -189,7 +188,7 @@ contract Setup is ExtendedTest {
     }
 
     function setFees(uint16 _protocolFee, uint16 _performanceFee) public {
-        address gov = Governance(address(vaultFactory)).governance();
+        address gov = vaultFactory.governance();
 
         // Need to make sure there is a protocol fee recipient to set the fee.
         vm.prank(gov);
