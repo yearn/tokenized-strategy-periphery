@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import "forge-std/Script.sol";
 
 // Deploy a contract to a deterministic address with create2
-contract Deploy is Script {
+contract DeployCommonTrigger is Script {
 
     Deployer public deployer = Deployer(0x8D85e7c9A4e369E53Acc8d5426aE1568198b0112);
 
@@ -13,13 +13,14 @@ contract Deploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Encode constructor arguments
-        bytes memory construct = abi.encode();
+        bytes memory construct = abi.encode(0x33333333D5eFb92f19a5F94a43456b3cec2797AE);
         
         // Append constructor args to the bytecode
         bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
 
+
         // Pick an unique salt
-        uint256 salt = uint256(keccak256("v3.0.0"));
+        uint256 salt = uint256(keccak256("Common Trigger"));
 
         address contractAddress = deployer.deploy(bytecode, salt);
 

@@ -47,15 +47,14 @@ This can be done permissionlessly if the most recent contract has not yet been d
 
 1. Add your deployers Private key under PRIVATE_KEY in your .env file.
      - NOTE: make sure to add `0x` to the beginning of the key.
-2. Enter what contract you want to deploy on line 9
-    `ContractFile.sol:ContractName`
-2. Run the deployment script
+2. Run the deployment script for the contract you want to deploy.
     ```sh
-    forge script script/Deploy.s.sol:Deploy --broadcast --rpc-url YOUR_RPC
+    forge script script/DeployContractName.s.sol:DeployContractName --broadcast --rpc-url YOUR_RPC_URL
     ```
     - You can do a dry run before officially deploying by removing the `--broadcast` flag.
     - For chains that don't support 1559 tx's you may need to add a `--legacy` flag.
 3. The address the contract was deployed at will print in the console and should match any other chain the same version has been deployed on.
+
 ## Swapper helper contracts
 
 For strategies that need to swap reward tokens back into 'asset' a series of 'swapper' contracts have been pre-developed to make your preferred method as easy as possible to use.
