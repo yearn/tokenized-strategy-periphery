@@ -22,44 +22,10 @@ contract MockHealthCheck is BaseHealthCheck {
         override
         returns (uint256 _totalAssets)
     {
-        require(_healthy(), "unhealthy");
-
         _totalAssets = asset.balanceOf(address(this));
-
-        _executeHealthCheck(_totalAssets);
-    }
-
-    // Can't deposit if its not healthy
-    function availableDepositLimit(
-        address _owner
-    ) public view override returns (uint256) {
-        if (!_healthy()) return 0;
-
-        return super.availableDepositLimit(_owner);
-    }
-
-    // Can't Withdraw if not healthy.
-    function availableWithdrawLimit(
-        address _owner
-    ) public view override returns (uint256) {
-        if (!_healthy()) return 0;
-
-        return super.availableWithdrawLimit(_owner);
-    }
-
-    function _healthy() internal view returns (bool) {
-        return healthy;
-    }
-
-    function setHealthy(bool _health) external {
-        healthy = _health;
     }
 }
 
 import {IBaseHealthCheck} from "../../HealthCheck/IBaseHealthCheck.sol";
 
-interface IMockHealthCheck is IBaseHealthCheck {
-    function healthy() external view returns (bool);
-
-    function setHealthy(bool _health) external;
-}
+interface IMockHealthCheck is IBaseHealthCheck {}
