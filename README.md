@@ -86,28 +86,9 @@ Health Checks can be used by a strategy to assure automated reports are not unex
 
 It's important to note that the health check does not stop losses from being reported, rather will require manual intervention from 'management' for out of range losses or gains.
 
-A strategist simply has to inherit the [BaseHealthCheck](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/HealthCheck/BaseHealthCheck.sol) contract in their strategy, set the profit and loss limit ratios with the needed setters, and then call `_executeHealthCheck(uint256)` with the expected return value as the parameter during `_harvestAndReport`.
-
-EX:
-
-    contract Strategy is BaseHealthCheck {
-        ...
-        
-        function _harvestAndReport() internal override returns (uint256 _totalAssets) {
-            ...
-            
-            _executeHealthCheck(_totalAssets);
-        
-        }
-    }
+A strategist simply has to inherit the [BaseHealthCheck](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/HealthCheck/BaseHealthCheck.sol) contract in their strategy, set the profit and loss limit ratios with the needed setters, and then override `_harvestAndReport()` just as they otherwise would. If the profit or loss that would be recorded is outside the acceptable bounds the tx will revert.
 
 The profit and loss ratios can adjusted by management through their specific setters as well as turning the healthCheck off for a specific report. If turned off the health check will automatically turn back on for the next report.
-
-The Health check contract also comes with a [checkHealth](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/HealthCheck/BaseHealthCheck.sol#L28) modifier that can be put on functions that will check any strategy specific invariants/checks that can be defined in the [_checkHealth](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/HealthCheck/BaseHealthCheck.sol#L124) function. 
-
-NOTE: This should revert to work properly as a modifier if the check is false.
-
-see [MockHealthCheck](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/test/mocks/MockHealthCheck.sol) for an example.
 
 ## Apr Oracle
 For easy integration with on chain debt allocator's as well as off chain interfaces, strategist's can implement their own custom 'AprOracle'.

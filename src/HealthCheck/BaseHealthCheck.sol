@@ -13,9 +13,9 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
  *   `checkHealth` modifier.
  *
  *   A strategist simply needs to inherit this contract. Set
- *   the limit ratios to the desired amounts and then call
- *   `_executeHealthCheck(...)` during the  `_harvestAndReport()`
- *   execution. If the profit or loss that would be recorded is
+ *   the limit ratios to the desired amounts and then
+ *   override `_harvestAndReport()` just as they otherwise
+ *  would. If the profit or loss that would be recorded is
  *   outside the acceptable bounds the tx will revert.
  *
  *   The healthcheck does not prevent a strategy from reporting
@@ -107,6 +107,23 @@ abstract contract BaseHealthCheck is BaseStrategy {
      */
     function setDoHealthCheck(bool _doHealthCheck) public onlyManagement {
         doHealthCheck = _doHealthCheck;
+    }
+
+    /**
+     * @notice OVerrides the default {harvestAndReport} to include a healthcheck.
+     * @return _totalAssets New totalAssets post report.
+     */
+    function harvestAndReport()
+        external
+        override
+        onlySelf
+        returns (uint256 _totalAssets)
+    {
+        // Let the strategy report.
+        _totalAssets = _harvestAndReport();
+
+        // Run the healthcheck on the amount returned.
+        _executeHealthCheck(_totalAssets);
     }
 
     /**
