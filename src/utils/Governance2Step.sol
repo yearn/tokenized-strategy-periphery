@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-contract Governance {
+contract Governance2Step {
     event GovernanceTransferred(
         address indexed previousGovernance,
         address indexed newGovernance
