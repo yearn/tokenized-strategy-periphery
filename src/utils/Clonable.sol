@@ -9,7 +9,7 @@ contract Clonable {
      * @notice Clone the contracts default `original` contract.
      * @return Address of the new Minimal Proxy clone.
      */
-    function _clone() internal returns (address) {
+    function _clone() internal virtual returns (address) {
         return _clone(original);
     }
 
@@ -17,7 +17,9 @@ contract Clonable {
      * @notice Clone any `_original` contract.
      * @return _newContract Address of the new Minimal Proxy clone.
      */
-    function _clone(address _original) internal returns (address _newContract) {
+    function _clone(
+        address _original
+    ) internal virtual returns (address _newContract) {
         // Copied from https://github.com/optionality/clone-factory/blob/master/contracts/CloneFactory.sol
         bytes20 addressBytes = bytes20(_original);
         assembly {

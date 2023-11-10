@@ -54,7 +54,7 @@ contract AprOracle {
     function getStrategyApr(
         address _strategy,
         int256 _debtChange
-    ) public view returns (uint256) {
+    ) public view virtual returns (uint256) {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
@@ -70,7 +70,9 @@ contract AprOracle {
      * @param _strategy Address of the strategy.
      * @return . The current weighted APR of the strategy.
      */
-    function weightedApr(address _strategy) external view returns (uint256) {
+    function weightedApr(
+        address _strategy
+    ) external view virtual returns (uint256) {
         return
             IStrategy(_strategy).totalAssets() * getStrategyApr(_strategy, 0);
     }
@@ -84,7 +86,7 @@ contract AprOracle {
      * @param _strategy Address of the strategy.
      * @param _oracle Address of the APR Oracle.
      */
-    function setOracle(address _strategy, address _oracle) external {
+    function setOracle(address _strategy, address _oracle) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
 
         oracles[_strategy] = _oracle;
@@ -100,7 +102,9 @@ contract AprOracle {
      * @param _vault The address of the vault or strategy.
      * @return apr The current apr expressed as 1e18.
      */
-    function getCurrentApr(address _vault) external view returns (uint256 apr) {
+    function getCurrentApr(
+        address _vault
+    ) external view virtual returns (uint256 apr) {
         return getExpectedApr(_vault, 0);
     }
 
@@ -122,7 +126,7 @@ contract AprOracle {
     function getExpectedApr(
         address _vault,
         int256 _delta
-    ) public view returns (uint256 apr) {
+    ) public view virtual returns (uint256 apr) {
         IVault vault = IVault(_vault);
 
         // Check if the full profit has already been unlocked.

@@ -43,7 +43,7 @@ contract SolidlySwapper {
         address _token0,
         address _token1,
         bool _stable
-    ) internal {
+    ) internal virtual {
         stable[_token0][_token1] = _stable;
         stable[_token1][_token0] = _stable;
     }
@@ -66,7 +66,7 @@ contract SolidlySwapper {
         address _to,
         uint256 _amountIn,
         uint256 _minAmountOut
-    ) internal {
+    ) internal virtual {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
 
@@ -95,7 +95,7 @@ contract SolidlySwapper {
         address _from,
         address _to,
         uint256 _amountIn
-    ) internal view returns (uint256) {
+    ) internal view virtual returns (uint256) {
         uint256[] memory amounts = ISolidly(router).getAmountsOut(
             _amountIn,
             _getTokenOutPath(_from, _to)
@@ -115,7 +115,7 @@ contract SolidlySwapper {
     function _getTokenOutPath(
         address _tokenIn,
         address _tokenOut
-    ) internal view returns (ISolidly.route[] memory _path) {
+    ) internal view virtual returns (ISolidly.route[] memory _path) {
         bool isBase = _tokenIn == base || _tokenOut == base;
         _path = new ISolidly.route[](isBase ? 1 : 2);
 
@@ -143,7 +143,7 @@ contract SolidlySwapper {
         address _contract,
         address _token,
         uint256 _amount
-    ) internal {
+    ) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).approve(_contract, 0);
             ERC20(_token).approve(_contract, _amount);

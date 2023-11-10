@@ -1,25 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-contract Governance2Step {
-    event GovernanceTransferred(
-        address indexed previousGovernance,
-        address indexed newGovernance
-    );
+import {Governance} from "./Governance.sol";
 
+contract Governance2Step is Governance {
     event UpdatePendingGovernance(address indexed newPendingGovernance);
-
-    modifier onlyGovernance() {
-        _checkGovernance();
-        _;
-    }
-
-    function _checkGovernance() internal view virtual {
-        require(governance == msg.sender, "!governance");
-    }
-
-    // Address that can set the default base fee and provider
-    address public governance;
 
     // Address that is set to take over governance.
     address public pendingGovernance;
@@ -37,7 +22,7 @@ contract Governance2Step {
      */
     function transferGovernance(
         address _newGovernance
-    ) external onlyGovernance {
+    ) external virtual override onlyGovernance {
         require(_newGovernance != address(0), "ZERO ADDRESS");
         pendingGovernance = _newGovernance;
 
@@ -47,7 +32,7 @@ contract Governance2Step {
     /**
      * @notice Allows the `pendingGovernance` to accept the role.
      */
-    function acceptGovernance() external {
+    function acceptGovernance() external virtual {
         require(msg.sender == pendingGovernance, "!pending governance");
 
         emit GovernanceTransferred(governance, msg.sender);

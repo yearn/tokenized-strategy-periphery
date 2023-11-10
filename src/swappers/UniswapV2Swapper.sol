@@ -43,7 +43,7 @@ contract UniswapV2Swapper {
         address _to,
         uint256 _amountIn,
         uint256 _minAmountOut
-    ) internal {
+    ) internal virtual {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
 
@@ -72,7 +72,7 @@ contract UniswapV2Swapper {
         address _from,
         address _to,
         uint256 _amountIn
-    ) internal view returns (uint256) {
+    ) internal view virtual returns (uint256) {
         uint256[] memory amounts = IUniswapV2Router02(router).getAmountsOut(
             _amountIn,
             _getTokenOutPath(_from, _to)
@@ -92,7 +92,7 @@ contract UniswapV2Swapper {
     function _getTokenOutPath(
         address _tokenIn,
         address _tokenOut
-    ) internal view returns (address[] memory _path) {
+    ) internal view virtual returns (address[] memory _path) {
         bool isBase = _tokenIn == base || _tokenOut == base;
         _path = new address[](isBase ? 2 : 3);
         _path[0] = _tokenIn;
@@ -117,7 +117,7 @@ contract UniswapV2Swapper {
         address _contract,
         address _token,
         uint256 _amount
-    ) internal {
+    ) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).approve(_contract, 0);
             ERC20(_token).approve(_contract, _amount);

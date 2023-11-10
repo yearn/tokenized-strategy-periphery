@@ -32,7 +32,7 @@ contract Governance {
      */
     function transferGovernance(
         address _newGovernance
-    ) external onlyGovernance {
+    ) external virtual onlyGovernance {
         require(_newGovernance != address(0), "ZERO ADDRESS");
         address oldGovernance = governance;
         governance = _newGovernance;
