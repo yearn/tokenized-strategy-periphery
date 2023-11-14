@@ -44,7 +44,7 @@ contract UniswapV3Swapper {
         address _token0,
         address _token1,
         uint24 _fee
-    ) internal {
+    ) internal virtual {
         uniFees[_token0][_token1] = _fee;
         uniFees[_token1][_token0] = _fee;
     }
@@ -71,7 +71,7 @@ contract UniswapV3Swapper {
         address _to,
         uint256 _amountIn,
         uint256 _minAmountOut
-    ) internal returns (uint256 _amountOut) {
+    ) internal virtual returns (uint256 _amountOut) {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
             if (_from == base || _to == base) {
@@ -134,7 +134,7 @@ contract UniswapV3Swapper {
         address _to,
         uint256 _amountTo,
         uint256 _maxAmountFrom
-    ) internal returns (uint256 _amountIn) {
+    ) internal virtual returns (uint256 _amountIn) {
         if (_maxAmountFrom > minAmountToSell) {
             _checkAllowance(router, _from, _maxAmountFrom);
             if (_from == base || _to == base) {
@@ -185,7 +185,7 @@ contract UniswapV3Swapper {
         address _contract,
         address _token,
         uint256 _amount
-    ) internal {
+    ) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).approve(_contract, 0);
             ERC20(_token).approve(_contract, _amount);

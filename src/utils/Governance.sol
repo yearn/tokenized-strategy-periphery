@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 contract Governance {
+    /// @notice Emitted when the governance address is updated.
     event GovernanceTransferred(
         address indexed previousGovernance,
         address indexed newGovernance
@@ -12,11 +13,12 @@ contract Governance {
         _;
     }
 
+    /// @notice Checks if the msg sender is the governance.
     function _checkGovernance() internal view virtual {
         require(governance == msg.sender, "!governance");
     }
 
-    // Address that can set the default base fee and provider
+    /// @notice Address that can set the default base fee and provider
     address public governance;
 
     constructor(address _governance) {
@@ -32,7 +34,7 @@ contract Governance {
      */
     function transferGovernance(
         address _newGovernance
-    ) external onlyGovernance {
+    ) external virtual onlyGovernance {
         require(_newGovernance != address(0), "ZERO ADDRESS");
         address oldGovernance = governance;
         governance = _newGovernance;

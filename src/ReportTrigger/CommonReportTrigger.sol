@@ -121,7 +121,7 @@ contract CommonReportTrigger is Governance {
     function setCustomStrategyTrigger(
         address _strategy,
         address _trigger
-    ) external {
+    ) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyTrigger[_strategy] = _trigger;
 
@@ -144,7 +144,7 @@ contract CommonReportTrigger is Governance {
     function setCustomStrategyBaseFee(
         address _strategy,
         uint256 _baseFee
-    ) external {
+    ) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyBaseFee[_strategy] = _baseFee;
 
@@ -171,7 +171,7 @@ contract CommonReportTrigger is Governance {
         address _vault,
         address _strategy,
         address _trigger
-    ) external {
+    ) external virtual {
         // Check that the address has the ADD_STRATEGY_MANAGER role on
         // the vault. Just check their role has a 1 at the first position.
         uint256 mask = 1;
@@ -204,7 +204,7 @@ contract CommonReportTrigger is Governance {
         address _vault,
         address _strategy,
         uint256 _baseFee
-    ) external {
+    ) external virtual {
         // Check that the address has the ADD_STRATEGY_MANAGER role on
         // the vault. Just check their role has a 1 at the first position.
         uint256 mask = 1;
@@ -232,7 +232,7 @@ contract CommonReportTrigger is Governance {
      */
     function strategyReportTrigger(
         address _strategy
-    ) external view returns (bool, bytes memory) {
+    ) external view virtual returns (bool, bytes memory) {
         address _trigger = customStrategyTrigger[_strategy];
 
         // If a custom trigger contract is set use that one.
@@ -266,7 +266,7 @@ contract CommonReportTrigger is Governance {
      */
     function defaultStrategyReportTrigger(
         address _strategy
-    ) public view returns (bool, bytes memory) {
+    ) public view virtual returns (bool, bytes memory) {
         // Cache the strategy instance.
         IStrategy strategy = IStrategy(_strategy);
 
@@ -314,7 +314,7 @@ contract CommonReportTrigger is Governance {
     function vaultReportTrigger(
         address _vault,
         address _strategy
-    ) external view returns (bool, bytes memory) {
+    ) external view virtual returns (bool, bytes memory) {
         address _trigger = customVaultTrigger[_vault][_strategy];
 
         // If a custom trigger contract is set use that.
@@ -351,7 +351,7 @@ contract CommonReportTrigger is Governance {
     function defaultVaultReportTrigger(
         address _vault,
         address _strategy
-    ) public view returns (bool, bytes memory) {
+    ) public view virtual returns (bool, bytes memory) {
         // Cache the vault instance.
         IVault vault = IVault(_vault);
 
@@ -404,7 +404,7 @@ contract CommonReportTrigger is Governance {
      */
     function strategyTendTrigger(
         address _strategy
-    ) external view returns (bool, bytes memory) {
+    ) external view virtual returns (bool, bytes memory) {
         // Return the status of the tend trigger.
         return IStrategy(_strategy).tendTrigger();
     }
@@ -414,7 +414,7 @@ contract CommonReportTrigger is Governance {
      * @dev Will return 0 if a base fee provider is not set.
      * @return . The current base fee for the chain.
      */
-    function getCurrentBaseFee() public view returns (uint256) {
+    function getCurrentBaseFee() public view virtual returns (uint256) {
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider == address(0)) return 0;
 
@@ -431,7 +431,7 @@ contract CommonReportTrigger is Governance {
      *
      * @return . IF the current base fee is acceptable.
      */
-    function isCurrentBaseFeeAcceptable() external view returns (bool) {
+    function isCurrentBaseFeeAcceptable() external view virtual returns (bool) {
         address _baseFeeProvider = baseFeeProvider;
         // If no provider is set return true.
         if (_baseFeeProvider == address(0)) return true;
@@ -450,7 +450,7 @@ contract CommonReportTrigger is Governance {
      */
     function setBaseFeeProvider(
         address _baseFeeProvider
-    ) external onlyGovernance {
+    ) external virtual onlyGovernance {
         baseFeeProvider = _baseFeeProvider;
 
         emit NewBaseFeeProvider(_baseFeeProvider);
@@ -463,7 +463,7 @@ contract CommonReportTrigger is Governance {
      */
     function setAcceptableBaseFee(
         uint256 _newAcceptableBaseFee
-    ) external onlyGovernance {
+    ) external virtual onlyGovernance {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);
