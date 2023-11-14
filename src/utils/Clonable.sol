@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 contract Clonable {
-    // Set to the address to auto clone from.
+    /// @notice Set to the address to auto clone from.
     address public original;
 
     /**

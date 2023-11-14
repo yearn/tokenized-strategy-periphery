@@ -4,16 +4,13 @@ pragma solidity 0.8.18;
 import {Governance} from "./Governance.sol";
 
 contract Governance2Step is Governance {
+    /// @notice Emitted when the pending governance address is set.
     event UpdatePendingGovernance(address indexed newPendingGovernance);
 
-    // Address that is set to take over governance.
+    /// @notice Address that is set to take over governance.
     address public pendingGovernance;
 
-    constructor(address _governance) {
-        governance = _governance;
-
-        emit GovernanceTransferred(address(0), _governance);
-    }
+    constructor(address _governance) Governance(_governance) {}
 
     /**
      * @notice Sets a new address as the `pendingGovernance` of the contract.
