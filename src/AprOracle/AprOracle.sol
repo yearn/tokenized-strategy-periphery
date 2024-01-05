@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
+import {Governance} from "../utils/Governance.sol";
 import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
@@ -28,13 +29,15 @@ interface IOracle {
  *  NOTE: All values are just at the specific time called and subject
  *  to change.
  */
-contract AprOracle {
+contract AprOracle is Governance {
     // Mapping of a strategy to its specific apr oracle.
     mapping(address => address) public oracles;
 
     // Used to get the Current and Expected APR'S.
     uint256 internal constant MAX_BPS_EXTENDED = 1_000_000_000_000;
     uint256 internal constant SECONDS_PER_YEAR = 31_556_952;
+
+    constructor(address _governance) Governance(_governance) {}
 
     /**
      * @notice Get the current APR a strategy is earning.
@@ -58,7 +61,9 @@ contract AprOracle {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
-        // Will revert if a oracle is not set.
+        // Don't revert if a oracle is not set.
+        if (oracle == address(0)) return 0;
+        
         return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
     }
 
@@ -79,7 +84,8 @@ contract AprOracle {
 
     /**
      * @notice Set a custom APR `_oracle` for a `_strategy`.
-     * @dev Can only be called by the management of the `_strategy`.
+     * @dev Can only be called by the oracle's `governance` or
+     *  management of the `_strategy`.
      *
      * The `_oracle` will need to implement the IOracle interface.
      *
@@ -87,7 +93,9 @@ contract AprOracle {
      * @param _oracle Address of the APR Oracle.
      */
     function setOracle(address _strategy, address _oracle) external virtual {
-        require(msg.sender == IStrategy(_strategy).management(), "!authorized");
+        if(governance != msg.sender) {
+            require(msg.sender == IStrategy(_strategy).management(), "!authorized");
+        }
 
         oracles[_strategy] = _oracle;
     }
