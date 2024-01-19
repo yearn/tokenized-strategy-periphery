@@ -52,19 +52,19 @@ contract AprOracle is Governance {
      *
      * @param _strategy Address of the strategy to check.
      * @param _debtChange Positive or negative change in debt.
-     * @return . The expected APR it will be earning represented as 1e18.
+     * @return apr The expected APR it will be earning represented as 1e18.
      */
     function getStrategyApr(
         address _strategy,
         int256 _debtChange
-    ) public view virtual returns (uint256) {
+    ) public view virtual returns (uint256 apr) {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
         // Don't revert if a oracle is not set.
-        if (oracle == address(0)) return 0;
-        
-        return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
+        if (oracle != address(0)) {
+            return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
+        }
     }
 
     /**
@@ -93,8 +93,11 @@ contract AprOracle is Governance {
      * @param _oracle Address of the APR Oracle.
      */
     function setOracle(address _strategy, address _oracle) external virtual {
-        if(governance != msg.sender) {
-            require(msg.sender == IStrategy(_strategy).management(), "!authorized");
+        if (governance != msg.sender) {
+            require(
+                msg.sender == IStrategy(_strategy).management(),
+                "!authorized"
+            );
         }
 
         oracles[_strategy] = _oracle;
