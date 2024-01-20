@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import {BaseHealthCheck, ERC20} from "../../HealthCheck/BaseHealthCheck.sol";
+import {BaseHealthCheck, ERC20} from "../../Bases/HealthCheck/BaseHealthCheck.sol";
 
 contract MockHealthCheck is BaseHealthCheck {
     bool public healthy = true;
 
     constructor(address _asset) BaseHealthCheck(_asset, "Mock Health Check") {}
 
-    // `healthy` is already implemented in deposit limit so
-    // doesn't need to be checked again.
     function _deployFunds(uint256) internal override {}
 
-    // `healthy` is already implemented in withdraw limit so
-    // doesn't need to be checked again.
     function _freeFunds(uint256) internal override {}
 
-    // Uses `checkHealth` modifier
     function _harvestAndReport()
         internal
         override
@@ -26,6 +21,6 @@ contract MockHealthCheck is BaseHealthCheck {
     }
 }
 
-import {IBaseHealthCheck} from "../../HealthCheck/IBaseHealthCheck.sol";
+import {IBaseHealthCheck} from "../../Bases/HealthCheck/IBaseHealthCheck.sol";
 
 interface IMockHealthCheck is IBaseHealthCheck {}
