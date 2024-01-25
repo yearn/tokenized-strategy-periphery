@@ -43,7 +43,7 @@ contract AuctionSwapper {
             auction = _auction;
         }
         // Enable new auction.
-        Auction(_auction).enableAuction(_from, _to, _minimumPrice);
+        Auction(_auction).enableAuction(_from, _to, _minimumPrice, receiver);
     }
 
     function _disableAuction(address _from, address _to) internal virtual {
@@ -76,7 +76,6 @@ contract AuctionSwapper {
         address _token,
         uint256 _newAmount
     ) external virtual onlyAuction {
-        ERC20(_token).transferFrom(auction, address(this), _newAmount);
         _postTake(_token, _newAmount);
     }
 

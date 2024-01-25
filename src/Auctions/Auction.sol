@@ -46,6 +46,7 @@ contract Auction is Governance {
         uint256 initialAvailable;
         uint256 currentAvailable;
         uint256 minimumPrice;
+        address receiver;
         bool active;
     }
 
@@ -196,7 +197,16 @@ contract Auction is Governance {
         address _from,
         address _to,
         uint256 _minimumPrice
-    ) external virtual onlyGovernance returns (bytes32 _auctionId) {
+    ) external virtual returns (bytes32) {
+        return enableAuction(_from, _to, _minimumPrice, governance);
+    }
+
+    function enableAuction(
+        address _from,
+        address _to,
+        uint256 _minimumPrice,
+        address _receiver
+    ) public virtual onlyGovernance returns (bytes32 _auctionId) {
         require(_from != address(0) && _to != address(0), "ZERO ADDRESS");
         require(_from != address(this) && _to != address(this), "SELF");
 
@@ -212,6 +222,7 @@ contract Auction is Governance {
             initialAvailable: 0,
             currentAvailable: 0,
             minimumPrice: _minimumPrice,
+            receiver: address,
             active: true
         });
 
@@ -306,7 +317,11 @@ contract Auction is Governance {
         auctions[_id].currentAvailable = left;
 
         // Pull token in.
-        ERC20(auction.toToken).transferFrom(msg.sender, address(this), needed);
+        ERC20(auction.toToken).transferFrom(
+            msg.sender,
+            auction.receiver,
+            needed
+        );
 
         // Transfer from token out.
         ERC20(auction.fromToken).transfer(_receiver, _amountTaken);
