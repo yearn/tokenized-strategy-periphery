@@ -27,6 +27,9 @@ contract AuctionSwapper {
 
     address public auction;
 
+    /*//////////////////////////////////////////////////////////////
+                    AUCTION STARTING AND STOPPING
+    //////////////////////////////////////////////////////////////*/
     function _enableAuction(
         address _from,
         address _to,
@@ -43,11 +46,11 @@ contract AuctionSwapper {
             auction = _auction;
         }
         // Enable new auction.
-        Auction(_auction).enableAuction(_from, _to, _minimumPrice, receiver);
+        Auction(_auction).enable(_from, _to, _minimumPrice, address(this));
     }
 
     function _disableAuction(address _from, address _to) internal virtual {
-        Auction(auction).disableAuction(_from, _to);
+        Auction(auction).disable(_from, _to);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -57,7 +60,7 @@ contract AuctionSwapper {
     function kickable(address _token) external view virtual returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
     }
-
+    
     function auctionKicked(
         address _token
     ) external virtual onlyAuction returns (uint256) {
@@ -80,7 +83,7 @@ contract AuctionSwapper {
     }
 
     /*//////////////////////////////////////////////////////////////
-                            AUCTION HOOKS
+                        OPTIONAL AUCTION HOOKS
     //////////////////////////////////////////////////////////////*/
 
     function _auctionKicked(
