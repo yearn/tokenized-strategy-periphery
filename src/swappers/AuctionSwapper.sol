@@ -7,6 +7,7 @@ import {Auction} from "../Auctions/Auction.sol";
 
 interface IAuctionFactory {
     function createNewAuction(
+        address _want,
         address _owner,
         address _hook
     ) external returns (address);
@@ -19,7 +20,7 @@ contract AuctionSwapper {
         _;
     }
 
-    function _isAuction() internal view {
+    function _isAuction() internal view virtual {
         require(msg.sender == auction, "!auction");
     }
 
@@ -39,6 +40,7 @@ contract AuctionSwapper {
         if (_auction == address(0)) {
             // Deploy a new auction
             _auction = IAuctionFactory(auctionFactory).createNewAuction(
+                _to,
                 address(this),
                 address(this)
             );
@@ -46,11 +48,11 @@ contract AuctionSwapper {
             auction = _auction;
         }
         // Enable new auction.
-        Auction(_auction).enable(_from, _to, _minimumPrice, address(this));
+        Auction(_auction).enable(_from, _minimumPrice, address(this));
     }
 
-    function _disableAuction(address _from, address _to) internal virtual {
-        Auction(auction).disable(_from, _to);
+    function _disableAuction(address _from) internal virtual {
+        Auction(auction).disable(_from);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -60,7 +62,7 @@ contract AuctionSwapper {
     function kickable(address _token) external view virtual returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
     }
-    
+
     function auctionKicked(
         address _token
     ) external virtual onlyAuction returns (uint256) {

@@ -17,111 +17,123 @@ contract AuctionFactory is Clonable {
 
     /// @notice The amount to start the auction with.
     uint256 public constant defaultStartingPrice = 1_000_000_000;
-    
+
     constructor() {
         // Deploy the original
         original = address(new Auction());
     }
 
-    function createNewAuction() external returns (address) {
+    function createNewAuction(address _want) external returns (address) {
         return
             _createNewAuction(
+                _want,
+                address(0),
                 msg.sender,
                 defaultAuctionLength,
                 defaultAuctionCooldown,
-                defaultStartingPrice,
-                address(0)
+                defaultStartingPrice
             );
     }
 
-    function createNewAuction(address _governance) external returns (address) {
+    function createNewAuction(address _want, address _hook) external returns (address) {
         return
             _createNewAuction(
-                _governance,
+                _want,
+                _hook,
+                msg.sender,
                 defaultAuctionLength,
                 defaultAuctionCooldown,
-                defaultStartingPrice,
-                address(0)
+                defaultStartingPrice
             );
     }
 
     function createNewAuction(
-        address _governance,
-        address _hook
+        address _want,
+        address _hook,
+        address _governance
     ) external returns (address) {
         return
             _createNewAuction(
+                _want,
+                _hook,
                 _governance,
                 defaultAuctionLength,
                 defaultAuctionCooldown,
-                defaultStartingPrice,
-                _hook
+                defaultStartingPrice
             );
     }
 
     function createNewAuction(
-        address _governance,
+        address _want,
         address _hook,
+        address _governance,
         uint256 _startingPrice
     ) external returns (address) {
         return
             _createNewAuction(
+                _want,
+                _hook,
                 _governance,
                 defaultAuctionLength,
                 defaultAuctionCooldown,
-                _startingPrice,
-                _hook
+                _startingPrice
             );
     }
 
     function createNewAuction(
-        address _governance,
+        address _want,
         address _hook,
+        address _governance,
         uint256 _startingPrice,
         uint256 _auctionCooldown
     ) external returns (address) {
         return
             _createNewAuction(
+                _want,
+                _hook,
                 _governance,
                 defaultAuctionLength,
                 _auctionCooldown,
-                _startingPrice,
-                _hook
+                _startingPrice
             );
     }
 
     function createNewAuction(
-        address _governance,
+        address _want,
         address _hook,
+        address _governance,
         uint256 _startingPrice,
         uint256 _auctionCooldown,
         uint256 _auctionLength
     ) external returns (address) {
         return
             _createNewAuction(
+                _want,
+                _hook,
                 _governance,
                 _auctionLength,
                 _auctionCooldown,
-                _startingPrice,
-                _hook
+                _startingPrice
             );
     }
 
     function _createNewAuction(
+        address _want,
+        address _hook,
         address _governance,
         uint256 _auctionLength,
         uint256 _auctionCooldown,
-        uint256 _startingPrice,
-        address _hook
+        uint256 _startingPrice
     ) internal returns (address _newAuction) {
         _newAuction = _clone();
 
         Auction(_newAuction).initialize(
+            _want,
+            _hook,
             _governance,
             _auctionLength,
             _auctionCooldown,
-            _startingPrice,
-            _hook
+            _startingPrice
         );
 
         emit DeployedNewAuction(_newAuction);
