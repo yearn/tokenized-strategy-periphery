@@ -5,6 +5,7 @@ import "forge-std/console.sol";
 import {ExtendedTest} from "./ExtendedTest.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {VyperDeployer} from "./VyperDeployer.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
@@ -15,6 +16,8 @@ import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 import {MockStrategy} from "../mocks/MockStrategy.sol";
 
 contract Setup is ExtendedTest {
+    using SafeERC20 for ERC20;
+
     VyperDeployer public vyperDeployer = new VyperDeployer();
 
     // Contract instances that we will use repeatedly.
@@ -41,8 +44,8 @@ contract Setup is ExtendedTest {
     uint256 public MAX_BPS = 10_000;
 
     // Fuzz amount
-    uint256 public maxFuzzAmount = 1e24;
-    uint256 public minFuzzAmount = 100_000;
+    uint256 public maxFuzzAmount = 1e12;
+    uint256 public minFuzzAmount = MAX_BPS;
 
     // Default profit max unlock time is set for 10 days
     uint256 public profitMaxUnlockTime = 10 days;
@@ -50,8 +53,8 @@ contract Setup is ExtendedTest {
     function setUp() public virtual {
         _setTokenAddrs();
 
-        // Set asset
-        asset = ERC20(tokenAddrs["DAI"]);
+        // Make sure everything works with USDT
+        asset = ERC20(tokenAddrs["USDT"]);
 
         // Set decimals
         decimals = asset.decimals();
@@ -122,11 +125,11 @@ contract Setup is ExtendedTest {
         address _user,
         uint256 _amount
     ) public {
-        vm.prank(_user);
-        asset.approve(address(_strategy), _amount);
+        vm.startPrank(_user);
+        asset.safeApprove(address(_strategy), _amount);
 
-        vm.prank(_user);
         _strategy.deposit(_amount, _user);
+        vm.stopPrank();
     }
 
     function mintAndDepositIntoStrategy(

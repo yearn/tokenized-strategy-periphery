@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-import {Setup, IStrategy} from "./utils/Setup.sol";
+import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
 
 import {MockHealthCheck, IMockHealthCheck} from "./mocks/MockHealthCheck.sol";
 
 contract HealthCheckTest is Setup {
+    using SafeERC20 for ERC20;
+
     IMockHealthCheck public healthCheck;
 
     function setUp() public override {
@@ -294,11 +296,11 @@ contract HealthCheckTest is Setup {
         );
 
         // Loose .01%
-        uint256 loss = _amount / 10000;
+        uint256 loss = _amount / MAX_BPS;
 
         // simulate loss
         vm.prank(address(healthCheck));
-        asset.transfer(management, loss);
+        asset.safeTransfer(management, loss);
 
         assertEq(
             healthCheck.doHealthCheck(),
@@ -391,11 +393,11 @@ contract HealthCheckTest is Setup {
         );
 
         // Loose .01%
-        uint256 loss = _amount / 10_000;
+        uint256 loss = _amount / MAX_BPS;
 
         // simulate loss
         vm.prank(address(healthCheck));
-        asset.transfer(management, loss);
+        asset.safeTransfer(management, loss);
 
         assertEq(
             healthCheck.doHealthCheck(),
