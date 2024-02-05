@@ -45,7 +45,7 @@ contract Setup is ExtendedTest {
 
     // Fuzz amount
     uint256 public maxFuzzAmount = 1e12;
-    uint256 public minFuzzAmount = 100;
+    uint256 public minFuzzAmount = MAX_BPS;
 
     // Default profit max unlock time is set for 10 days
     uint256 public profitMaxUnlockTime = 10 days;
