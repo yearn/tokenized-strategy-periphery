@@ -10,7 +10,7 @@ contract UniswapV3SwapperTest is Setup {
 
     ERC20 public weth;
 
-    uint256 public minWethAmount = 1e8;
+    uint256 public minWethAmount = 1e10;
     uint256 public maxWethAmount = 1e20;
 
     function setUp() public override {
@@ -105,7 +105,7 @@ contract UniswapV3SwapperTest is Setup {
         // Assert WETH balance in the contract is 0
         assertEq(weth.balanceOf(address(uniV3Swapper)), 0);
 
-        uint256 toGet = amount / 4_000;
+        uint256 toGet = (amount * 1e12) / 4_000;
 
         // Perform swap from asset to WETH
         uint256 amountIn = uniV3Swapper.swapTo(
@@ -136,7 +136,7 @@ contract UniswapV3SwapperTest is Setup {
         // Assert asset balance in the contract is 0
         assertEq(asset.balanceOf(address(uniV3Swapper)), 0);
 
-        uint256 toGet = amount * 1_000;
+        uint256 toGet = (amount * 1_000) / 1e12;
 
         // Perform swap from WETH to asset
         uint256 amountIn = uniV3Swapper.swapTo(
@@ -156,7 +156,7 @@ contract UniswapV3SwapperTest is Setup {
 
     function test_swapFrom_multiHop(uint256 amount) public {
         // Need to make sure we are getting enough DAI to be non 0 USDC.
-        vm.assume(amount >= 1e15 && amount <= maxFuzzAmount);
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
         ERC20 swapTo = ERC20(tokenAddrs["USDC"]);
         // Set fees for weth and asset
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
@@ -192,7 +192,8 @@ contract UniswapV3SwapperTest is Setup {
 
     function test_swapTo_multiHop(uint256 amount) public {
         // Need to make sure we are getting enough DAI to be non 0 USDC.
-        vm.assume(amount >= 1e15 && amount <= maxFuzzAmount);
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+
         ERC20 swapTo = ERC20(tokenAddrs["USDC"]);
         // Set fees for weth and asset
         uniV3Swapper.setUniFees(address(weth), address(asset), 500);
@@ -209,7 +210,7 @@ contract UniswapV3SwapperTest is Setup {
         assertEq(swapTo.balanceOf(address(uniV3Swapper)), 0);
 
         // Define the desired amount to receive
-        uint256 toGet = amount / 2e12;
+        uint256 toGet = amount / 10;
 
         // Perform swap from asset to swap_to
         uint256 amountIn = uniV3Swapper.swapTo(
@@ -243,7 +244,7 @@ contract UniswapV3SwapperTest is Setup {
         assertEq(weth.balanceOf(address(uniV3Swapper)), 0);
 
         // Define the minimum amount of WETH to receive
-        uint256 minOut = amount;
+        uint256 minOut = amount * 1e12;
 
         // Perform swap from asset to WETH with minimum output requirement
         vm.expectRevert();

@@ -11,7 +11,7 @@ contract UniswapV2SwapperTest is Setup {
 
     ERC20 public base;
 
-    uint256 public minBaseAmount = 1e8;
+    uint256 public minBaseAmount = 1e10;
     uint256 public maxBaseAmount = 1e20;
 
     function setUp() public override {
@@ -74,7 +74,7 @@ contract UniswapV2SwapperTest is Setup {
 
     function test_swapFrom_multiHop(uint256 amount) public {
         // Need to make sure we are getting enough DAI to be non 0 USDC.
-        vm.assume(amount >= 1e15 && amount <= maxFuzzAmount);
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
         ERC20 swapTo = ERC20(tokenAddrs["USDC"]);
 
         // Send some asset to the contract
@@ -110,7 +110,7 @@ contract UniswapV2SwapperTest is Setup {
         assertEq(base.balanceOf(address(uniV2Swapper)), 0);
 
         // Define the minimum amount of Base to receive
-        uint256 minOut = amount;
+        uint256 minOut = amount * 1e12;
 
         // Perform swap from asset to Base with minimum output requirement
         vm.expectRevert();

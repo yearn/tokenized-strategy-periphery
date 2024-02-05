@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IUniswapV2Router02} from "../interfaces/Uniswap/V2/IUniswapV2Router02.sol";
 
@@ -17,6 +18,8 @@ import {IUniswapV2Router02} from "../interfaces/Uniswap/V2/IUniswapV2Router02.so
  *   based on needs or chain its used on.
  */
 contract UniswapV2Swapper {
+    using SafeERC20 for ERC20;
+
     // Optional Variable to be set to not sell dust.
     uint256 public minAmountToSell;
     // Defaults to WETH on mainnet.
@@ -119,8 +122,8 @@ contract UniswapV2Swapper {
         uint256 _amount
     ) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
-            ERC20(_token).approve(_contract, 0);
-            ERC20(_token).approve(_contract, _amount);
+            ERC20(_token).safeApprove(_contract, 0);
+            ERC20(_token).safeApprove(_contract, _amount);
         }
     }
 }
