@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-contract Hooks is DepositHooks, WithdrawHooks, TransferHooks {}
-
 contract DepositHooks {
     function _preDepositHook(
         uint256 assets,
@@ -49,3 +47,5 @@ contract TransferHooks {
         bool success
     ) internal virtual {}
 }
+
+contract Hooks is DepositHooks, WithdrawHooks, TransferHooks {}
