@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {BaseHealthCheck, ERC20} from "../HealthCheck/BaseHealthCheck.sol";
 
-abstract contract DepositHooks {
+contract DepositHooks {
     function _preDepositHook(
         uint256 assets,
         uint256 shares,
@@ -17,7 +17,7 @@ abstract contract DepositHooks {
     ) internal virtual {}
 }
 
-abstract contract WithdrawHooks {
+contract WithdrawHooks {
     function _preWithdrawHook(
         uint256 assets,
         uint256 shares,
@@ -35,7 +35,7 @@ abstract contract WithdrawHooks {
     ) internal virtual {}
 }
 
-abstract contract TransferHooks {
+contract TransferHooks {
     function _preTransferHook(
         address from,
         address to,
@@ -50,7 +50,7 @@ abstract contract TransferHooks {
     ) internal virtual {}
 }
 
-abstract contract Hooks is DepositHooks, WithdrawHooks, TransferHooks {}
+contract Hooks is DepositHooks, WithdrawHooks, TransferHooks {}
 
 /**
  *   @title Base Hooks
