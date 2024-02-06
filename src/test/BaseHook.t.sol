@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-import {Setup, IStrategy} from "./utils/Setup.sol";
+import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
 
 import {MockHooks, HookEvents} from "./mocks/MockHooks.sol";
 
 contract BaseHookTest is Setup, HookEvents {
+    using SafeERC20 for ERC20;
+    using SafeERC20 for IStrategy;
+
     function setUp() public override {
         super.setUp();
 
@@ -24,8 +27,9 @@ contract BaseHookTest is Setup, HookEvents {
 
         airdrop(asset, user, _amount);
 
-        vm.prank(user);
-        asset.approve(address(mockStrategy), _amount);
+        vm.startPrank(user);
+        asset.safeApprove(address(mockStrategy), _amount);
+        vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
         vm.expectEmit(true, true, true, true, address(mockStrategy));
@@ -46,8 +50,9 @@ contract BaseHookTest is Setup, HookEvents {
 
         airdrop(asset, user, _amount);
 
-        vm.prank(user);
-        asset.approve(address(mockStrategy), _amount);
+        vm.startPrank(user);
+        asset.safeApprove(address(mockStrategy), _amount);
+        vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
         vm.expectEmit(true, true, true, true, address(mockStrategy));
@@ -176,8 +181,9 @@ contract BaseHookTest is Setup, HookEvents {
         checkStrategyTotals(mockStrategy, _amount, 0, _amount);
 
         // Approve daddy to move funds
-        vm.prank(user);
-        mockStrategy.approve(daddy, _amount);
+        vm.startPrank(user);
+        mockStrategy.safeApprove(daddy, _amount);
+        vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
         vm.expectEmit(true, true, true, true, address(mockStrategy));
