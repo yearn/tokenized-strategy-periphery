@@ -84,10 +84,8 @@ contract AuctionSwapper {
                         OPTIONAL AUCTION HOOKS
     //////////////////////////////////////////////////////////////*/
 
-    function _auctionKicked(
-        address _token
-    ) internal virtual returns (uint256 _available) {
-        _available = ERC20(_token).balanceOf(address(this));
+    function _auctionKicked(address _token) internal virtual returns (uint256) {
+        return ERC20(_token).balanceOf(address(this));
     }
 
     function _preTake(address _token, uint256 _amountToTake) internal virtual {}

@@ -5,6 +5,7 @@ import {Maths} from "../libraries/Maths.sol";
 import {Governance} from "../utils/Governance.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IHook {
     function kickable(address _fromToken) external view returns (uint256);
@@ -16,7 +17,7 @@ interface IHook {
     function postTake(address _toToken, uint256 _newAmount) external;
 }
 
-contract Auction is Governance {
+contract Auction is Governance, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
     event AuctionEnabled(
@@ -395,7 +396,7 @@ contract Auction is Governance {
      */
     function kick(
         bytes32 _auctionId
-    ) external virtual returns (uint256 available) {
+    ) external virtual nonReentrant returns (uint256 available) {
         address _fromToken = auctions[_auctionId].fromInfo.tokenAddress;
         require(_fromToken != address(0), "not enabled");
         require(
@@ -451,7 +452,7 @@ contract Auction is Governance {
         bytes32 _auctionId,
         uint256 _maxAmount,
         address _receiver
-    ) public virtual returns (uint256 _amountTaken) {
+    ) public virtual nonReentrant returns (uint256 _amountTaken) {
         AuctionInfo memory auction = auctions[_auctionId];
         // Make sure the auction is active.
         require(
@@ -482,10 +483,10 @@ contract Auction is Governance {
 
         address _want = want();
 
-        // Pull token in.
+        // Pull `want`.
         ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
 
-        // Transfer from token out.
+        // Send `from`.
         ERC20(auction.fromInfo.tokenAddress).safeTransfer(
             _receiver,
             _amountTaken
