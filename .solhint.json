@@ -14,6 +14,7 @@
       "not-rely-on-time": "off",
       "private-vars-leading-underscore": "off",
       "reason-string": ["warn", { "maxLength": 64 }],
-      "no-console": "off"
+      "no-console": "off",
+      "custom-errors": "off"
     }
   }

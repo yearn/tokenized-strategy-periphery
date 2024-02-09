@@ -23,14 +23,14 @@ contract Auction is Governance {
         bytes32 auctionId,
         address indexed from,
         address indexed to,
-        address indexed strategy
+        address indexed auctionAddress
     );
 
     event AuctionDisabled(
         bytes32 auctionId,
         address indexed from,
         address indexed to,
-        address indexed strategy
+        address indexed auctionAddress
     );
 
     event AuctionKicked(bytes32 auctionId, uint256 available);
@@ -48,11 +48,10 @@ contract Auction is Governance {
 
     struct AuctionInfo {
         TokenInfo fromInfo;
-        uint256 kicked;
+        uint96 kicked;
+        address receiver;
         uint256 initialAvailable;
         uint256 currentAvailable;
-        uint256 minimumPrice;
-        address receiver;
     }
 
     uint256 internal constant WAD = 1e18;
@@ -100,8 +99,8 @@ contract Auction is Governance {
         uint256 _auctionCooldown,
         uint256 _startingPrice
     ) external virtual {
+        require(auctionLength == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
-        require(auctionLength != 0, "initialized");
         require(_auctionLength != 0, "length");
         require(_auctionLength < _auctionCooldown, "cooldown");
         require(_startingPrice != 0, "starting price");
@@ -111,18 +110,19 @@ contract Auction is Governance {
             tokenAddress: _want,
             scaler: uint96(WAD / 10 ** ERC20(_want).decimals())
         });
+
+        hook = _hook;
         governance = _governance;
         auctionLength = _auctionLength;
         auctionCooldown = _auctionCooldown;
         startingPrice = _startingPrice;
-        hook = _hook;
     }
 
     /*//////////////////////////////////////////////////////////////
                          VIEW METHODS
     //////////////////////////////////////////////////////////////*/
 
-    function want() external view returns (address) {
+    function want() public view returns (address) {
         return wantInfo.tokenAddress;
     }
 
@@ -203,10 +203,10 @@ contract Auction is Governance {
     }
 
     /**
-     * @notice Gets the amount needed to fulfill a given take amount in an auction.
+     * @notice Gets the amount of `want` needed to buy a specific amount of `from`.
      * @param _auctionId The unique identifier of the auction.
-     * @param _amountToTake The amount to take in the auction.
-     * @return . The amount needed to fulfill the take amount.
+     * @param _amountToTake The amount of `from` to take in the auction.
+     * @return . The amount of `want` needed to fulfill the take amount.
      */
     function getAmountNeeded(
         bytes32 _auctionId,
@@ -216,26 +216,30 @@ contract Auction is Governance {
     }
 
     /**
-     * @notice Gets the amount needed to fulfill a given take amount in an auction at a specific timestamp.
+     * @notice Gets the amount of `want` needed to buy a specific amount of `from` at a specific timestamp.
      * @param _auctionId The unique identifier of the auction.
-     * @param _amountToTake The amount to take in the auction.
+     * @param _amountToTake The amount `from` to take in the auction.
      * @param _timestamp The specific timestamp for calculating the amount needed.
-     * @return . The amount needed to fulfill the take amount.
+     * @return . The amount of `want` needed to fulfill the take amount.
      */
     function getAmountNeeded(
         bytes32 _auctionId,
         uint256 _amountToTake,
         uint256 _timestamp
     ) public view virtual returns (uint256) {
+        AuctionInfo memory auction = auctions[_auctionId];
         return
+            // Scale _amountToTake to 1e18
             (_amountToTake *
+                auction.fromInfo.scaler *
+                // Price is always 1e18
                 _price(
-                    auctions[_auctionId].kicked,
-                    auctions[_auctionId].initialAvailable *
-                        auctions[_auctionId].fromInfo.scaler,
+                    auction.kicked,
+                    auction.initialAvailable * auction.fromInfo.scaler,
                     _timestamp
                 )) /
             1e18 /
+            // Scale back down to want.
             wantInfo.scaler;
     }
 
@@ -295,7 +299,7 @@ contract Auction is Governance {
         );
         uint256 initialPrice = _available == 0
             ? 0
-            : Maths.wdiv(1_000_000_000 * 1e18, _available);
+            : Maths.wdiv(startingPrice * 1e18, _available);
 
         return
             (initialPrice * Maths.rmul(hoursComponent, minutesComponent)) /
@@ -306,42 +310,24 @@ contract Auction is Governance {
                             SETTERS
     //////////////////////////////////////////////////////////////*/
 
-    // TODO: Approvals?
-
     /**
      * @notice Enables a new auction.
-     * @dev Uses 0 as minimum price and governance as the receiver.
+     * @dev Uses governance as the receiver.
      * @param _from The address of the token to be auctioned.
      * @return . The unique identifier of the enabled auction.
      */
     function enable(address _from) external virtual returns (bytes32) {
-        return enable(_from, 0, governance);
-    }
-
-    /**
-     * @notice Enables a new auction with a specified minimum price.
-     * @dev Uses governance as the receiver.
-     * @param _from The address of the token to be auctioned.
-     * @param _minimumPrice The minimum price for the auction.
-     * @return . The unique identifier of the enabled auction.
-     */
-    function enable(
-        address _from,
-        uint256 _minimumPrice
-    ) external virtual returns (bytes32) {
-        return enable(_from, _minimumPrice, governance);
+        return enable(_from, governance);
     }
 
     /**
      * @notice Enables a new auction.
      * @param _from The address of the token to be auctioned.
-     * @param _minimumPrice The minimum price for the auction.
      * @param _receiver The address that will receive the funds in the auction.
      * @return _auctionId The unique identifier of the enabled auction.
      */
     function enable(
         address _from,
-        uint256 _minimumPrice,
         address _receiver
     ) public virtual onlyGovernance returns (bytes32 _auctionId) {
         require(_from != address(0), "ZERO ADDRESS");
@@ -360,10 +346,9 @@ contract Auction is Governance {
                 scaler: uint96(WAD / 10 ** ERC20(_from).decimals())
             }),
             kicked: 0,
+            receiver: _receiver,
             initialAvailable: 0,
-            currentAvailable: 0,
-            minimumPrice: _minimumPrice,
-            receiver: _receiver
+            currentAvailable: 0
         });
 
         emit AuctionEnabled(
@@ -424,7 +409,7 @@ contract Auction is Governance {
         require(available != 0, "nothing to kick");
 
         // Update the auctions status.
-        auctions[_auctionId].kicked = block.timestamp;
+        auctions[_auctionId].kicked = uint96(block.timestamp);
         auctions[_auctionId].initialAvailable = available;
         auctions[_auctionId].currentAvailable = available;
 
@@ -468,11 +453,10 @@ contract Auction is Governance {
         address _receiver
     ) public virtual returns (uint256 _amountTaken) {
         AuctionInfo memory auction = auctions[_auctionId];
-        // Make sure the auction was kicked.
+        // Make sure the auction is active.
         require(
-            auction.kicked != 0 &&
-                auction.kicked + auctionLength >= block.timestamp,
-            "too soon"
+            auction.kicked + auctionLength >= block.timestamp,
+            "not kicked"
         );
 
         // Max amount that can be taken.
@@ -483,25 +467,12 @@ contract Auction is Governance {
         // Pre take hook.
         _preTake(auction.fromInfo.tokenAddress, _amountTaken);
 
-        // The current price.
-        uint256 currentPrice = _price(
-            auction.kicked,
-            auction.initialAvailable * auction.fromInfo.scaler,
+        // Get the amount needed
+        uint256 needed = getAmountNeeded(
+            _auctionId,
+            _amountTaken,
             block.timestamp
         );
-
-        TokenInfo memory _wantInfo = wantInfo;
-
-        // Check the minimum price
-        require(
-            currentPrice / _wantInfo.scaler >= auction.minimumPrice,
-            "minimum price"
-        );
-
-        // Need to scale correctly.
-        uint256 needed = (_amountTaken * currentPrice) /
-            1e18 /
-            _wantInfo.scaler;
 
         require(needed != 0, "zero needed");
 
@@ -509,12 +480,10 @@ contract Auction is Governance {
         uint256 left = auction.currentAvailable - _amountTaken;
         auctions[_auctionId].currentAvailable = left;
 
+        address _want = want();
+
         // Pull token in.
-        ERC20(_wantInfo.tokenAddress).safeTransferFrom(
-            msg.sender,
-            auction.receiver,
-            needed
-        );
+        ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
 
         // Transfer from token out.
         ERC20(auction.fromInfo.tokenAddress).safeTransfer(
@@ -525,7 +494,7 @@ contract Auction is Governance {
         emit AuctionTaken(_auctionId, _amountTaken, left);
 
         // Post take hook.
-        _postTake(_wantInfo.tokenAddress, needed);
+        _postTake(_want, needed);
     }
 
     /*//////////////////////////////////////////////////////////////

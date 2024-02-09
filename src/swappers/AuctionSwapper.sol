@@ -31,11 +31,7 @@ contract AuctionSwapper {
     /*//////////////////////////////////////////////////////////////
                     AUCTION STARTING AND STOPPING
     //////////////////////////////////////////////////////////////*/
-    function _enableAuction(
-        address _from,
-        address _to,
-        uint256 _minimumPrice
-    ) internal virtual {
+    function _enableAuction(address _from, address _to) internal virtual {
         address _auction = auction;
         if (_auction == address(0)) {
             // Deploy a new auction
@@ -48,7 +44,7 @@ contract AuctionSwapper {
             auction = _auction;
         }
         // Enable new auction.
-        Auction(_auction).enable(_from, _minimumPrice, address(this));
+        Auction(_auction).enable(_from, address(this));
     }
 
     function _disableAuction(address _from) internal virtual {

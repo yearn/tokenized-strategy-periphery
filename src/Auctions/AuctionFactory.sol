@@ -13,10 +13,10 @@ contract AuctionFactory is Clonable {
     uint256 public constant defaultAuctionLength = 1 days;
 
     /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public constant defaultAuctionCooldown = 7 days;
+    uint256 public constant defaultAuctionCooldown = 5 days;
 
     /// @notice The amount to start the auction with.
-    uint256 public constant defaultStartingPrice = 1_000_000_000;
+    uint256 public constant defaultStartingPrice = 1_000_000;
 
     constructor() {
         // Deploy the original
