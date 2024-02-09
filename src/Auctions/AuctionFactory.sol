@@ -9,10 +9,10 @@ import {Auction} from "./Auction.sol";
 contract AuctionFactory is Clonable {
     event DeployedNewAuction(address indexed auction);
 
-    /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public constant defaultAuctionLength = 3 days;
-
     /// @notice The time that each auction lasts.
+    uint256 public constant defaultAuctionLength = 1 days;
+
+    /// @notice The minimum time to wait between auction 'kicks'.
     uint256 public constant defaultAuctionCooldown = 7 days;
 
     /// @notice The amount to start the auction with.
@@ -35,7 +35,10 @@ contract AuctionFactory is Clonable {
             );
     }
 
-    function createNewAuction(address _want, address _hook) external returns (address) {
+    function createNewAuction(
+        address _want,
+        address _hook
+    ) external returns (address) {
         return
             _createNewAuction(
                 _want,
@@ -67,16 +70,16 @@ contract AuctionFactory is Clonable {
         address _want,
         address _hook,
         address _governance,
-        uint256 _startingPrice
+        uint256 _auctionLength
     ) external returns (address) {
         return
             _createNewAuction(
                 _want,
                 _hook,
                 _governance,
-                defaultAuctionLength,
+                _auctionLength,
                 defaultAuctionCooldown,
-                _startingPrice
+                defaultStartingPrice
             );
     }
 
@@ -84,7 +87,7 @@ contract AuctionFactory is Clonable {
         address _want,
         address _hook,
         address _governance,
-        uint256 _startingPrice,
+        uint256 _auctionLength,
         uint256 _auctionCooldown
     ) external returns (address) {
         return
@@ -92,9 +95,9 @@ contract AuctionFactory is Clonable {
                 _want,
                 _hook,
                 _governance,
-                defaultAuctionLength,
+                _auctionLength,
                 _auctionCooldown,
-                _startingPrice
+                defaultStartingPrice
             );
     }
 
@@ -102,9 +105,9 @@ contract AuctionFactory is Clonable {
         address _want,
         address _hook,
         address _governance,
-        uint256 _startingPrice,
+        uint256 _auctionLength,
         uint256 _auctionCooldown,
-        uint256 _auctionLength
+        uint256 _startingPrice
     ) external returns (address) {
         return
             _createNewAuction(

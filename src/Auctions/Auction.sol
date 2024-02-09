@@ -58,7 +58,8 @@ contract Auction is Governance {
     uint256 internal constant WAD = 1e18;
 
     /// @notice Used for the price decay.
-    uint256 constant MINUTE_HALF_LIFE = 0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
+    uint256 internal constant MINUTE_HALF_LIFE =
+        0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
 
     TokenInfo internal wantInfo;
 
@@ -106,7 +107,7 @@ contract Auction is Governance {
         require(_startingPrice != 0, "starting price");
 
         // Set variables
-        wantInfo = TokenInfo ({
+        wantInfo = TokenInfo({
             tokenAddress: _want,
             scaler: uint96(WAD / 10 ** ERC20(_want).decimals())
         });
@@ -124,16 +125,17 @@ contract Auction is Governance {
     function want() external view returns (address) {
         return wantInfo.tokenAddress;
     }
-    
+
     /**
      * @notice Get the unique auction identifier.
      * @param _from The address of the token to sell.
      * @return bytes32 A unique auction identifier.
      */
-    function getAuctionId(
-        address _from
-    ) public view virtual returns (bytes32) {
-        return keccak256(abi.encodePacked(_from, wantInfo.tokenAddress, address(this)));
+    function getAuctionId(address _from) public view virtual returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(_from, wantInfo.tokenAddress, address(this))
+            );
     }
 
     /**
@@ -187,11 +189,16 @@ contract Auction is Governance {
         address _hook = hook;
         if (_hook != address(0)) {
             // If so default to the hooks logic.
-            return IHook(_hook).kickable(auctions[_auctionId].fromInfo.tokenAddress);
+            return
+                IHook(_hook).kickable(
+                    auctions[_auctionId].fromInfo.tokenAddress
+                );
         } else {
             // Else just use the full balance of this contract.
             return
-                ERC20(auctions[_auctionId].fromInfo.tokenAddress).balanceOf(address(this));
+                ERC20(auctions[_auctionId].fromInfo.tokenAddress).balanceOf(
+                    address(this)
+                );
         }
     }
 
@@ -307,9 +314,7 @@ contract Auction is Governance {
      * @param _from The address of the token to be auctioned.
      * @return . The unique identifier of the enabled auction.
      */
-    function enable(
-        address _from
-    ) external virtual returns (bytes32) {
+    function enable(address _from) external virtual returns (bytes32) {
         return enable(_from, 0, governance);
     }
 
@@ -350,7 +355,7 @@ contract Auction is Governance {
         );
 
         auctions[_auctionId] = AuctionInfo({
-            fromInfo: TokenInfo ({
+            fromInfo: TokenInfo({
                 tokenAddress: _from,
                 scaler: uint96(WAD / 10 ** ERC20(_from).decimals())
             }),
@@ -361,7 +366,12 @@ contract Auction is Governance {
             receiver: _receiver
         });
 
-        emit AuctionEnabled(_auctionId, _from, wantInfo.tokenAddress, address(this));
+        emit AuctionEnabled(
+            _auctionId,
+            _from,
+            wantInfo.tokenAddress,
+            address(this)
+        );
     }
 
     /**
@@ -369,18 +379,24 @@ contract Auction is Governance {
      * @dev Only callable by governance.
      * @param _from The address of the token being sold.
      */
-    function disable(
-        address _from
-    ) external virtual onlyGovernance {
+    function disable(address _from) external virtual onlyGovernance {
         bytes32 _auctionId = getAuctionId(_from);
 
         // Make sure the auction was enables.
-        require(auctions[_auctionId].fromInfo.tokenAddress != address(0), "not enabled");
+        require(
+            auctions[_auctionId].fromInfo.tokenAddress != address(0),
+            "not enabled"
+        );
 
         // Remove the struct.
         delete auctions[_auctionId];
 
-        emit AuctionDisabled(_auctionId, _from, wantInfo.tokenAddress, address(this));
+        emit AuctionDisabled(
+            _auctionId,
+            _from,
+            wantInfo.tokenAddress,
+            address(this)
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -501,7 +517,10 @@ contract Auction is Governance {
         );
 
         // Transfer from token out.
-        ERC20(auction.fromInfo.tokenAddress).safeTransfer(_receiver, _amountTaken);
+        ERC20(auction.fromInfo.tokenAddress).safeTransfer(
+            _receiver,
+            _amountTaken
+        );
 
         emit AuctionTaken(_auctionId, _amountTaken, left);
 
