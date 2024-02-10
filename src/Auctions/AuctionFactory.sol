@@ -6,8 +6,10 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Clonable} from "../utils/Clonable.sol";
 import {Auction} from "./Auction.sol";
 
+/// @title AuctionFactory
+/// @notice Deploy a new Auction.
 contract AuctionFactory is Clonable {
-    event DeployedNewAuction(address indexed auction);
+    event DeployedNewAuction(address indexed auction, address indexed want);
 
     /// @notice The time that each auction lasts.
     uint256 public constant defaultAuctionLength = 1 days;
@@ -23,6 +25,11 @@ contract AuctionFactory is Clonable {
         original = address(new Auction());
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(address _want) external returns (address) {
         return
             _createNewAuction(
@@ -35,6 +42,12 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _hook Address of the hook contract if any.
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(
         address _want,
         address _hook
@@ -50,6 +63,13 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _hook Address of the hook contract if any.
+     * @param _governance Address allowed to enable and disable auctions.
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(
         address _want,
         address _hook,
@@ -66,6 +86,14 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _hook Address of the hook contract if any.
+     * @param _governance Address allowed to enable and disable auctions.
+     * @param _auctionLength Length of the auction in seconds.
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(
         address _want,
         address _hook,
@@ -83,6 +111,15 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _hook Address of the hook contract if any.
+     * @param _governance Address allowed to enable and disable auctions.
+     * @param _auctionLength Length of the auction in seconds.
+     * @param _auctionCooldown Minimum time period between kicks in seconds.
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(
         address _want,
         address _hook,
@@ -101,6 +138,16 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _hook Address of the hook contract if any.
+     * @param _governance Address allowed to enable and disable auctions.
+     * @param _auctionLength Length of the auction in seconds.
+     * @param _auctionCooldown Minimum time period between kicks in seconds.
+     * @param _startingPrice Starting price for the auction (no decimals).
+     * @return _newAuction Address of the newly created auction contract.
+     */
     function createNewAuction(
         address _want,
         address _hook,
@@ -120,6 +167,9 @@ contract AuctionFactory is Clonable {
             );
     }
 
+    /**
+     * @dev Deploys and initializes a new Auction
+     */
     function _createNewAuction(
         address _want,
         address _hook,
@@ -139,6 +189,6 @@ contract AuctionFactory is Clonable {
             _startingPrice
         );
 
-        emit DeployedNewAuction(_newAuction);
+        emit DeployedNewAuction(_newAuction, _want);
     }
 }

@@ -92,12 +92,38 @@ contract AuctionSwapper {
         return ERC20(_token).balanceOf(address(this));
     }
 
+    /**
+     * @dev To override if something other than just sending the loose balance
+     *  of `_token` to the auction is desired, such as accruing and and claiming rewards.
+     *
+     * @param _token Address of the token being auctioned off
+     */
     function _auctionKicked(address _token) internal virtual returns (uint256) {
-        return ERC20(_token).balanceOf(address(this));
+        // Send any loose balance to the auction.
+        uint256 balance = ERC20(_token).balanceOf(address(this));
+        if (balance != 0) ERC20(_token).safeTransfer(auction, balance);
+        return ERC20(_token).balanceOf(auction);
     }
 
+    /**
+     * @dev To override if something needs to be done before a take is completed.
+     *   This can be used if the auctioned token only will be freed up when a `take`
+     *   occurs.
+     * @param _token Address of the token being taken.
+     * @param _amountToTake Amount of `_token` needed.
+     */
     function _preTake(address _token, uint256 _amountToTake) internal virtual {}
 
+    /**
+     * @dev To override if a post take action is desired.
+     *
+     * This could be used to re-deploy the bought token back into the yield source,
+     * or in conjunction with {_preTake} to check that the price sold at was within
+     * some allowed range.
+     *
+     * @param _token Address of the token that the strategy was sent.
+     * @param _newAmount Amount of `_token` that was sent to the strategy.
+     */
     function _postTake(address _token, uint256 _newAmount) internal virtual {}
 
     /*//////////////////////////////////////////////////////////////
@@ -116,14 +142,25 @@ contract AuctionSwapper {
         return _auctionKicked(_token);
     }
 
+    /**
+     * @notice External hook for the auction to call before a `take`.
+     * @dev Will call the internal version for the strategist to override.
+     * @param _token Token being taken in the auction.
+     * @param _amountToTake The amount of `_token` to be sent to the taker..
+     */
     function preTake(
         address _token,
         uint256 _amountToTake
     ) external virtual onlyAuction {
         _preTake(_token, _amountToTake);
-        ERC20(_token).safeTransfer(auction, _amountToTake);
     }
 
+    /**
+     * @notice External hook for the auction to call after a `take` completed.
+     * @dev Will call the internal version for the strategist to override.
+     * @param _token The `want` token that was sent to the strategy.
+     * @param _newAmount The amount of `_token` that was sent to the strategy.
+     */
     function postTake(
         address _token,
         uint256 _newAmount

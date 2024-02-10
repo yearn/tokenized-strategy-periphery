@@ -143,7 +143,7 @@ contract Auction is Governance, ReentrancyGuard {
      * @notice Get the address of this auctions want token.
      * @return . The want token.
      */
-    function want() public view returns (address) {
+    function want() public view virtual returns (address) {
         return wantInfo.tokenAddress;
     }
 
@@ -398,7 +398,7 @@ contract Auction is Governance, ReentrancyGuard {
     function disable(address _from) external virtual onlyGovernance {
         bytes32 _auctionId = getAuctionId(_from);
 
-        // Make sure the auction was enables.
+        // Make sure the auction was enabled.
         require(
             auctions[_auctionId].fromInfo.tokenAddress != address(0),
             "not enabled"
@@ -434,8 +434,14 @@ contract Auction is Governance, ReentrancyGuard {
             "too soon"
         );
 
-        // Let the hook do anything needed to account for the amount to auction.
-        available = _amountKicked(_fromToken);
+        address _hook = hook;
+        // Use hook if defined.
+        if (_hook != address(0)) {
+            available = IHook(_hook).auctionKicked(_fromToken);
+        } else {
+            // Else just use current balance.
+            available = ERC20(_fromToken).balanceOf(address(this));
+        }
 
         require(available != 0, "nothing to kick");
 
@@ -486,6 +492,14 @@ contract Auction is Governance, ReentrancyGuard {
         return _take(_auctionId, _maxAmount, _receiver, new bytes(0));
     }
 
+    /**
+     * @notice Take the token being sold in a live auction.
+     * @param _auctionId The unique identifier of the auction.
+     * @param _maxAmount The maximum amount of fromToken to take in the auction.
+     * @param _receiver The address that will receive the fromToken.
+     * @param _data The data signify the callback should be used and sent with it.
+     * @return _amountTaken The amount of fromToken taken in the auction.
+     */
     function take(
         bytes32 _auctionId,
         uint256 _maxAmount,
@@ -495,6 +509,7 @@ contract Auction is Governance, ReentrancyGuard {
         return _take(_auctionId, _maxAmount, _receiver, _data);
     }
 
+    /// @dev Implements the take of the auction.
     function _take(
         bytes32 _auctionId,
         uint256 _maxAmount,
@@ -561,31 +576,6 @@ contract Auction is Governance, ReentrancyGuard {
         // Post take hook if defined.
         if (_hook != address(0)) {
             IHook(_hook).postTake(_want, needed);
-        }
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                        OPTIONAL AUCTION HOOKS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @dev Called when an auction is kicked to get the amount to sell.
-     *
-     *  If no `hook` is set it will default to the balance of this contract.
-     *
-     * @param _fromToken The address of the token to calculate the kicked amount.
-     * @return . The amount kicked for the specified token.
-     */
-    function _amountKicked(
-        address _fromToken
-    ) internal virtual returns (uint256) {
-        address _hook = hook;
-
-        // Use hood if defined.
-        if (_hook != address(0)) {
-            return IHook(_hook).auctionKicked(_fromToken);
-        } else {
-            return ERC20(_fromToken).balanceOf(address(this));
         }
     }
 }
