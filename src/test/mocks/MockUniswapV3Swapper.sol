@@ -31,6 +31,14 @@ contract MockUniswapV3Swapper is BaseStrategy, UniswapV3Swapper {
         base = _base;
     }
 
+    function setUniFees(
+        address _token0,
+        address _token1,
+        uint24 _fee
+    ) external {
+        _setUniFees(_token0, _token1, _fee);
+    }
+
     function swapFrom(
         address _from,
         address _to,
