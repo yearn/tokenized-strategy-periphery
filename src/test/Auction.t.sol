@@ -47,21 +47,13 @@ contract AuctionTest is Setup {
         assertEq(auctionFactory.defaultAuctionCooldown(), 5 days);
         assertEq(auctionFactory.defaultAuctionLength(), 1 days);
         assertEq(auctionFactory.defaultStartingPrice(), 1e6);
-
-        address original = auctionFactory.original();
-        vm.expectRevert("initialized");
-        Auction(original).initialize(
-            address(asset),
-            address(0),
-            management,
-            1,
-            10,
-            8
-        );
     }
 
     function test_defaults() public {
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        vm.expectRevert("initialized");
+        auction.initialize(address(asset), address(0), management, 1, 10, 8);
 
         assertEq(auction.want(), address(asset));
         assertEq(auction.hook(), address(0));
