@@ -6,9 +6,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {AuctionFactory, Auction} from "../Auctions/AuctionFactory.sol";
 
-/// @title AuctionSwapper
-/// @author yearn.fi
-/// @dev Helper contract for a strategy to use dutch auctions for reward sales.
+/**
+ *   @title AuctionSwapper
+ *   @author yearn.fi
+ *   @dev Helper contract for a strategy to use dutch auctions for token sales.
+ */
 contract AuctionSwapper {
     using SafeERC20 for ERC20;
 
@@ -25,7 +27,9 @@ contract AuctionSwapper {
     }
 
     /// @notice The pre-deployed Auction factory for cloning.
-    address public constant auctionFactory = address(69);
+    // TODO: Update to real address
+    address public constant auctionFactory =
+        0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9;
 
     /// @notice Address of the specific Auction this strategy uses.
     address public auction;
@@ -33,6 +37,13 @@ contract AuctionSwapper {
     /*//////////////////////////////////////////////////////////////
                     AUCTION STARTING AND STOPPING
     //////////////////////////////////////////////////////////////*/
+
+    function _enableAuction(
+        address _from,
+        address _want
+    ) internal virtual returns (bytes32) {
+        return _enableAuction(_from, _want, 1 days, 3 days, 1e9);
+    }
 
     /**
      * @dev Used to enable a new Auction to sell `_from` to `_want`.
@@ -47,7 +58,10 @@ contract AuctionSwapper {
      */
     function _enableAuction(
         address _from,
-        address _want
+        address _want,
+        uint256 _auctionLength,
+        uint256 _auctionCooldown,
+        uint256 _startingPrice
     ) internal virtual returns (bytes32) {
         address _auction = auction;
 
@@ -57,7 +71,10 @@ contract AuctionSwapper {
             _auction = AuctionFactory(auctionFactory).createNewAuction(
                 _want,
                 address(this),
-                address(this)
+                address(this),
+                _auctionLength,
+                _auctionCooldown,
+                _startingPrice
             );
             // Store it for future use.
             auction = _auction;
@@ -88,7 +105,7 @@ contract AuctionSwapper {
      * @param _token Address of the `_from` token.
      * @return . The amount of `_token` ready to be auctioned off.
      */
-    function kickable(address _token) external view virtual returns (uint256) {
+    function kickable(address _token) public view virtual returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
     }
 

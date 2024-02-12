@@ -4,9 +4,10 @@ pragma solidity 0.8.18;
 import "forge-std/console.sol";
 import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
 
+import {ITaker} from "../interfaces/ITaker.sol";
 import {Auction, AuctionFactory} from "../Auctions/AuctionFactory.sol";
 
-contract AuctionTest is Setup {
+contract AuctionTest is Setup, ITaker {
     using SafeERC20 for ERC20;
 
     event AuctionEnabled(
@@ -31,11 +32,21 @@ contract AuctionTest is Setup {
         uint256 amountLeft
     );
 
+    event Callback(
+        bytes32 _auctionId,
+        address _sender,
+        uint256 _amountTaken,
+        uint256 _amountNeeded,
+        bytes _data
+    );
+
     Auction public auction;
     AuctionFactory public auctionFactory;
 
     uint256 public wantScaler;
     uint256 public fromScaler;
+
+    bool public callbackHit;
 
     function setUp() public override {
         super.setUp();
@@ -104,6 +115,11 @@ contract AuctionTest is Setup {
         assertEq(_kicked, 0);
         assertEq(_available, 0);
 
+        (Auction.TokenInfo memory _token, , address _receiver, , ) = auction
+            .auctions(id);
+        assertEq(_token.tokenAddress, from);
+        assertEq(_receiver, address(this));
+
         // Kicking it reverts
         vm.expectRevert("nothing to kick");
         auction.kick(id);
@@ -151,6 +167,12 @@ contract AuctionTest is Setup {
         assertEq(_to, address(asset));
         assertEq(_kicked, 0);
         assertEq(_available, 0);
+
+        (Auction.TokenInfo memory _token, , address _receiver, , ) = auction
+            .auctions(id);
+        assertEq(_token.tokenAddress, address(0));
+        assertEq(_token.scaler, 0);
+        assertEq(_receiver, address(0));
     }
 
     function test_kickAuction(uint256 _amount) public {
@@ -290,7 +312,62 @@ contract AuctionTest is Setup {
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
     }
 
-    function test_takeAuction_half(uint256 _amount) public {
+    function test_takeAuction_part(uint256 _amount, uint16 _percent) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+        _percent = uint16(bound(uint256(_percent), 1_000, MAX_BPS));
+
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        bytes32 id = auction.enable(from, address(mockStrategy));
+
+        airdrop(ERC20(from), address(auction), _amount);
+
+        auction.kick(id);
+
+        assertEq(auction.kickable(id), 0);
+        (
+            address _from,
+            address _to,
+            uint256 _kicked,
+            uint256 _available
+        ) = auction.auctionInfo(id);
+        assertEq(_from, from);
+        assertEq(_to, address(asset));
+        assertEq(_kicked, block.timestamp);
+        assertEq(_available, _amount);
+
+        skip(auction.auctionLength() / 2);
+
+        uint256 toTake = (_amount * _percent) / MAX_BPS;
+        uint256 left = _amount - toTake;
+        uint256 needed = auction.getAmountNeeded(id, toTake);
+
+        airdrop(ERC20(asset), address(this), needed);
+
+        ERC20(asset).safeApprove(address(auction), needed);
+
+        uint256 before = ERC20(from).balanceOf(address(this));
+
+        vm.expectEmit(true, true, true, true, address(auction));
+        emit AuctionTaken(id, toTake, left);
+        uint256 amountTaken = auction.take(id, toTake);
+
+        assertEq(amountTaken, toTake);
+
+        (, , , _available) = auction.auctionInfo(id);
+        assertEq(_available, left);
+        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
+        assertEq(ERC20(from).balanceOf(address(auction)), left);
+        assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
+        assertEq(ERC20(asset).balanceOf(address(auction)), 0);
+    }
+
+    function test_takeAuction_callback(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         address from = tokenAddrs["WBTC"];
@@ -303,7 +380,7 @@ contract AuctionTest is Setup {
 
         airdrop(ERC20(from), address(auction), _amount);
 
-        uint256 available = auction.kick(id);
+        auction.kick(id);
 
         assertEq(auction.kickable(id), 0);
         (
@@ -329,10 +406,14 @@ contract AuctionTest is Setup {
 
         uint256 before = ERC20(from).balanceOf(address(this));
 
-        vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionTaken(id, toTake, left);
-        uint256 amountTaken = auction.take(id, toTake);
+        callbackHit = false;
+        bytes memory _data = new bytes(69);
 
+        vm.expectEmit(true, true, true, true, address(this));
+        emit Callback(id, address(this), toTake, needed, _data);
+        uint256 amountTaken = auction.take(id, toTake, address(this), _data);
+
+        assertTrue(callbackHit);
         assertEq(amountTaken, toTake);
 
         (, , , _available) = auction.auctionInfo(id);
@@ -344,6 +425,15 @@ contract AuctionTest is Setup {
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
     }
 
-    // TODO:
-    // kick again and old amount is added
+    // Taker call back function
+    function auctionTakeCallback(
+        bytes32 _auctionId,
+        address _sender,
+        uint256 _amountTaken,
+        uint256 _amountNeeded,
+        bytes memory _data
+    ) external {
+        callbackHit = true;
+        emit Callback(_auctionId, _sender, _amountTaken, _amountNeeded, _data);
+    }
 }

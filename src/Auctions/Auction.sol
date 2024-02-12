@@ -6,6 +6,7 @@ import {Governance} from "../utils/Governance.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ITaker} from "../interfaces/ITaker.sol";
 
 interface IHook {
     function kickable(address _fromToken) external view returns (uint256);
@@ -17,18 +18,11 @@ interface IHook {
     function postTake(address _toToken, uint256 _newAmount) external;
 }
 
-interface ITaker {
-    function auctionTakeCallback(
-        bytes32 _auctionId,
-        address _sender,
-        uint256 _amountTaken,
-        uint256 _amountNeeded,
-        bytes calldata _data
-    ) external;
-}
-
-/// @title Auction
-/// @notice General use dutch auction contract for token sales.
+/**
+ *   @title Auction
+ *   @author yearn.fi
+ *   @notice General use dutch auction contract for token sales.
+ */
 contract Auction is Governance, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
@@ -251,6 +245,9 @@ contract Auction is Governance, ReentrancyGuard {
         return _getAmountNeeded(_auctionId, _amountToTake, _timestamp);
     }
 
+    /**
+     * @dev Return the amount of `want` needed to buy `_amountToTake`.
+     */
     function _getAmountNeeded(
         bytes32 _auctionId,
         uint256 _amountToTake,
@@ -360,7 +357,10 @@ contract Auction is Governance, ReentrancyGuard {
         address _receiver
     ) public virtual onlyGovernance returns (bytes32 _auctionId) {
         require(_from != address(0), "ZERO ADDRESS");
-        require(_receiver != address(0), "receiver");
+        require(
+            _receiver != address(0) && _receiver != address(this),
+            "receiver"
+        );
 
         // Calculate the id.
         _auctionId = getAuctionId(_from);
@@ -543,7 +543,7 @@ contract Auction is Governance, ReentrancyGuard {
 
         address _hook = hook;
         if (_hook != address(0)) {
-            // Use hood if defined.
+            // Use hook if defined.
             IHook(_hook).preTake(auction.fromInfo.tokenAddress, _amountTaken);
         }
 
