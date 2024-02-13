@@ -313,9 +313,8 @@ contract Auction is Governance, ReentrancyGuard {
         if (_kicked == 0 || _available == 0) return 0;
 
         uint256 secondsElapsed = _timestamp - _kicked;
-        uint256 _window = auctionLength;
 
-        if (secondsElapsed > _window) return 0;
+        if (secondsElapsed > auctionLength) return 0;
 
         // Exponential decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
         uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
@@ -343,7 +342,7 @@ contract Auction is Governance, ReentrancyGuard {
      * @return . The unique identifier of the enabled auction.
      */
     function enable(address _from) external virtual returns (bytes32) {
-        return enable(_from, governance);
+        return enable(_from, msg.sender);
     }
 
     /**
@@ -356,7 +355,8 @@ contract Auction is Governance, ReentrancyGuard {
         address _from,
         address _receiver
     ) public virtual onlyGovernance returns (bytes32 _auctionId) {
-        require(_from != address(0), "ZERO ADDRESS");
+        address _want = want();
+        require(_from != address(0) && _from != _want, "ZERO ADDRESS");
         require(
             _receiver != address(0) && _receiver != address(this),
             "receiver"
@@ -382,12 +382,7 @@ contract Auction is Governance, ReentrancyGuard {
             currentAvailable: 0
         });
 
-        emit AuctionEnabled(
-            _auctionId,
-            _from,
-            wantInfo.tokenAddress,
-            address(this)
-        );
+        emit AuctionEnabled(_auctionId, _from, _want, address(this));
     }
 
     /**
@@ -407,12 +402,7 @@ contract Auction is Governance, ReentrancyGuard {
         // Remove the struct.
         delete auctions[_auctionId];
 
-        emit AuctionDisabled(
-            _auctionId,
-            _from,
-            wantInfo.tokenAddress,
-            address(this)
-        );
+        emit AuctionDisabled(_auctionId, _from, want(), address(this));
     }
 
     /*//////////////////////////////////////////////////////////////

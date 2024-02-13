@@ -42,7 +42,7 @@ contract AuctionSwapper {
         address _from,
         address _want
     ) internal virtual returns (bytes32) {
-        return _enableAuction(_from, _want, 1 days, 3 days, 1e9);
+        return _enableAuction(_from, _want, 1 days, 3 days, 1e6);
     }
 
     /**
@@ -83,8 +83,8 @@ contract AuctionSwapper {
             require(Auction(_auction).want() == _want, "wrong want");
         }
 
-        // Enable new auction with the strategy as the hook.
-        return Auction(_auction).enable(_from, address(this));
+        // Enable new auction for `_from` token.
+        return Auction(_auction).enable(_from);
     }
 
     /**
