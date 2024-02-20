@@ -487,4 +487,63 @@ contract AuctionSwapperTest is Setup {
         assertEq(ERC20(asset).balanceOf(address(swapper)), needed);
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
     }
+
+    function test_setFlags(uint256 _amount, uint16 _percent) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+        _percent = uint16(bound(uint256(_percent), 1_000, MAX_BPS));
+
+        address from = tokenAddrs["WBTC"];
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        bytes32 id = swapper.enableAuction(from, address(asset));
+
+        auction = Auction(swapper.auction());
+
+        airdrop(ERC20(from), address(swapper), _amount);
+
+        assertEq(auction.kickable(id), _amount);
+
+        vm.prank(address(swapper));
+        auction.setHookFlags(false, false, true, true);
+
+        assertEq(auction.kickable(id), 0);
+
+        vm.expectRevert("nothing to kick");
+        auction.kick(id);
+
+        vm.prank(address(swapper));
+        auction.setHookFlags(false, true, true, true);
+
+        auction.kick(id);
+
+        assertEq(ERC20(from).balanceOf(address(auction)), _amount);
+
+        swapper.setShouldRevert(true);
+
+        skip(auction.auctionLength() / 2);
+
+        uint256 toTake = (_amount * _percent) / MAX_BPS;
+        uint256 left = _amount - toTake;
+        uint256 needed = auction.getAmountNeeded(id, toTake);
+
+        airdrop(ERC20(asset), address(this), needed);
+
+        ERC20(asset).safeApprove(address(auction), needed);
+
+        vm.expectRevert("pre take revert");
+        auction.take(id, toTake);
+
+        vm.prank(address(swapper));
+        auction.setHookFlags(false, true, false, true);
+
+        vm.expectRevert("post take revert");
+        auction.take(id, toTake);
+
+        vm.prank(address(swapper));
+        auction.setHookFlags(false, true, false, false);
+
+        auction.take(id, toTake);
+    }
 }

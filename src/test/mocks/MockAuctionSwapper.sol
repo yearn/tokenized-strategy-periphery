@@ -12,6 +12,8 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
 
     bool public useDefault = true;
 
+    bool public shouldRevert;
+
     uint256 public letKick;
 
     constructor(address _asset) BaseStrategy(_asset, "Mock Uni V3") {}
@@ -58,6 +60,7 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         uint256 _amountToTake,
         uint256 _amountToPay
     ) internal override {
+        require(!shouldRevert, "pre take revert");
         if (useDefault) return;
         emit PreTake(_token, _amountToTake, _amountToPay);
     }
@@ -67,6 +70,7 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         uint256 _amountTaken,
         uint256 _amountPayed
     ) internal override {
+        require(!shouldRevert, "post take revert");
         if (useDefault) return;
         emit PostTake(_token, _amountTaken, _amountPayed);
     }
@@ -77,6 +81,10 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
 
     function setLetKick(uint256 _letKick) external {
         letKick = _letKick;
+    }
+
+    function setShouldRevert(bool _shouldRevert) external {
+        shouldRevert = _shouldRevert;
     }
 }
 
@@ -98,4 +106,6 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
     function letKick() external view returns (uint256);
 
     function setLetKick(uint256 _letKick) external;
+
+    function setShouldRevert(bool _shouldRevert) external;
 }

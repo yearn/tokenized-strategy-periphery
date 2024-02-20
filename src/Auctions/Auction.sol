@@ -76,6 +76,7 @@ contract Auction is Governance, ReentrancyGuard {
         uint128 currentAvailable;
     }
 
+    /// @notice Store the hook address and each flag in one slot.
     struct Hook {
         address hook;
         bool kickable;
@@ -141,7 +142,7 @@ contract Auction is Governance, ReentrancyGuard {
 
         // If we are using a hook.
         if (_hook != address(0)) {
-            // Have all flags default to true.
+            // All flags default to true.
             hook_ = Hook({
                 hook: _hook,
                 kickable: true,
@@ -466,8 +467,11 @@ contract Auction is Governance, ReentrancyGuard {
         bool _preTake,
         bool _postTake
     ) external virtual onlyGovernance {
+        address _hook = hook_.hook;
+        require(_hook != address(0), "no hook set");
+
         hook_ = Hook({
-            hook: hook_.hook,
+            hook: _hook,
             kickable: _kickable,
             kick: _kick,
             preTake: _preTake,
