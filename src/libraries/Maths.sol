@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.18;
 
+// Math library from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/internal/Maths.sol
+
 /**
     @title  Maths library
     @notice Internal library containing common maths.

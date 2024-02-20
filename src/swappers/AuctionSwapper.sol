@@ -128,8 +128,13 @@ contract AuctionSwapper {
      *   occurs.
      * @param _token Address of the token being taken.
      * @param _amountToTake Amount of `_token` needed.
+     * @param _amountToPay Amount of `want` that will be payed.
      */
-    function _preTake(address _token, uint256 _amountToTake) internal virtual {}
+    function _preTake(
+        address _token,
+        uint256 _amountToTake,
+        uint256 _amountToPay
+    ) internal virtual {}
 
     /**
      * @dev To override if a post take action is desired.
@@ -139,9 +144,14 @@ contract AuctionSwapper {
      * some allowed range.
      *
      * @param _token Address of the token that the strategy was sent.
-     * @param _newAmount Amount of `_token` that was sent to the strategy.
+     * @param _amountTaken Amount of the from token taken.
+     * @param _amountPayed Amount of `_token` that was sent to the strategy.
      */
-    function _postTake(address _token, uint256 _newAmount) internal virtual {}
+    function _postTake(
+        address _token,
+        uint256 _amountTaken,
+        uint256 _amountPayed
+    ) internal virtual {}
 
     /*//////////////////////////////////////////////////////////////
                             AUCTION HOOKS
@@ -163,25 +173,29 @@ contract AuctionSwapper {
      * @notice External hook for the auction to call before a `take`.
      * @dev Will call the internal version for the strategist to override.
      * @param _token Token being taken in the auction.
-     * @param _amountToTake The amount of `_token` to be sent to the taker..
+     * @param _amountToTake The amount of `_token` to be sent to the taker.
+     * @param _amountToPay Amount of `want` that will be payed.
      */
     function preTake(
         address _token,
-        uint256 _amountToTake
+        uint256 _amountToTake,
+        uint256 _amountToPay
     ) external virtual onlyAuction {
-        _preTake(_token, _amountToTake);
+        _preTake(_token, _amountToTake, _amountToPay);
     }
 
     /**
      * @notice External hook for the auction to call after a `take` completed.
      * @dev Will call the internal version for the strategist to override.
      * @param _token The `want` token that was sent to the strategy.
-     * @param _newAmount The amount of `_token` that was sent to the strategy.
+     * @param _amountTaken Amount of the from token taken.
+     * @param _amountPayed Amount of `_token` that was sent to the strategy.
      */
     function postTake(
         address _token,
-        uint256 _newAmount
+        uint256 _amountTaken,
+        uint256 _amountPayed
     ) external virtual onlyAuction {
-        _postTake(_token, _newAmount);
+        _postTake(_token, _amountTaken, _amountPayed);
     }
 }

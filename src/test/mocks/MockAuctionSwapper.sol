@@ -7,8 +7,8 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
     using SafeERC20 for ERC20;
 
-    event PreTake(address token, uint256 amount);
-    event PostTake(address token, uint256 amount);
+    event PreTake(address token, uint256 amountToTake, uint256 amountToPay);
+    event PostTake(address token, uint256 amountTaken, uint256 amountPayed);
 
     bool public useDefault = true;
 
@@ -53,14 +53,22 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         return ERC20(_token).balanceOf(auction);
     }
 
-    function _preTake(address _token, uint256 _amountToTake) internal override {
+    function _preTake(
+        address _token,
+        uint256 _amountToTake,
+        uint256 _amountToPay
+    ) internal override {
         if (useDefault) return;
-        emit PreTake(_token, _amountToTake);
+        emit PreTake(_token, _amountToTake, _amountToPay);
     }
 
-    function _postTake(address _token, uint256 _newAmount) internal override {
+    function _postTake(
+        address _token,
+        uint256 _amountTaken,
+        uint256 _amountPayed
+    ) internal override {
         if (useDefault) return;
-        emit PostTake(_token, _newAmount);
+        emit PostTake(_token, _amountTaken, _amountPayed);
     }
 
     function setUseDefault(bool _useDefault) external {

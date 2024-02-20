@@ -10,8 +10,8 @@ import {Auction, AuctionFactory} from "../Auctions/AuctionFactory.sol";
 contract AuctionSwapperTest is Setup {
     using SafeERC20 for ERC20;
 
-    event PreTake(address token, uint256 amount);
-    event PostTake(address token, uint256 amount);
+    event PreTake(address token, uint256 amountToTake, uint256 amountToPay);
+    event PostTake(address token, uint256 amountTaken, uint256 amountPayed);
 
     event DeployedNewAuction(address indexed auction, address indexed want);
 
@@ -472,9 +472,9 @@ contract AuctionSwapperTest is Setup {
         uint256 before = ERC20(from).balanceOf(address(this));
 
         vm.expectEmit(true, true, true, true, address(swapper));
-        emit PreTake(from, toTake);
+        emit PreTake(from, toTake, needed);
         vm.expectEmit(true, true, true, true, address(swapper));
-        emit PostTake(address(asset), needed);
+        emit PostTake(address(asset), toTake, needed);
         uint256 amountTaken = auction.take(id, toTake);
 
         assertEq(amountTaken, toTake);

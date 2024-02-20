@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.18;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import {Clonable} from "../utils/Clonable.sol";
 import {Auction} from "./Auction.sol";
+import {Clonable} from "../utils/Clonable.sol";
 
 /// @title AuctionFactory
 /// @notice Deploy a new Auction.
@@ -12,13 +10,16 @@ contract AuctionFactory is Clonable {
     event DeployedNewAuction(address indexed auction, address indexed want);
 
     /// @notice The time that each auction lasts.
-    uint256 public constant defaultAuctionLength = 1 days;
+    uint256 public constant DEFAULT_AUCTION_LENGTH = 1 days;
 
     /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public constant defaultAuctionCooldown = 5 days;
+    uint256 public constant DEFAULT_AUCTION_COOLDOWN = 5 days;
 
     /// @notice The amount to start the auction with.
-    uint256 public constant defaultStartingPrice = 1_000_000;
+    uint256 public constant DEFAULT_STARTING_PRICE = 1_000_000;
+
+    /// @notice Full array of all auctions deployed through this factory.
+    address[] public auctions;
 
     constructor() {
         // Deploy the original
@@ -36,9 +37,9 @@ contract AuctionFactory is Clonable {
                 _want,
                 address(0),
                 msg.sender,
-                defaultAuctionLength,
-                defaultAuctionCooldown,
-                defaultStartingPrice
+                DEFAULT_AUCTION_LENGTH,
+                DEFAULT_AUCTION_COOLDOWN,
+                DEFAULT_STARTING_PRICE
             );
     }
 
@@ -57,9 +58,9 @@ contract AuctionFactory is Clonable {
                 _want,
                 _hook,
                 msg.sender,
-                defaultAuctionLength,
-                defaultAuctionCooldown,
-                defaultStartingPrice
+                DEFAULT_AUCTION_LENGTH,
+                DEFAULT_AUCTION_COOLDOWN,
+                DEFAULT_STARTING_PRICE
             );
     }
 
@@ -80,9 +81,9 @@ contract AuctionFactory is Clonable {
                 _want,
                 _hook,
                 _governance,
-                defaultAuctionLength,
-                defaultAuctionCooldown,
-                defaultStartingPrice
+                DEFAULT_AUCTION_LENGTH,
+                DEFAULT_AUCTION_COOLDOWN,
+                DEFAULT_STARTING_PRICE
             );
     }
 
@@ -106,8 +107,8 @@ contract AuctionFactory is Clonable {
                 _hook,
                 _governance,
                 _auctionLength,
-                defaultAuctionCooldown,
-                defaultStartingPrice
+                DEFAULT_AUCTION_COOLDOWN,
+                DEFAULT_STARTING_PRICE
             );
     }
 
@@ -134,7 +135,7 @@ contract AuctionFactory is Clonable {
                 _governance,
                 _auctionLength,
                 _auctionCooldown,
-                defaultStartingPrice
+                DEFAULT_STARTING_PRICE
             );
     }
 
@@ -146,6 +147,7 @@ contract AuctionFactory is Clonable {
      * @param _auctionLength Length of the auction in seconds.
      * @param _auctionCooldown Minimum time period between kicks in seconds.
      * @param _startingPrice Starting price for the auction (no decimals).
+     *  NOTE: The starting price should be without decimals (1k == 1_000).
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(
@@ -189,6 +191,22 @@ contract AuctionFactory is Clonable {
             _startingPrice
         );
 
+        auctions.push(_newAuction);
+
         emit DeployedNewAuction(_newAuction, _want);
+    }
+
+    /**
+     * @notice Get the full list of auctions deployed through this factory.
+     */
+    function getAllAuctions() external view returns (address[] memory) {
+        return auctions;
+    }
+
+    /**
+     * @notice Get the total number of auctions deployed through this factory.
+     */
+    function numberOfAuctions() external view returns (uint256) {
+        return auctions.length;
     }
 }

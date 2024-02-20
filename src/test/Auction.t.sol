@@ -55,9 +55,9 @@ contract AuctionTest is Setup, ITaker {
     }
 
     function test_setup() public {
-        assertEq(auctionFactory.defaultAuctionCooldown(), 5 days);
-        assertEq(auctionFactory.defaultAuctionLength(), 1 days);
-        assertEq(auctionFactory.defaultStartingPrice(), 1e6);
+        assertEq(auctionFactory.DEFAULT_AUCTION_COOLDOWN(), 5 days);
+        assertEq(auctionFactory.DEFAULT_AUCTION_LENGTH(), 1 days);
+        assertEq(auctionFactory.DEFAULT_STARTING_PRICE(), 1e6);
     }
 
     function test_defaults() public {
@@ -71,15 +71,15 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.governance(), address(this));
         assertEq(
             auction.auctionLength(),
-            auctionFactory.defaultAuctionLength()
+            auctionFactory.DEFAULT_AUCTION_LENGTH()
         );
         assertEq(
             auction.auctionCooldown(),
-            auctionFactory.defaultAuctionCooldown()
+            auctionFactory.DEFAULT_AUCTION_COOLDOWN()
         );
         assertEq(
             auction.startingPrice(),
-            auctionFactory.defaultStartingPrice()
+            auctionFactory.DEFAULT_STARTING_PRICE()
         );
     }
 

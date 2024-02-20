@@ -8,14 +8,23 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ITaker} from "../interfaces/ITaker.sol";
 
+/// @notice Interface that the optional `hook` contract should implement if the non-standard logic is desired.
 interface IHook {
     function kickable(address _fromToken) external view returns (uint256);
 
     function auctionKicked(address _fromToken) external returns (uint256);
 
-    function preTake(address _fromToken, uint256 _amountToTake) external;
+    function preTake(
+        address _fromToken,
+        uint256 _amountToTake,
+        uint256 _amountToPay
+    ) external;
 
-    function postTake(address _toToken, uint256 _newAmount) external;
+    function postTake(
+        address _toToken,
+        uint256 _amountTaken,
+        uint256 _amountPayed
+    ) external;
 }
 
 /**
@@ -322,9 +331,7 @@ contract Auction is Governance, ReentrancyGuard {
             MINUTE_HALF_LIFE,
             (secondsElapsed % 3600) / 60
         );
-        uint256 initialPrice = _available == 0
-            ? 0
-            : Maths.wdiv(startingPrice * 1e18, _available);
+        uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
 
         return
             (initialPrice * Maths.rmul(hoursComponent, minutesComponent)) /
@@ -528,13 +535,20 @@ contract Auction is Governance, ReentrancyGuard {
         require(needed != 0, "zero needed");
 
         // How much is left in this auction.
-        uint256 left = auction.currentAvailable - _amountTaken;
+        uint256 left;
+        unchecked {
+            left = auction.currentAvailable - _amountTaken;
+        }
         auctions[_auctionId].currentAvailable = left;
 
         address _hook = hook;
         if (_hook != address(0)) {
             // Use hook if defined.
-            IHook(_hook).preTake(auction.fromInfo.tokenAddress, _amountTaken);
+            IHook(_hook).preTake(
+                auction.fromInfo.tokenAddress,
+                _amountTaken,
+                needed
+            );
         }
 
         // Send `from`.
@@ -561,11 +575,11 @@ contract Auction is Governance, ReentrancyGuard {
         // Pull `want`.
         ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
 
-        emit AuctionTaken(_auctionId, _amountTaken, left);
-
         // Post take hook if defined.
         if (_hook != address(0)) {
-            IHook(_hook).postTake(_want, needed);
+            IHook(_hook).postTake(_want, _amountTaken, needed);
         }
+
+        emit AuctionTaken(_auctionId, _amountTaken, left);
     }
 }
