@@ -319,7 +319,7 @@ contract Auction is Governance, ReentrancyGuard {
         uint256 _available,
         uint256 _timestamp
     ) internal view virtual returns (uint256) {
-        if (_kicked == 0 || _available == 0) return 0;
+        if (_available == 0) return 0;
 
         uint256 secondsElapsed = _timestamp - _kicked;
 
