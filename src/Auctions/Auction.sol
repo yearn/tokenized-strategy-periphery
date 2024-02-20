@@ -72,8 +72,8 @@ contract Auction is Governance, ReentrancyGuard {
         TokenInfo fromInfo;
         uint96 kicked;
         address receiver;
-        uint256 initialAvailable;
-        uint256 currentAvailable;
+        uint128 initialAvailable;
+        uint128 currentAvailable;
     }
 
     uint256 internal constant WAD = 1e18;
@@ -378,16 +378,11 @@ contract Auction is Governance, ReentrancyGuard {
         );
 
         // Store all needed info.
-        auctions[_auctionId] = AuctionInfo({
-            fromInfo: TokenInfo({
-                tokenAddress: _from,
-                scaler: uint96(WAD / 10 ** ERC20(_from).decimals())
-            }),
-            kicked: 0,
-            receiver: _receiver,
-            initialAvailable: 0,
-            currentAvailable: 0
+        auctions[_auctionId].fromInfo = TokenInfo({
+            tokenAddress: _from,
+            scaler: uint96(WAD / 10 ** ERC20(_from).decimals())
         });
+        auctions[_auctionId].receiver = _receiver;
 
         emit AuctionEnabled(_auctionId, _from, _want, address(this));
     }
@@ -444,8 +439,8 @@ contract Auction is Governance, ReentrancyGuard {
 
         // Update the auctions status.
         auctions[_auctionId].kicked = uint96(block.timestamp);
-        auctions[_auctionId].initialAvailable = available;
-        auctions[_auctionId].currentAvailable = available;
+        auctions[_auctionId].initialAvailable = uint128(available);
+        auctions[_auctionId].currentAvailable = uint128(available);
 
         emit AuctionKicked(_auctionId, available);
     }
@@ -539,7 +534,7 @@ contract Auction is Governance, ReentrancyGuard {
         unchecked {
             left = auction.currentAvailable - _amountTaken;
         }
-        auctions[_auctionId].currentAvailable = left;
+        auctions[_auctionId].currentAvailable = uint128(left);
 
         address _hook = hook;
         if (_hook != address(0)) {
