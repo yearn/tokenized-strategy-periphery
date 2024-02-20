@@ -10,6 +10,21 @@ import {AuctionFactory, Auction} from "../Auctions/AuctionFactory.sol";
  *   @title AuctionSwapper
  *   @author yearn.fi
  *   @dev Helper contract for a strategy to use dutch auctions for token sales.
+ *
+ *   This contract is meant to be inherited by a V3 strategy in order
+ *   to easily integrate dutch auctions into a contract for token swaps.
+ *
+ *   The strategist will need to implement a way to call `_enableAuction`
+ *   for an token pair they want to use, or a setter to manually set the
+ *   `auction` contract.
+ *
+ *   The contract comes with all of the needed function to act as a `hook`
+ *   contract for the specific auction contract with the ability to override
+ *   any of the functions to implement custom hooks.
+ *
+ *   NOTE: If any hooks are not desired, the strategist should also
+ *   implement a way to call the {setHookFlags} on the auction contract
+ *   to avoid unnecessary gas for unused functions.
  */
 contract AuctionSwapper {
     using SafeERC20 for ERC20;
