@@ -109,6 +109,9 @@ contract Auction is Governance, ReentrancyGuard {
     /// @notice Mapping from an auction ID to its struct.
     mapping(bytes32 => AuctionInfo) public auctions;
 
+    /// @notice Array of all the enabled auction for this contract.
+    bytes32[] public enabledAuctions;
+
     constructor() Governance(msg.sender) {}
 
     /**
@@ -193,6 +196,13 @@ contract Auction is Governance, ReentrancyGuard {
     {
         Hook memory _hook;
         return (_hook.kickable, _hook.kick, _hook.preTake, _hook.postTake);
+    }
+
+    /**
+     * @notice Get the length of the enabled auctions array.
+     */
+    function numberOfEnabledAuctions() external view virtual returns (uint256) {
+        return enabledAuctions.length;
     }
 
     /**
@@ -431,6 +441,9 @@ contract Auction is Governance, ReentrancyGuard {
         });
         auctions[_auctionId].receiver = _receiver;
 
+        // Add to the array.
+        enabledAuctions.push(_auctionId);
+
         emit AuctionEnabled(_auctionId, _from, _want, address(this));
     }
 
@@ -450,6 +463,21 @@ contract Auction is Governance, ReentrancyGuard {
 
         // Remove the struct.
         delete auctions[_auctionId];
+
+        // Remove the auction ID from the array.
+        bytes32[] memory _enabledAuctions = enabledAuctions;
+        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+            if (_enabledAuctions[i] == _auctionId) {
+                if (i < _enabledAuctions.length - 1) {
+                    _enabledAuctions[i] = _enabledAuctions[
+                        _enabledAuctions.length - 1
+                    ];
+                    enabledAuctions = _enabledAuctions;
+                }
+                enabledAuctions.pop();
+                break;
+            }
+        }
 
         emit AuctionDisabled(_auctionId, _from, want(), address(this));
     }

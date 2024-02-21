@@ -99,6 +99,8 @@ contract AuctionTest is Setup, ITaker {
         bytes32 id = auction.enable(from);
         assertEq(id, expectedId);
 
+        assertEq(auction.numberOfEnabledAuctions(), 1);
+        assertEq(auction.enabledAuctions(0), expectedId);
         assertEq(auction.kickable(id), 0);
         assertEq(auction.getAmountNeeded(id, 1e18), 0);
         assertEq(auction.price(id), 0);
@@ -141,6 +143,8 @@ contract AuctionTest is Setup, ITaker {
 
         bytes32 id = auction.enable(from);
 
+        assertEq(auction.numberOfEnabledAuctions(), 1);
+
         (
             address _from,
             address _to,
@@ -160,6 +164,8 @@ contract AuctionTest is Setup, ITaker {
         vm.expectEmit(true, true, true, true, address(auction));
         emit AuctionDisabled(id, from, address(asset), address(auction));
         auction.disable(from);
+
+        assertEq(auction.numberOfEnabledAuctions(), 0);
 
         (_from, _to, _kicked, _available) = auction.auctionInfo(id);
 
