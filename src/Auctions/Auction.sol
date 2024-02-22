@@ -137,10 +137,14 @@ contract Auction is Governance, ReentrancyGuard {
         require(_auctionLength < _auctionCooldown, "cooldown");
         require(_startingPrice != 0, "starting price");
 
+        // Cannot have more than 18 decimals.
+        uint256 decimals = ERC20(_want).decimals();
+        require(decimals <= WAD, "unsupported decimals");
+
         // Set variables
         wantInfo = TokenInfo({
             tokenAddress: _want,
-            scaler: uint96(WAD / 10 ** ERC20(_want).decimals())
+            scaler: uint96(WAD / 10 ** decimals)
         });
 
         // If we are using a hook.
@@ -425,6 +429,9 @@ contract Auction is Governance, ReentrancyGuard {
             _receiver != address(0) && _receiver != address(this),
             "receiver"
         );
+        // Cannot have more than 18 decimals.
+        uint256 decimals = ERC20(_from).decimals();
+        require(decimals <= WAD, "unsupported decimals");
 
         // Calculate the id.
         _auctionId = getAuctionId(_from);
@@ -437,7 +444,7 @@ contract Auction is Governance, ReentrancyGuard {
         // Store all needed info.
         auctions[_auctionId].fromInfo = TokenInfo({
             tokenAddress: _from,
-            scaler: uint96(WAD / 10 ** ERC20(_from).decimals())
+            scaler: uint96(WAD / 10 ** decimals)
         });
         auctions[_auctionId].receiver = _receiver;
 
@@ -452,7 +459,20 @@ contract Auction is Governance, ReentrancyGuard {
      * @dev Only callable by governance.
      * @param _from The address of the token being sold.
      */
-    function disable(address _from) external virtual onlyGovernance {
+    function disable(address _from) external virtual {
+        disable(_from, 0);
+    }
+
+    /**
+     * @notice Disables an existing auction.
+     * @dev Only callable by governance.
+     * @param _from The address of the token being sold.
+     * @param _index The index the auctionId is at in the array.
+     */
+    function disable(
+        address _from,
+        uint256 _index
+    ) public virtual onlyGovernance {
         bytes32 _auctionId = getAuctionId(_from);
 
         // Make sure the auction was enabled.
@@ -466,18 +486,27 @@ contract Auction is Governance, ReentrancyGuard {
 
         // Remove the auction ID from the array.
         bytes32[] memory _enabledAuctions = enabledAuctions;
-        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
-            if (_enabledAuctions[i] == _auctionId) {
-                if (i < _enabledAuctions.length - 1) {
-                    _enabledAuctions[i] = _enabledAuctions[
-                        _enabledAuctions.length - 1
-                    ];
-                    enabledAuctions = _enabledAuctions;
+        if (_enabledAuctions[_index] != _auctionId) {
+            // If the _index given is not the id find it.
+            for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+                if (_enabledAuctions[i] == _auctionId) {
+                    _index = i;
+                    break;
                 }
-                enabledAuctions.pop();
-                break;
             }
         }
+
+        // Move the id to the last spot if not there.
+        if (_index < _enabledAuctions.length - 1) {
+            _enabledAuctions[_index] = _enabledAuctions[
+                _enabledAuctions.length - 1
+            ];
+            // Update the array.
+            enabledAuctions = _enabledAuctions;
+        }
+
+        // Pop the id off the array.
+        enabledAuctions.pop();
 
         emit AuctionDisabled(_auctionId, _from, want(), address(this));
     }
