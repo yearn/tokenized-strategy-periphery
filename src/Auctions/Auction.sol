@@ -139,7 +139,7 @@ contract Auction is Governance, ReentrancyGuard {
 
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_want).decimals();
-        require(decimals <= WAD, "unsupported decimals");
+        require(decimals <= 18, "unsupported decimals");
 
         // Set variables
         wantInfo = TokenInfo({
@@ -431,7 +431,7 @@ contract Auction is Governance, ReentrancyGuard {
         );
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
-        require(decimals <= WAD, "unsupported decimals");
+        require(decimals <= 18, "unsupported decimals");
 
         // Calculate the id.
         _auctionId = getAuctionId(_from);

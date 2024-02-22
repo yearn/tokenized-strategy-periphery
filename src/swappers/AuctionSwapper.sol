@@ -42,9 +42,8 @@ contract AuctionSwapper {
     }
 
     /// @notice The pre-deployed Auction factory for cloning.
-    // TODO: Update to real address
     address public constant auctionFactory =
-        0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9;
+        0x4A14145C4977E18c719BB70E6FcBF8fBFF6F62d2;
 
     /// @notice Address of the specific Auction this strategy uses.
     address public auction;
