@@ -7,7 +7,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface IOracle {
     function aprAfterDebtChange(
-        address _asset,
+        address _strategy,
         int256 _delta
     ) external view returns (uint256);
 }
