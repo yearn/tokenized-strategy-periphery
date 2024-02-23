@@ -8,11 +8,13 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {VyperDeployer} from "./VyperDeployer.sol";
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
-import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
+
 import {Roles} from "@yearn-vaults/interfaces/Roles.sol";
-import {VaultConstants} from "@yearn-vaults/interfaces/VaultConstants.sol";
+import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
+import {VaultConstants} from "@yearn-vaults/interfaces/VaultConstants.sol";
+
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
 
@@ -95,7 +97,7 @@ contract Setup is ExtendedTest {
 
         vm.prank(management);
         // Give the vault manager all the roles
-        _vault.set_role(vaultManagement, 16383);
+        _vault.set_role(vaultManagement, Roles.ALL);
 
         vm.prank(vaultManagement);
         _vault.set_deposit_limit(type(uint256).max);
