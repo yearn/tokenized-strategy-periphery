@@ -42,6 +42,7 @@ contract Setup is ExtendedTest {
     // Integer variables that will be used repeatedly.
     uint256 public decimals;
     uint256 public MAX_BPS = 10_000;
+    uint256 public WAD = 1e18;
 
     // Fuzz amount
     uint256 public maxFuzzAmount = 1e12;
