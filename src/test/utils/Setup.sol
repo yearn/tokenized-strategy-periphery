@@ -15,8 +15,9 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
+import {Clonable} from "../../utils/Clonable.sol";
 
-contract Setup is ExtendedTest {
+contract Setup is ExtendedTest, Clonable {
     using SafeERC20 for ERC20;
 
     VyperDeployer public vyperDeployer = new VyperDeployer();
@@ -76,20 +77,21 @@ contract Setup is ExtendedTest {
     }
 
     function setUpVault() public returns (IVault) {
-        bytes memory args = abi.encode(
+        if (original == address(0)) {
+            original = vyperDeployer.deployContract(
+                "lib/yearn-vaults-v3/contracts/",
+                "VaultV3"
+            );
+        }
+
+        IVault _vault = IVault(_clone());
+
+        _vault.initialize(
             address(asset),
             "Test vault",
             "tsVault",
             management,
             10 days
-        );
-
-        IVault _vault = IVault(
-            vyperDeployer.deployContract(
-                "lib/yearn-vaults-v3/contracts/",
-                "VaultV3",
-                args
-            )
         );
 
         vm.prank(management);
