@@ -8,14 +8,16 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {VyperDeployer} from "./VyperDeployer.sol";
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
+
+import {Roles} from "@yearn-vaults/interfaces/Roles.sol";
 import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
-import {VaultConstants, Roles} from "@yearn-vaults/interfaces/VaultConstants.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
+import {Clonable} from "../../utils/Clonable.sol";
 
-contract Setup is ExtendedTest {
+contract Setup is ExtendedTest, Clonable {
     using SafeERC20 for ERC20;
 
     VyperDeployer public vyperDeployer = new VyperDeployer();
@@ -27,7 +29,6 @@ contract Setup is ExtendedTest {
     // Vault contracts to test with.
     IVault public vault;
     IVaultFactory public vaultFactory;
-    VaultConstants public vaultConstants = new VaultConstants();
 
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
@@ -76,7 +77,16 @@ contract Setup is ExtendedTest {
     }
 
     function setUpVault() public returns (IVault) {
-        bytes memory args = abi.encode(
+        if (original == address(0)) {
+            original = vyperDeployer.deployContract(
+                "lib/yearn-vaults-v3/contracts/",
+                "VaultV3"
+            );
+        }
+
+        IVault _vault = IVault(_clone());
+
+        _vault.initialize(
             address(asset),
             "Test vault",
             "tsVault",
@@ -84,17 +94,9 @@ contract Setup is ExtendedTest {
             10 days
         );
 
-        IVault _vault = IVault(
-            vyperDeployer.deployContract(
-                "lib/yearn-vaults-v3/contracts/",
-                "VaultV3",
-                args
-            )
-        );
-
         vm.prank(management);
         // Give the vault manager all the roles
-        _vault.set_role(vaultManagement, 16383);
+        _vault.set_role(vaultManagement, Roles.ALL);
 
         vm.prank(vaultManagement);
         _vault.set_deposit_limit(type(uint256).max);
@@ -180,9 +182,15 @@ contract Setup is ExtendedTest {
         uint256 _totalDebt,
         uint256 _totalIdle
     ) public {
-        assertEq(_strategy.totalAssets(), _totalAssets, "!totalAssets");
-        assertEq(_strategy.totalDebt(), _totalDebt, "!totalDebt");
-        assertEq(_strategy.totalIdle(), _totalIdle, "!totalIdle");
+        uint256 _assets = _strategy.totalAssets();
+        uint256 _balance = ERC20(_strategy.asset()).balanceOf(
+            address(_strategy)
+        );
+        uint256 _idle = _balance > _assets ? _assets : _balance;
+        uint256 _debt = _assets - _idle;
+        assertEq(_assets, _totalAssets, "!totalAssets");
+        assertEq(_debt, _totalDebt, "!totalDebt");
+        assertEq(_idle, _totalIdle, "!totalIdle");
         assertEq(_totalAssets, _totalDebt + _totalIdle, "!Added");
     }
 

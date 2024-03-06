@@ -3,11 +3,16 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 
+auto_detect_remappings = false
+
 remappings = [
     'forge-std/=lib/forge-std/src/',
     '@openzeppelin/=lib/openzeppelin-contracts/',
     "@tokenized-strategy/=lib/tokenized-strategy/src/",
-    "@yearn-vaults/=lib/yearn-vaults-v3/contracts/"
+    "@yearn-vaults/=lib/yearn-vaults-v3/contracts/",
+    "ds-test/=lib/forge-std/lib/ds-test/src/"
 ]
 
+[fuzz]
+runs = 250
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
