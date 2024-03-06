@@ -10,3 +10,6 @@
 [submodule "lib/tokenized-strategy"]
 	path = lib/tokenized-strategy
 	url = https://github.com/yearn/tokenized-strategy
+[submodule "lib/yearn-vaults-v3"]
+	path = lib/yearn-vaults-v3
+	url = https://github.com/yearn/yearn-vaults-v3
