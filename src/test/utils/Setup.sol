@@ -13,8 +13,6 @@ import {Roles} from "@yearn-vaults/interfaces/Roles.sol";
 import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
-import {VaultConstants} from "@yearn-vaults/interfaces/VaultConstants.sol";
-
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
 
@@ -30,7 +28,6 @@ contract Setup is ExtendedTest {
     // Vault contracts to test with.
     IVault public vault;
     IVaultFactory public vaultFactory;
-    VaultConstants public vaultConstants = new VaultConstants();
 
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
