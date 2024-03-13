@@ -105,7 +105,7 @@ contract UniswapV3SwapperTest is Setup {
         // Assert WETH balance in the contract is 0
         assertEq(weth.balanceOf(address(uniV3Swapper)), 0);
 
-        uint256 toGet = (amount * 1e12) / 4_000;
+        uint256 toGet = (amount * 1e12) / 10_000;
 
         // Perform swap from asset to WETH
         uint256 amountIn = uniV3Swapper.swapTo(
