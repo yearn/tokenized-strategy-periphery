@@ -79,6 +79,13 @@ contract AuctionSwapperTest is Setup {
         assertEq(_to, address(asset));
         assertEq(_kicked, 0);
         assertEq(_available, 0);
+        assertEq(auction.hook(), address(swapper));
+        (bool hook1, bool hook2, bool hook3, bool hook4) = auction
+            .getHookFlags();
+        assertTrue(hook1);
+        assertTrue(hook2);
+        assertTrue(hook3);
+        assertTrue(hook4);
 
         // Kicking it reverts
         vm.expectRevert("nothing to kick");

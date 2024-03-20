@@ -198,7 +198,7 @@ contract Auction is Governance, ReentrancyGuard {
         virtual
         returns (bool, bool, bool, bool)
     {
-        Hook memory _hook;
+        Hook memory _hook = hook_;
         return (_hook.kickable, _hook.kick, _hook.preTake, _hook.postTake);
     }
 
