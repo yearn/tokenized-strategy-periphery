@@ -18,7 +18,7 @@ contract DeployAuctionFactory is Script {
         // Pick an unique salt
         bytes32 salt = keccak256("Auction Factory");
 
-        address contractAddress = deployer.deployCreate2(salt, bytecode);
+        address contractAddress = deployer.deployCreate3(salt, bytecode);
 
         console.log("Address is ", contractAddress);
 
@@ -29,7 +29,7 @@ contract DeployAuctionFactory is Script {
 interface Deployer {
     event ContractCreation(address indexed newContract, bytes32 indexed salt);
 
-    function deployCreate2(
+    function deployCreate3(
         bytes32 salt,
         bytes memory initCode
     ) external payable returns (address newContract);
