@@ -30,10 +30,10 @@ abstract contract BaseHealthCheck is BaseStrategy {
     uint256 internal constant MAX_BPS = 10_000;
 
     // Default profit limit to 100%.
-    uint256 private _profitLimitRatio = MAX_BPS;
+    uint16 private _profitLimitRatio = uint16(MAX_BPS);
 
     // Defaults loss limit to 0.
-    uint256 private _lossLimitRatio;
+    uint16 private _lossLimitRatio;
 
     constructor(
         address _asset,
@@ -76,7 +76,8 @@ abstract contract BaseHealthCheck is BaseStrategy {
      */
     function _setProfitLimitRatio(uint256 _newProfitLimitRatio) internal {
         require(_newProfitLimitRatio > 0, "!zero profit");
-        _profitLimitRatio = _newProfitLimitRatio;
+        require(_newProfitLimitRatio <= type(uint16).max, "!too high");
+        _profitLimitRatio = uint16(_newProfitLimitRatio);
     }
 
     /**
@@ -97,7 +98,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      */
     function _setLossLimitRatio(uint256 _newLossLimitRatio) internal {
         require(_newLossLimitRatio < MAX_BPS, "!loss limit");
-        _lossLimitRatio = _newLossLimitRatio;
+        _lossLimitRatio = uint16(_newLossLimitRatio);
     }
 
     /**
@@ -144,13 +145,13 @@ abstract contract BaseHealthCheck is BaseStrategy {
         if (_newTotalAssets > currentTotalAssets) {
             require(
                 ((_newTotalAssets - currentTotalAssets) <=
-                    (currentTotalAssets * _profitLimitRatio) / MAX_BPS),
+                    (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
                 "healthCheck"
             );
         } else if (currentTotalAssets > _newTotalAssets) {
             require(
                 (currentTotalAssets - _newTotalAssets <=
-                    ((currentTotalAssets * _lossLimitRatio) / MAX_BPS)),
+                    ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
                 "healthCheck"
             );
         }
