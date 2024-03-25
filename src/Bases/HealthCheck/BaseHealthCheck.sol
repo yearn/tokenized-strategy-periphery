@@ -98,7 +98,6 @@ abstract contract BaseHealthCheck is BaseStrategy {
      */
     function _setLossLimitRatio(uint256 _newLossLimitRatio) internal {
         require(_newLossLimitRatio < MAX_BPS, "!loss limit");
-        require(_newLossLimitRatio <= type(uint16).max, "!too high");
         _lossLimitRatio = uint16(_newLossLimitRatio);
     }
 
