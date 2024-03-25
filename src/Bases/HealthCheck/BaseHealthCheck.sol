@@ -30,10 +30,10 @@ abstract contract BaseHealthCheck is BaseStrategy {
     uint256 internal constant MAX_BPS = 10_000;
 
     // Default profit limit to 100%.
-    uint256 private _profitLimitRatio = MAX_BPS;
+    uint16 private _profitLimitRatio = uint16(MAX_BPS);
 
     // Defaults loss limit to 0.
-    uint256 private _lossLimitRatio;
+    uint16 private _lossLimitRatio;
 
     constructor(
         address _asset,
@@ -45,7 +45,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Use a getter function to keep the variable private.
      * @return . The current profit limit ratio.
      */
-    function profitLimitRatio() public view returns (uint256) {
+    function profitLimitRatio() public view returns (uint16) {
         return _profitLimitRatio;
     }
 
@@ -54,7 +54,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Use a getter function to keep the variable private.
      * @return . The current loss limit ratio.
      */
-    function lossLimitRatio() public view returns (uint256) {
+    function lossLimitRatio() public view returns (uint16) {
         return _lossLimitRatio;
     }
 
@@ -64,7 +64,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
     function setProfitLimitRatio(
-        uint256 _newProfitLimitRatio
+        uint16 _newProfitLimitRatio
     ) external onlyManagement {
         _setProfitLimitRatio(_newProfitLimitRatio);
     }
@@ -74,7 +74,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * in basis points. I.E. 1_000 == 10%.
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
-    function _setProfitLimitRatio(uint256 _newProfitLimitRatio) internal {
+    function _setProfitLimitRatio(uint16 _newProfitLimitRatio) internal {
         require(_newProfitLimitRatio > 0, "!zero profit");
         _profitLimitRatio = _newProfitLimitRatio;
     }
@@ -85,7 +85,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @param _newLossLimitRatio The new loss limit ratio.
      */
     function setLossLimitRatio(
-        uint256 _newLossLimitRatio
+        uint16 _newLossLimitRatio
     ) external onlyManagement {
         _setLossLimitRatio(_newLossLimitRatio);
     }
@@ -95,7 +95,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * in basis points. I.E. 1_000 == 10%.
      * @param _newLossLimitRatio The new loss limit ratio.
      */
-    function _setLossLimitRatio(uint256 _newLossLimitRatio) internal {
+    function _setLossLimitRatio(uint16 _newLossLimitRatio) internal {
         require(_newLossLimitRatio < MAX_BPS, "!loss limit");
         _lossLimitRatio = _newLossLimitRatio;
     }
@@ -144,13 +144,13 @@ abstract contract BaseHealthCheck is BaseStrategy {
         if (_newTotalAssets > currentTotalAssets) {
             require(
                 ((_newTotalAssets - currentTotalAssets) <=
-                    (currentTotalAssets * _profitLimitRatio) / MAX_BPS),
+                    (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
                 "healthCheck"
             );
         } else if (currentTotalAssets > _newTotalAssets) {
             require(
                 (currentTotalAssets - _newTotalAssets <=
-                    ((currentTotalAssets * _lossLimitRatio) / MAX_BPS)),
+                    ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
                 "healthCheck"
             );
         }
