@@ -45,7 +45,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Use a getter function to keep the variable private.
      * @return . The current profit limit ratio.
      */
-    function profitLimitRatio() public view returns (uint16) {
+    function profitLimitRatio() public view returns (uint256) {
         return _profitLimitRatio;
     }
 
@@ -54,7 +54,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Use a getter function to keep the variable private.
      * @return . The current loss limit ratio.
      */
-    function lossLimitRatio() public view returns (uint16) {
+    function lossLimitRatio() public view returns (uint256) {
         return _lossLimitRatio;
     }
 
@@ -64,7 +64,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
     function setProfitLimitRatio(
-        uint16 _newProfitLimitRatio
+        uint256 _newProfitLimitRatio
     ) external onlyManagement {
         _setProfitLimitRatio(_newProfitLimitRatio);
     }
@@ -74,9 +74,10 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * in basis points. I.E. 1_000 == 10%.
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
-    function _setProfitLimitRatio(uint16 _newProfitLimitRatio) internal {
+    function _setProfitLimitRatio(uint256 _newProfitLimitRatio) internal {
         require(_newProfitLimitRatio > 0, "!zero profit");
-        _profitLimitRatio = _newProfitLimitRatio;
+        require(_newProfitLimitRatio <= type(uint16).max, "!too high");
+        _profitLimitRatio = uint16(_newProfitLimitRatio);
     }
 
     /**
@@ -85,7 +86,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @param _newLossLimitRatio The new loss limit ratio.
      */
     function setLossLimitRatio(
-        uint16 _newLossLimitRatio
+        uint256 _newLossLimitRatio
     ) external onlyManagement {
         _setLossLimitRatio(_newLossLimitRatio);
     }
@@ -95,9 +96,10 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * in basis points. I.E. 1_000 == 10%.
      * @param _newLossLimitRatio The new loss limit ratio.
      */
-    function _setLossLimitRatio(uint16 _newLossLimitRatio) internal {
+    function _setLossLimitRatio(uint256 _newLossLimitRatio) internal {
         require(_newLossLimitRatio < MAX_BPS, "!loss limit");
-        _lossLimitRatio = _newLossLimitRatio;
+        require(_newLossLimitRatio <= type(uint16).max, "!too high");
+        _lossLimitRatio = uint16(_newLossLimitRatio);
     }
 
     /**
