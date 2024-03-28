@@ -80,9 +80,12 @@ abstract contract TradeFactorySwapper {
                         _rewardTokensLocal.length - 1
                     ];
                 }
-                ERC20(_tokenFrom).safeApprove(_tf, 0);
-                ITradeFactory(_tf).disable(_tokenFrom, _tokenTo);
 
+                if (_tf != address(0)) {
+                    ERC20(_tokenFrom).safeApprove(_tf, 0);
+                    ITradeFactory(_tf).disable(_tokenFrom, _tokenTo);
+                }
+                
                 // Set to storage
                 _rewardTokens = _rewardTokensLocal;
                 _rewardTokens.pop();
