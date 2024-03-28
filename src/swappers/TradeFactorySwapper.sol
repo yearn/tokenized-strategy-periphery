@@ -6,29 +6,54 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {ITradeFactory} from "../interfaces/TradeFactory/ITradeFactory.sol";
 
+/**
+ * @title Trade Factory Swapper
+ * @dev Inherit to use a Trade Factory for token swapping.
+ *   External functions with the proper modifiers should be
+ *   declared in the strategy that inherits this to add a
+ *   Trade Factory and the tokens to sell.
+ */
 abstract contract TradeFactorySwapper {
     using SafeERC20 for ERC20;
 
+    // Address of the trade factory in use if any.
     address private _tradeFactory;
 
+    // Array of any tokens added to be sold.
     address[] private _rewardTokens;
 
-    // We use a getter so trade factory can only be set through the
-    // proper functions to avoid issues.
+    /**
+     * @notice Get the current Trade Factory.
+     * @dev We use a getter so trade factory can only be set through the
+     *   proper functions to avoid issues.
+     * @return The current trade factory in use if any.
+     */
     function tradeFactory() public view returns (address) {
         return _tradeFactory;
     }
 
+    /**
+     * @notice Get the current tokens being sold through the Trade Factory.
+     * @dev We use a getter so the array can only be set through the
+     *   proper functions to avoid issues.
+     * @return The current array of tokens being sold if any.
+     */
     function rewardTokens() public view returns (address[] memory) {
         return _rewardTokens;
     }
 
+    /**
+     * @dev Add an array of tokens to sell to its corresponding `_to_.
+     */
     function _addTokens(address[] memory _from, address[] memory _to) internal {
         for (uint256 i; i < _from.length; ++i) {
             _addToken(_from[i], _to[i]);
         }
     }
 
+    /**
+     * @dev Add the `_tokenFrom` to be sold to `_tokenTo` through the Trade Factory
+     */
     function _addToken(address _tokenFrom, address _tokenTo) internal {
         address _tf = tradeFactory();
         if (_tf != address(0)) {
@@ -40,6 +65,10 @@ abstract contract TradeFactorySwapper {
         _rewardTokens.push(_tokenFrom);
     }
 
+    /**
+     * @dev Remove a specific `_tokenFrom` that was previously added to not be
+     * sold through the Trade Factory any more.
+     */
     function _removeToken(address _tokenFrom, address _tokenTo) internal {
         address[] memory _rewardTokensLocal = rewardTokens();
         address _tf = tradeFactory();
@@ -47,7 +76,9 @@ abstract contract TradeFactorySwapper {
             if (_rewardTokensLocal[i] == _tokenFrom) {
                 if (i != _rewardTokensLocal.length - 1) {
                     // if it isn't the last token, swap with the last one/
-                    _rewardTokensLocal[i] = _rewardTokensLocal[_rewardTokensLocal.length - 1];
+                    _rewardTokensLocal[i] = _rewardTokensLocal[
+                        _rewardTokensLocal.length - 1
+                    ];
                 }
                 ERC20(_tokenFrom).safeApprove(_tf, 0);
                 ITradeFactory(_tf).disable(_tokenFrom, _tokenTo);
@@ -59,15 +90,24 @@ abstract contract TradeFactorySwapper {
         }
     }
 
+    /**
+     * @dev Removes all reward tokens and delete the Trade Factory.
+     */
     function _deleteRewardTokens() internal {
         _removeTradeFactoryPermissions();
         delete _rewardTokens;
     }
 
+    /**
+     * @dev Set a new instance of the Trade Factory.
+     *   This will remove any old approvals for current factory if any.
+     *   Then will add the new approvals for the new Trade Factory.
+     *   Can pass in address(0) for `tradeFactory_` to remove all permissions.
+     */
     function _setTradeFactory(
         address tradeFactory_,
         address _tokenTo
-    ) internal {   
+    ) internal {
         address _tf = tradeFactory();
 
         // Remove any old Trade Factory
@@ -80,18 +120,20 @@ abstract contract TradeFactorySwapper {
 
         address[] memory _rewardTokensLocal = _rewardTokens;
 
-        // TODO: Dont iterate over the array twice
         for (uint256 i; i < _rewardTokensLocal.length; ++i) {
             address token = _rewardTokensLocal[i];
 
-            ERC20(token).safeApprove(_tf, type(uint256).max);
-
-            ITradeFactory(_tf).enable(token, _tokenTo);
+            ERC20(token).safeApprove(tradeFactory_, type(uint256).max);
+            ITradeFactory(tradeFactory_).enable(token, _tokenTo);
         }
 
+        // Set to storage
         _tradeFactory = tradeFactory_;
     }
 
+    /**
+     * @dev Remove any active approvals and set the trade factory to address(0).
+     */
     function _removeTradeFactoryPermissions() internal {
         address[] memory rewardTokensLocal = rewardTokens();
         address _tf = tradeFactory();
@@ -102,12 +144,16 @@ abstract contract TradeFactorySwapper {
         _tradeFactory = address(0);
     }
 
-    // Used for TradeFactory to claim rewards
+    /**
+     * @notice Used for TradeFactory to claim rewards.
+     */
     function claimRewards() external {
         require(msg.sender == _tradeFactory, "!authorized");
         _claimRewards();
     }
 
-    // Need to be overridden to claim rewards mid report cycles.
+    /**
+     * @dev Need to be overridden to claim rewards mid report cycles.
+     */
     function _claimRewards() internal virtual;
 }
