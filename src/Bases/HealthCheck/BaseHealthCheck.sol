@@ -145,13 +145,15 @@ abstract contract BaseHealthCheck is BaseStrategy {
         if (_newTotalAssets > currentTotalAssets) {
             require(
                 ((_newTotalAssets - currentTotalAssets) <=
-                    (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
+                    (currentTotalAssets * uint256(_profitLimitRatio)) /
+                        MAX_BPS),
                 "healthCheck"
             );
         } else if (currentTotalAssets > _newTotalAssets) {
             require(
                 (currentTotalAssets - _newTotalAssets <=
-                    ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
+                    ((currentTotalAssets * uint256(_lossLimitRatio)) /
+                        MAX_BPS)),
                 "healthCheck"
             );
         }
