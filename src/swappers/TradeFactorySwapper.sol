@@ -70,8 +70,8 @@ abstract contract TradeFactorySwapper {
      * sold through the Trade Factory any more.
      */
     function _removeToken(address _tokenFrom, address _tokenTo) internal {
-        address[] memory _rewardTokensLocal = rewardTokens();
         address _tf = tradeFactory();
+        address[] memory _rewardTokensLocal = rewardTokens();
         for (uint256 i; i < _rewardTokensLocal.length; ++i) {
             if (_rewardTokensLocal[i] == _tokenFrom) {
                 if (i != _rewardTokensLocal.length - 1) {
@@ -135,8 +135,8 @@ abstract contract TradeFactorySwapper {
      * @dev Remove any active approvals and set the trade factory to address(0).
      */
     function _removeTradeFactoryPermissions() internal {
-        address[] memory rewardTokensLocal = rewardTokens();
         address _tf = tradeFactory();
+        address[] memory rewardTokensLocal = rewardTokens();
         for (uint256 i; i < rewardTokensLocal.length; ++i) {
             ERC20(rewardTokensLocal[i]).safeApprove(_tf, 0);
         }
