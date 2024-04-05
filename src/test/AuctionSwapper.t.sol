@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.18;
+pragma solidity >=0.8.18;
 
 import "forge-std/console.sol";
 import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";

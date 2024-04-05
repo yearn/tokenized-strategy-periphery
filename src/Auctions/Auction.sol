@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.18;
+pragma solidity >=0.8.18;
 
 import {Maths} from "../libraries/Maths.sol";
 import {Governance} from "../utils/Governance.sol";
