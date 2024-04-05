@@ -57,8 +57,7 @@ abstract contract TradeFactorySwapper {
     function _addToken(address _tokenFrom, address _tokenTo) internal {
         address _tf = tradeFactory();
         if (_tf != address(0)) {
-            ERC20(_tokenFrom).safeApprove(_tf, type(uint256).max);
-
+            ERC20(_tokenFrom).forceApprove(_tf, type(uint256).max);
             ITradeFactory(_tf).enable(_tokenFrom, _tokenTo);
         }
 
@@ -82,7 +81,7 @@ abstract contract TradeFactorySwapper {
                 }
 
                 if (_tf != address(0)) {
-                    ERC20(_tokenFrom).safeApprove(_tf, 0);
+                    ERC20(_tokenFrom).forceApprove(_tf, 0);
                     ITradeFactory(_tf).disable(_tokenFrom, _tokenTo);
                 }
 
@@ -126,7 +125,7 @@ abstract contract TradeFactorySwapper {
         for (uint256 i; i < _rewardTokensLocal.length; ++i) {
             address token = _rewardTokensLocal[i];
 
-            ERC20(token).safeApprove(tradeFactory_, type(uint256).max);
+            ERC20(token).forceApprove(tradeFactory_, type(uint256).max);
             ITradeFactory(tradeFactory_).enable(token, _tokenTo);
         }
 
@@ -141,7 +140,7 @@ abstract contract TradeFactorySwapper {
         address _tf = tradeFactory();
         address[] memory rewardTokensLocal = rewardTokens();
         for (uint256 i; i < rewardTokensLocal.length; ++i) {
-            ERC20(rewardTokensLocal[i]).safeApprove(_tf, 0);
+            ERC20(rewardTokensLocal[i]).forceApprove(_tf, 0);
         }
 
         _tradeFactory = address(0);
