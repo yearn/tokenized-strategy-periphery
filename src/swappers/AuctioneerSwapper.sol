@@ -344,8 +344,7 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
         address _want = want();
         require(_from != address(0) && _from != _want, "ZERO ADDRESS");
         require(
-            _receiver != address(0) && _receiver != address(this),
-            "receiver"
+            _receiver != address(0) 
         );
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
