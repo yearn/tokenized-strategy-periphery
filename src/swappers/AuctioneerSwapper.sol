@@ -52,7 +52,6 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
     struct AuctionInfo {
         TokenInfo fromInfo;
         uint96 kicked;
-        address receiver;
         uint128 initialAvailable;
         uint128 currentAvailable;
     }
@@ -321,21 +320,10 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
 
     /**
      * @notice Enables a new auction.
-     * @dev Uses governance as the receiver.
      * @param _from The address of the token to be auctioned.
-     * @return . The unique identifier of the enabled auction.
-     */
-    function enable(address _from) external virtual returns (bytes32) {
-        return enable(_from, msg.sender);
-    }
-
-    /**
-     * @notice Enables a new auction.
-     * @param _from The address of the token to be auctioned.
-     * @param _receiver The address that will receive the funds in the auction.
      * @return _auctionId The unique identifier of the enabled auction.
      */
-    function enable(address _from, address _receiver)
+    function enable(address _from)
         public
         virtual
         onlyManagement
@@ -343,9 +331,6 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
     {
         address _want = want();
         require(_from != address(0) && _from != _want, "ZERO ADDRESS");
-        require(
-            _receiver != address(0) 
-        );
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
         require(decimals <= 18, "unsupported decimals");
@@ -363,7 +348,6 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
             tokenAddress: _from,
             scaler: uint96(WAD / 10**decimals)
         });
-        auctions[_auctionId].receiver = _receiver;
 
         // Add to the array.
         enabledAuctions.push(_auctionId);
@@ -579,7 +563,7 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
         address _want = want();
 
         // Pull `want`.
-        ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
+        ERC20(_want).safeTransferFrom(msg.sender, address(this), needed);
 
         _postTake(_want, _amountTaken, needed);
 
@@ -592,12 +576,7 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
      * @param _token Address of the `_from` token.
      * @return . The amount of `_token` ready to be auctioned off.
      */
-    function _kickable(address _token)
-        internal
-        view
-        virtual
-        returns (uint256)
-    {
+    function _kickable(address _token) internal view virtual returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
     }
 
@@ -607,11 +586,7 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
      *
      * @param _token Address of the token being auctioned off
      */
-    function _auctionKicked(address _token)
-        internal
-        virtual
-        returns (uint256)
-    {
+    function _auctionKicked(address _token) internal virtual returns (uint256) {
         return ERC20(_token).balanceOf(address(this));
     }
 
