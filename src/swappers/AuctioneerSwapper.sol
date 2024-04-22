@@ -87,12 +87,14 @@ abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
      * @param _auctionCooldown Cooldown period between auctions in seconds.
      * @param _startingPrice Starting price for each auction.
      */
-    function initialize(
+    constructor(
+        address _asset,
+        string memory _name,
         address _want,
         uint256 _auctionLength,
         uint256 _auctionCooldown,
         uint256 _startingPrice
-    ) external virtual {
+    ) BaseHealthCheck(_asset, _name) {
         require(auctionLength == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
