@@ -65,20 +65,20 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
 
-    /// @notice The amount to start the auction at.
-    uint256 public startingPrice;
-
-    /// @notice The time that each auction lasts.
-    uint256 public auctionLength;
-
-    /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public auctionCooldown;
-
     /// @notice Mapping from an auction ID to its struct.
     mapping(bytes32 => AuctionInfo) public auctions;
 
     /// @notice Array of all the enabled auction for this contract.
     bytes32[] public enabledAuctions;
+
+    /// @notice The amount to start the auction at.
+    uint256 public startingPrice;
+
+    /// @notice The time that each auction lasts.
+    uint32 public auctionLength;
+
+    /// @notice The minimum time to wait between auction 'kicks'.
+    uint32 public auctionCooldown;
 
     /**
      * @notice Initializes the Auction contract with initial parameters.
@@ -91,8 +91,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         address _asset,
         string memory _name,
         address _want,
-        uint256 _auctionLength,
-        uint256 _auctionCooldown,
+        uint32 _auctionLength,
+        uint32 _auctionCooldown,
         uint256 _startingPrice
     ) BaseHealthCheck(_asset, _name) {
         require(auctionLength == 0, "initialized");
