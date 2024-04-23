@@ -61,11 +61,11 @@ interface IBaseAuctioneer is IBaseHealthCheck {
         view
         returns (uint256);
 
-    function enable(address _from) external returns (bytes32);
+    function enableAuction(address _from) external returns (bytes32);
 
-    function disable(address _from) external;
+    function disableAuction(address _from) external;
 
-    function disable(address _from, uint256 _index) external;
+    function disableAuction(address _from, uint256 _index) external;
 
     function kick(bytes32 _auctionId) external returns (uint256 available);
 

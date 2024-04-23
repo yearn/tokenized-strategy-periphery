@@ -32,7 +32,12 @@ contract MockAuctioneer is BaseAuctioneer {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function _kickable(address _token) internal view override returns (uint256) {
+    function _kickable(address _token)
+        internal
+        view
+        override
+        returns (uint256)
+    {
         if (useDefault) return super._kickable(_token);
         return letKick;
     }

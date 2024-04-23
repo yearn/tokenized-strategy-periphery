@@ -182,7 +182,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @return uint256 The amount that can be kicked into the auction.
      */
     function kickable(bytes32 _auctionId)
-        external
+        public
         view
         virtual
         returns (uint256)
@@ -328,7 +328,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      * @return _auctionId The unique identifier of the enabled auction.
      */
-    function enable(address _from)
+    function enableAuction(address _from)
         public
         virtual
         onlyManagement
@@ -365,8 +365,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @dev Only callable by governance.
      * @param _from The address of the token being sold.
      */
-    function disable(address _from) external virtual {
-        disable(_from, 0);
+    function disableAuction(address _from) external virtual {
+        disableAuction(_from, 0);
     }
 
     /**
@@ -375,7 +375,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _from The address of the token being sold.
      * @param _index The index the auctionId is at in the array.
      */
-    function disable(address _from, uint256 _index)
+    function disableAuction(address _from, uint256 _index)
         public
         virtual
         onlyEmergencyAuthorized
