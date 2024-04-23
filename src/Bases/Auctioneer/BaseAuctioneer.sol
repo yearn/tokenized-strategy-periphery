@@ -188,7 +188,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         returns (uint256)
     {
         // If not enough time has passed then `kickable` is 0.
-        if (auctions[_auctionId].kicked + uint256(auctionCooldown) > block.timestamp) {
+        if (
+            auctions[_auctionId].kicked + uint256(auctionCooldown) >
+            block.timestamp
+        ) {
             return 0;
         }
 
@@ -433,7 +436,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         address _fromToken = auctions[_auctionId].fromInfo.tokenAddress;
         require(_fromToken != address(0), "not enabled");
         require(
-            block.timestamp > auctions[_auctionId].kicked + uint256(auctionCooldown),
+            block.timestamp >
+                auctions[_auctionId].kicked + uint256(auctionCooldown),
             "too soon"
         );
 
