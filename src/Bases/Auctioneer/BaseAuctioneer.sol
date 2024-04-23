@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import {Maths} from "../libraries/Maths.sol";
+import {Maths} from "../../libraries/Maths.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ITaker} from "../interfaces/ITaker.sol";
-import {BaseHealthCheck} from "../Bases/HealthCheck/BaseHealthCheck.sol";
+import {ITaker} from "../../interfaces/ITaker.sol";
+import {BaseHealthCheck} from "../HealthCheck/BaseHealthCheck.sol";
 
 /**
  *   @title Auctioneer Swaper
  *   @author yearn.fi
  *   @notice General use dutch auction contract for token sales.
  */
-abstract contract AuctioneerSwapper is BaseHealthCheck, ReentrancyGuard {
+abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
     /// @notice Emitted when a new auction is enabled
