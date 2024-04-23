@@ -15,7 +15,9 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function cooldownLength() external view returns (uint32);
 
-    function auctions(bytes32)
+    function auctions(
+        bytes32
+    )
         external
         view
         returns (
@@ -31,7 +33,9 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function getAuctionId(address _from) external view returns (bytes32);
 
-    function auctionInfo(bytes32 _auctionId)
+    function auctionInfo(
+        bytes32 _auctionId
+    )
         external
         view
         returns (
@@ -43,10 +47,10 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function kickable(bytes32 _auctionId) external view returns (uint256);
 
-    function getAmountNeeded(bytes32 _auctionId, uint256 _amountToTake)
-        external
-        view
-        returns (uint256);
+    function getAmountNeeded(
+        bytes32 _auctionId,
+        uint256 _amountToTake
+    ) external view returns (uint256);
 
     function getAmountNeeded(
         bytes32 _auctionId,
@@ -56,10 +60,10 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function price(bytes32 _auctionId) external view returns (uint256);
 
-    function price(bytes32 _auctionId, uint256 _timestamp)
-        external
-        view
-        returns (uint256);
+    function price(
+        bytes32 _auctionId,
+        uint256 _timestamp
+    ) external view returns (uint256);
 
     function enableAuction(address _from) external returns (bytes32);
 
@@ -71,9 +75,10 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function take(bytes32 _auctionId) external returns (uint256);
 
-    function take(bytes32 _auctionId, uint256 _maxAmount)
-        external
-        returns (uint256);
+    function take(
+        bytes32 _auctionId,
+        uint256 _maxAmount
+    ) external returns (uint256);
 
     function take(
         bytes32 _auctionId,

@@ -16,9 +16,9 @@ contract MockAuctioneer is BaseAuctioneer {
 
     uint256 public letKick;
 
-    constructor(address _asset)
-        BaseAuctioneer(_asset, "Mock Auctioneer", _asset, 1 days, 5 days, 1e7)
-    {}
+    constructor(
+        address _asset
+    ) BaseAuctioneer(_asset, "Mock Auctioneer", _asset, 1 days, 5 days, 1e7) {}
 
     function _deployFunds(uint256) internal override {}
 
@@ -32,21 +32,16 @@ contract MockAuctioneer is BaseAuctioneer {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function _kickable(address _token)
-        internal
-        view
-        override
-        returns (uint256)
-    {
+    function _kickable(
+        address _token
+    ) internal view override returns (uint256) {
         if (useDefault) return super._kickable(_token);
         return letKick;
     }
 
-    function _auctionKicked(address _token)
-        internal
-        override
-        returns (uint256)
-    {
+    function _auctionKicked(
+        address _token
+    ) internal override returns (uint256) {
         if (useDefault) return super._auctionKicked(_token);
         return letKick;
     }

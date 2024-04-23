@@ -162,8 +162,8 @@ contract BaseAuctioneerTest is Setup {
 
         address from = tokenAddrs["WBTC"];
 
-        fromScaler = WAD / 10**ERC20(from).decimals();
-        wantScaler = WAD / 10**ERC20(asset).decimals();
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         bytes32 id = auctioneer.enableAuction(from);
 
@@ -248,8 +248,8 @@ contract BaseAuctioneerTest is Setup {
 
         address from = tokenAddrs["WBTC"];
 
-        fromScaler = WAD / 10**ERC20(from).decimals();
-        wantScaler = WAD / 10**ERC20(asset).decimals();
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         bytes32 id = auctioneer.enableAuction(from);
 
@@ -301,8 +301,8 @@ contract BaseAuctioneerTest is Setup {
 
         address from = tokenAddrs["WBTC"];
 
-        fromScaler = WAD / 10**ERC20(from).decimals();
-        wantScaler = WAD / 10**ERC20(asset).decimals();
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         bytes32 id = auctioneer.enableAuction(from);
 
@@ -394,8 +394,8 @@ contract BaseAuctioneerTest is Setup {
 
         address from = tokenAddrs["WBTC"];
 
-        fromScaler = WAD / 10**ERC20(from).decimals();
-        wantScaler = WAD / 10**ERC20(asset).decimals();
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         bytes32 id = auctioneer.enableAuction(from);
 

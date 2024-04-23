@@ -108,7 +108,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         // Set variables
         wantInfo = TokenInfo({
             tokenAddress: _want,
-            scaler: uint96(WAD / 10**decimals)
+            scaler: uint96(WAD / 10 ** decimals)
         });
 
         auctionLength = _auctionLength;
@@ -152,7 +152,9 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @return _kicked The timestamp of the last kick.
      * @return _available The current available amount for the auction.
      */
-    function auctionInfo(bytes32 _auctionId)
+    function auctionInfo(
+        bytes32 _auctionId
+    )
         public
         view
         virtual
@@ -181,12 +183,9 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _auctionId The unique identifier of the auction.
      * @return uint256 The amount that can be kicked into the auction.
      */
-    function kickable(bytes32 _auctionId)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function kickable(
+        bytes32 _auctionId
+    ) public view virtual returns (uint256) {
         // If not enough time has passed then `kickable` is 0.
         if (
             auctions[_auctionId].kicked + uint256(auctionCooldown) >
@@ -204,12 +203,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _amountToTake The amount of `from` to take in the auction.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(bytes32 _auctionId, uint256 _amountToTake)
-        external
-        view
-        virtual
-        returns (uint256)
-    {
+    function getAmountNeeded(
+        bytes32 _auctionId,
+        uint256 _amountToTake
+    ) external view virtual returns (uint256) {
         return
             _getAmountNeeded(
                 auctions[_auctionId],
@@ -272,12 +269,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _timestamp The specific timestamp for calculating the price.
      * @return . The price of the auction.
      */
-    function price(bytes32 _auctionId, uint256 _timestamp)
-        public
-        view
-        virtual
-        returns (uint256)
-    {
+    function price(
+        bytes32 _auctionId,
+        uint256 _timestamp
+    ) public view virtual returns (uint256) {
         // Get unscaled price and scale it down.
         return
             _price(
@@ -328,12 +323,9 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      * @return _auctionId The unique identifier of the enabled auction.
      */
-    function enableAuction(address _from)
-        public
-        virtual
-        onlyManagement
-        returns (bytes32 _auctionId)
-    {
+    function enableAuction(
+        address _from
+    ) public virtual onlyManagement returns (bytes32 _auctionId) {
         address _want = want();
         require(_from != address(0) && _from != _want, "ZERO ADDRESS");
         // Cannot have more than 18 decimals.
@@ -351,7 +343,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         // Store all needed info.
         auctions[_auctionId].fromInfo = TokenInfo({
             tokenAddress: _from,
-            scaler: uint96(WAD / 10**decimals)
+            scaler: uint96(WAD / 10 ** decimals)
         });
 
         // Add to the array.
@@ -375,11 +367,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _from The address of the token being sold.
      * @param _index The index the auctionId is at in the array.
      */
-    function disableAuction(address _from, uint256 _index)
-        public
-        virtual
-        onlyEmergencyAuthorized
-    {
+    function disableAuction(
+        address _from,
+        uint256 _index
+    ) public virtual onlyEmergencyAuthorized {
         bytes32 _auctionId = getAuctionId(_from);
 
         // Make sure the auction was enabled.
@@ -427,12 +418,9 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _auctionId The unique identifier of the auction.
      * @return available The available amount for bidding on in the auction.
      */
-    function kick(bytes32 _auctionId)
-        external
-        virtual
-        nonReentrant
-        returns (uint256 available)
-    {
+    function kick(
+        bytes32 _auctionId
+    ) external virtual nonReentrant returns (uint256 available) {
         address _fromToken = auctions[_auctionId].fromInfo.tokenAddress;
         require(_fromToken != address(0), "not enabled");
         require(
@@ -470,11 +458,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @return . The amount of fromToken taken in the auction.
      */
-    function take(bytes32 _auctionId, uint256 _maxAmount)
-        external
-        virtual
-        returns (uint256)
-    {
+    function take(
+        bytes32 _auctionId,
+        uint256 _maxAmount
+    ) external virtual returns (uint256) {
         return _take(_auctionId, _maxAmount, msg.sender, new bytes(0));
     }
 
