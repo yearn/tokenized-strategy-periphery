@@ -9,7 +9,7 @@ import {ITaker} from "../../interfaces/ITaker.sol";
 import {BaseHealthCheck} from "../HealthCheck/BaseHealthCheck.sol";
 
 /**
- *   @title Auctioneer Swaper
+ *   @title Base Auctioneer
  *   @author yearn.fi
  *   @notice General use dutch auction contract for token sales.
  */
