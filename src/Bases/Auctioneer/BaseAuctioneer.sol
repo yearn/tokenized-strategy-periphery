@@ -62,8 +62,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     uint256 internal constant MINUTE_HALF_LIFE =
         0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
 
-    /// @notice Struct to hold the info for `want`.
-    TokenInfo internal wantInfo;
+    /// @notice Struct to hold the info for `auctionWant`.
+    TokenInfo internal auctionWantInfo;
 
     /// @notice Mapping from an auction ID to its struct.
     mapping(bytes32 => AuctionInfo) public auctions;
@@ -72,7 +72,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     bytes32[] public enabledAuctions;
 
     /// @notice The amount to start the auction at.
-    uint256 public startingPrice;
+    uint256 public auctionStartingPrice;
 
     /// @notice The time that each auction lasts.
     uint32 public auctionLength;
@@ -82,38 +82,38 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
 
     /**
      * @notice Initializes the Auction contract with initial parameters.
-     * @param _want Address this auction is selling to.
+     * @param _auctionWant Address this auction is selling to.
      * @param _auctionLength Duration of each auction in seconds.
      * @param _auctionCooldown Cooldown period between auctions in seconds.
-     * @param _startingPrice Starting price for each auction.
+     * @param _auctionStartingPrice Starting price for each auction.
      */
     constructor(
         address _asset,
         string memory _name,
-        address _want,
+        address _auctionWant,
         uint32 _auctionLength,
         uint32 _auctionCooldown,
-        uint256 _startingPrice
+        uint256 _auctionStartingPrice
     ) BaseHealthCheck(_asset, _name) {
         require(auctionLength == 0, "initialized");
-        require(_want != address(0), "ZERO ADDRESS");
+        require(_auctionWant != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
         require(_auctionLength < _auctionCooldown, "cooldown");
-        require(_startingPrice != 0, "starting price");
+        require(_auctionStartingPrice != 0, "starting price");
 
         // Cannot have more than 18 decimals.
-        uint256 decimals = ERC20(_want).decimals();
+        uint256 decimals = ERC20(_auctionWant).decimals();
         require(decimals <= 18, "unsupported decimals");
 
         // Set variables
-        wantInfo = TokenInfo({
-            tokenAddress: _want,
+        auctionWantInfo = TokenInfo({
+            tokenAddress: _auctionWant,
             scaler: uint96(WAD / 10 ** decimals)
         });
 
         auctionLength = _auctionLength;
         auctionCooldown = _auctionCooldown;
-        startingPrice = _startingPrice;
+        auctionStartingPrice = _auctionStartingPrice;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -124,8 +124,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @notice Get the address of this auctions want token.
      * @return . The want token.
      */
-    function want() public view virtual returns (address) {
-        return wantInfo.tokenAddress;
+    function auctionWant() public view virtual returns (address) {
+        return auctionWantInfo.tokenAddress;
     }
 
     /**
@@ -141,7 +141,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      * @return bytes32 A unique auction identifier.
      */
     function getAuctionId(address _from) public view virtual returns (bytes32) {
-        return keccak256(abi.encodePacked(_from, want(), address(this)));
+        return keccak256(abi.encodePacked(_from, auctionWant(), address(this)));
     }
 
     /**
@@ -169,7 +169,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
 
         return (
             auction.fromInfo.tokenAddress,
-            want(),
+            auctionWant(),
             auction.kicked,
             auction.kicked + uint256(auctionLength) > block.timestamp
                 ? auction.currentAvailable
@@ -198,10 +198,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     }
 
     /**
-     * @notice Gets the amount of `want` needed to buy a specific amount of `from`.
+     * @notice Gets the amount of `auctionWant` needed to buy a specific amount of `from`.
      * @param _auctionId The unique identifier of the auction.
      * @param _amountToTake The amount of `from` to take in the auction.
-     * @return . The amount of `want` needed to fulfill the take amount.
+     * @return . The amount of `auctionWant` needed to fulfill the take amount.
      */
     function getAmountNeeded(
         bytes32 _auctionId,
@@ -216,11 +216,11 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     }
 
     /**
-     * @notice Gets the amount of `want` needed to buy a specific amount of `from` at a specific timestamp.
+     * @notice Gets the amount of `auctionWant` needed to buy a specific amount of `from` at a specific timestamp.
      * @param _auctionId The unique identifier of the auction.
      * @param _amountToTake The amount `from` to take in the auction.
      * @param _timestamp The specific timestamp for calculating the amount needed.
-     * @return . The amount of `want` needed to fulfill the take amount.
+     * @return . The amount of `auctionWant` needed to fulfill the take amount.
      */
     function getAmountNeeded(
         bytes32 _auctionId,
@@ -232,7 +232,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     }
 
     /**
-     * @dev Return the amount of `want` needed to buy `_amountToTake`.
+     * @dev Return the amount of `auctionWant` needed to buy `_amountToTake`.
      */
     function _getAmountNeeded(
         AuctionInfo memory _auction,
@@ -250,8 +250,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
                     _timestamp
                 )) /
             1e18 /
-            // Scale back down to want.
-            wantInfo.scaler;
+            // Scale back down to auctionWant.
+            auctionWantInfo.scaler;
     }
 
     /**
@@ -280,7 +280,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
                 auctions[_auctionId].initialAvailable *
                     auctions[_auctionId].fromInfo.scaler,
                 _timestamp
-            ) / wantInfo.scaler;
+            ) / auctionWantInfo.scaler;
     }
 
     /**
@@ -307,7 +307,10 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
             MINUTE_HALF_LIFE,
             (secondsElapsed % 3600) / 60
         );
-        uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
+        uint256 initialPrice = Maths.wdiv(
+            auctionStartingPrice * 1e18,
+            _available
+        );
 
         return
             (initialPrice * Maths.rmul(hoursComponent, minutesComponent)) /
@@ -326,8 +329,8 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
     function enableAuction(
         address _from
     ) public virtual onlyManagement returns (bytes32 _auctionId) {
-        address _want = want();
-        require(_from != address(0) && _from != _want, "ZERO ADDRESS");
+        address _auctionWant = auctionWant();
+        require(_from != address(0) && _from != _auctionWant, "ZERO ADDRESS");
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
         require(decimals <= 18, "unsupported decimals");
@@ -349,7 +352,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         // Add to the array.
         enabledAuctions.push(_auctionId);
 
-        emit AuctionEnabled(_auctionId, _from, _want, address(this));
+        emit AuctionEnabled(_auctionId, _from, _auctionWant, address(this));
     }
 
     /**
@@ -406,7 +409,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         // Pop the id off the array.
         enabledAuctions.pop();
 
-        emit AuctionDisabled(_auctionId, _from, want(), address(this));
+        emit AuctionDisabled(_auctionId, _from, auctionWant(), address(this));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -552,13 +555,13 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
             );
         }
 
-        // Cache the want address.
-        address _want = want();
+        // Cache the auctionWant address.
+        address _auctionWant = auctionWant();
 
-        // Pull `want`.
-        ERC20(_want).safeTransferFrom(msg.sender, address(this), needed);
+        // Pull `auctionWant`.
+        ERC20(_auctionWant).safeTransferFrom(msg.sender, address(this), needed);
 
-        _postTake(_want, _amountTaken, needed);
+        _postTake(_auctionWant, _amountTaken, needed);
 
         emit AuctionTaken(_auctionId, _amountTaken, left);
     }
@@ -589,7 +592,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
      *   occurs.
      * @param _token Address of the token being taken.
      * @param _amountToTake Amount of `_token` needed.
-     * @param _amountToPay Amount of `want` that will be payed.
+     * @param _amountToPay Amount of `auctionWant` that will be payed.
      */
     function _preTake(
         address _token,

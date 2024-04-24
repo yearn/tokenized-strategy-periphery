@@ -9,11 +9,11 @@ interface IBaseAuctioneer is IBaseHealthCheck {
         uint96 scaler;
     }
 
-    function startingPrice() external view returns (uint256);
+    function auctionStartingPrice() external view returns (uint256);
 
     function auctionLength() external view returns (uint32);
 
-    function cooldownLength() external view returns (uint32);
+    function auctionCooldown() external view returns (uint32);
 
     function auctions(
         bytes32
@@ -28,6 +28,8 @@ interface IBaseAuctioneer is IBaseHealthCheck {
         );
 
     function enabledAuctions() external view returns (bytes32[] memory);
+
+    function auctionWant() external view returns (address);
 
     function numberOfEnabledAuctions() external view returns (uint256);
 

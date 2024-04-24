@@ -192,12 +192,13 @@ contract BaseAuctioneerTest is Setup {
         uint256 available = auctioneer.kick(id);
 
         assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
+        assertEq(ERC20(from).balanceOf(address(auctioneer)), available);
 
         assertEq(auctioneer.kickable(id), 0);
         (, , _kicked, _available) = auctioneer.auctionInfo(id);
         assertEq(_kicked, block.timestamp);
         assertEq(_available, _amount);
-        uint256 startingPrice = ((auctioneer.startingPrice() *
+        uint256 startingPrice = ((auctioneer.auctionStartingPrice() *
             (WAD / wantScaler)) * 1e18) /
             _amount /
             fromScaler;
@@ -338,12 +339,13 @@ contract BaseAuctioneerTest is Setup {
         uint256 available = auctioneer.kick(id);
 
         assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
+        assertEq(kickable, available);
 
         assertEq(auctioneer.kickable(id), 0);
         (, , _kicked, _available) = auctioneer.auctionInfo(id);
         assertEq(_kicked, block.timestamp);
         assertEq(_available, kickable);
-        uint256 startingPrice = ((auctioneer.startingPrice() *
+        uint256 startingPrice = ((auctioneer.auctionStartingPrice() *
             (WAD / wantScaler)) * 1e18) /
             kickable /
             fromScaler;
