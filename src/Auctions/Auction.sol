@@ -134,7 +134,7 @@ contract Auction is Governance, ReentrancyGuard {
         require(auctionLength == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
-        require(_auctionLength < _auctionCooldown, "cooldown");
+        require(_auctionLength <= _auctionCooldown, "cooldown");
         require(_startingPrice != 0, "starting price");
 
         // Cannot have more than 18 decimals.

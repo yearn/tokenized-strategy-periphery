@@ -98,7 +98,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         require(auctionLength == 0, "initialized");
         require(_auctionWant != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
-        require(_auctionLength < _auctionCooldown, "cooldown");
+        require(_auctionLength <= _auctionCooldown, "cooldown");
         require(_auctionStartingPrice != 0, "starting price");
 
         // Cannot have more than 18 decimals.
