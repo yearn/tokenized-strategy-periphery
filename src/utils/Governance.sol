@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
+/// @title Contract ownership that allows for custom initialization.
 contract Governance {
     /// @notice Emitted when the governance address is updated.
     event GovernanceTransferred(
@@ -18,7 +19,7 @@ contract Governance {
         require(governance == msg.sender, "!governance");
     }
 
-    /// @notice Address that can set the default base fee and provider
+    /// @notice Address that owns the smart contract.
     address public governance;
 
     constructor(address _governance) {
