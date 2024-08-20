@@ -309,6 +309,7 @@ contract AuctionSwapperTest is Setup {
         uint256 toTake = (_amount * _percent) / MAX_BPS;
         uint256 left = _amount - toTake;
         uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
 
@@ -324,7 +325,7 @@ contract AuctionSwapperTest is Setup {
 
         (, , , _available) = auction.auctionInfo(id);
         assertEq(_available, left);
-        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(swapper)), needed);
@@ -470,6 +471,7 @@ contract AuctionSwapperTest is Setup {
         uint256 toTake = (kickable * _percent) / MAX_BPS;
         uint256 left = kickable - toTake;
         uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
 
@@ -487,7 +489,7 @@ contract AuctionSwapperTest is Setup {
 
         (, , , _available) = auction.auctionInfo(id);
         assertEq(_available, left);
-        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(swapper)), needed);
