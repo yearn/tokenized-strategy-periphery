@@ -28,7 +28,7 @@ abstract contract TradeFactorySwapper {
      *   proper functions to avoid issues.
      * @return The current trade factory in use if any.
      */
-    function tradeFactory() public view returns (address) {
+    function tradeFactory() public view virtual returns (address) {
         return _tradeFactory;
     }
 
@@ -38,14 +38,17 @@ abstract contract TradeFactorySwapper {
      *   proper functions to avoid issues.
      * @return The current array of tokens being sold if any.
      */
-    function rewardTokens() public view returns (address[] memory) {
+    function rewardTokens() public view virtual returns (address[] memory) {
         return _rewardTokens;
     }
 
     /**
      * @dev Add an array of tokens to sell to its corresponding `_to_.
      */
-    function _addTokens(address[] memory _from, address[] memory _to) internal {
+    function _addTokens(
+        address[] memory _from,
+        address[] memory _to
+    ) internal virtual {
         for (uint256 i; i < _from.length; ++i) {
             _addToken(_from[i], _to[i]);
         }
@@ -54,7 +57,7 @@ abstract contract TradeFactorySwapper {
     /**
      * @dev Add the `_tokenFrom` to be sold to `_tokenTo` through the Trade Factory
      */
-    function _addToken(address _tokenFrom, address _tokenTo) internal {
+    function _addToken(address _tokenFrom, address _tokenTo) internal virtual {
         address _tf = tradeFactory();
         if (_tf != address(0)) {
             ERC20(_tokenFrom).forceApprove(_tf, type(uint256).max);
@@ -68,7 +71,10 @@ abstract contract TradeFactorySwapper {
      * @dev Remove a specific `_tokenFrom` that was previously added to not be
      * sold through the Trade Factory any more.
      */
-    function _removeToken(address _tokenFrom, address _tokenTo) internal {
+    function _removeToken(
+        address _tokenFrom,
+        address _tokenTo
+    ) internal virtual {
         address _tf = tradeFactory();
         address[] memory _rewardTokensLocal = rewardTokens();
         for (uint256 i; i < _rewardTokensLocal.length; ++i) {
@@ -95,7 +101,7 @@ abstract contract TradeFactorySwapper {
     /**
      * @dev Removes all reward tokens and delete the Trade Factory.
      */
-    function _deleteRewardTokens() internal {
+    function _deleteRewardTokens() internal virtual {
         _removeTradeFactoryPermissions();
         delete _rewardTokens;
     }
@@ -109,7 +115,7 @@ abstract contract TradeFactorySwapper {
     function _setTradeFactory(
         address tradeFactory_,
         address _tokenTo
-    ) internal {
+    ) internal virtual {
         address _tf = tradeFactory();
 
         // Remove any old Trade Factory
@@ -136,7 +142,7 @@ abstract contract TradeFactorySwapper {
     /**
      * @dev Remove any active approvals and set the trade factory to address(0).
      */
-    function _removeTradeFactoryPermissions() internal {
+    function _removeTradeFactoryPermissions() internal virtual {
         address _tf = tradeFactory();
         address[] memory rewardTokensLocal = rewardTokens();
         for (uint256 i; i < rewardTokensLocal.length; ++i) {
@@ -149,7 +155,7 @@ abstract contract TradeFactorySwapper {
     /**
      * @notice Used for TradeFactory to claim rewards.
      */
-    function claimRewards() external {
+    function claimRewards() external virtual {
         require(msg.sender == _tradeFactory, "!authorized");
         _claimRewards();
     }

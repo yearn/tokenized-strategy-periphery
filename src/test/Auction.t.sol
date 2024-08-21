@@ -295,6 +295,7 @@ contract AuctionTest is Setup, ITaker {
         skip(auction.auctionLength() / 2);
 
         uint256 needed = auction.getAmountNeeded(id, _amount);
+        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
 
@@ -311,7 +312,7 @@ contract AuctionTest is Setup, ITaker {
         (, , , _available) = auction.auctionInfo(id);
         assertEq(_available, 0);
 
-        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + _amount);
         assertEq(ERC20(from).balanceOf(address(auction)), 0);
         assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
@@ -351,6 +352,7 @@ contract AuctionTest is Setup, ITaker {
         uint256 toTake = (_amount * _percent) / MAX_BPS;
         uint256 left = _amount - toTake;
         uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
 
@@ -366,7 +368,7 @@ contract AuctionTest is Setup, ITaker {
 
         (, , , _available) = auction.auctionInfo(id);
         assertEq(_available, left);
-        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
@@ -405,6 +407,7 @@ contract AuctionTest is Setup, ITaker {
         uint256 toTake = _amount / 2;
         uint256 left = _amount - toTake;
         uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
 
@@ -424,7 +427,7 @@ contract AuctionTest is Setup, ITaker {
 
         (, , , _available) = auction.auctionInfo(id);
         assertEq(_available, left);
-        assertEq(ERC20(asset).balanceOf(address(this)), 0);
+        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
