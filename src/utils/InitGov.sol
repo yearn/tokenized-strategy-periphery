@@ -41,7 +41,7 @@ contract InitGov {
     function signTxn(address _contract, address _newGovernance) external {
         require(isSigner[msg.sender], "!signer");
         bytes32 id = getTxnId(_contract, _newGovernance);
-        require(!signed[msg.sender][id], "already signer");
+        require(!signed[msg.sender][id], "already signed");
 
         signed[msg.sender][id] = true;
         numberSigned[id] += 1;
