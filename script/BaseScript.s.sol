@@ -24,5 +24,5 @@ abstract contract BaseScript is Script {
 
     address public v3Safe = 0x33333333D5eFb92f19a5F94a43456b3cec2797AE;
 
-    address public initGov;
+    address public initGov = 0x6f3cBE2ab3483EC4BA7B672fbdCa0E9B33F88db8;
 }
