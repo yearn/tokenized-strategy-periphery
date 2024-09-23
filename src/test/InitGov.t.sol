@@ -11,17 +11,17 @@ contract InitGovTest is Setup {
     address safe = 0x33333333D5eFb92f19a5F94a43456b3cec2797AE;
 
     address public constant SIGNER_ONE =
-        0xD7392bcc3D3611adF1793fDdaAAB4770772AC35A;
-    address public constant SIGNER_TWO =
-        0xa05c4256ff0dd38697e63D48dF146e6e2FE7fe4A;
-    address public constant SIGNER_THREE =
-        0x305af52AC31d3F9Daa1EC6231bA7b36Bb40f42f4;
-    address public constant SIGNER_FOUR =
-        0x80f751EdcB3012d5AF5530AFE97d5dC6EE176Bc0;
-    address public constant SIGNER_FIVE =
         0x6d2b80BA79871281Be7F70b079996a052B8D62F4;
-    address public constant SIGNER_SIX =
+    address public constant SIGNER_TWO =
+        0x305af52AC31d3F9Daa1EC6231bA7b36Bb40f42f4;
+    address public constant SIGNER_THREE =
+        0xa05c4256ff0dd38697e63D48dF146e6e2FE7fe4A;
+    address public constant SIGNER_FOUR =
         0x623d4A04e19328244924D1dee48252987C02fC0a;
+    address public constant SIGNER_FIVE =
+        0x5C166A5919cC07d785837d8Cc1261c67229d271D;
+    address public constant SIGNER_SIX =
+        0x80f751EdcB3012d5AF5530AFE97d5dC6EE176Bc0;
 
     InitGov public initGov;
 
