@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import "./BaseScript.sol";
+import "./BaseScript.s.sol";
 
 // Deploy a contract to a deterministic address with create2
-contract DeployAuctionFactory is BaseScript {
+contract DeployInitGov is BaseScript {
 
     function run() external {
         vm.startBroadcast();

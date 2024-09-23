@@ -18,7 +18,7 @@ interface Deployer {
 }
 
 // Deploy a contract to a deterministic address with create2
-contract BaseScript is Script {
+abstract contract BaseScript is Script {
 
     Deployer public deployer = Deployer(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
 
