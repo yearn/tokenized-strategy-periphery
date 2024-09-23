@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import "forge-std/Script.sol";
+import "./BaseScript.sol";
 
 // Deploy a contract to a deterministic address with create2
-contract DeployAuctionFactory is Script {
-
-    Deployer public deployer = Deployer(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
+contract DeployAuctionFactory is BaseScript {
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         // Get the bytecode
         bytes memory bytecode =  abi.encodePacked(vm.getCode("AuctionFactory.sol:AuctionFactory"));
@@ -24,13 +21,4 @@ contract DeployAuctionFactory is Script {
 
         vm.stopBroadcast();
     }
-}
-
-interface Deployer {
-    event ContractCreation(address indexed newContract, bytes32 indexed salt);
-
-    function deployCreate3(
-        bytes32 salt,
-        bytes memory initCode
-    ) external payable returns (address newContract);
 }

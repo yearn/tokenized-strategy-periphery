@@ -45,11 +45,15 @@ Deployment of periphery contracts such as the [Apr Oracle](https://github.com/ye
 
 This can be done permissionlessly if the most recent contract has not yet been deployed on a chain you would like to use it on.
 
-1. Add your deployers Private key under PRIVATE_KEY in your .env file.
-     - NOTE: make sure to add `0x` to the beginning of the key.
+1. If you have not added a keystore private key to foundry before add your address to use
+
+```shell
+$ cast wallet import --interactive <wallet_name>
+```
+
 2. Run the deployment script for the contract you want to deploy.
     ```sh
-    forge script script/DeployContractName.s.sol:DeployContractName --broadcast --rpc-url YOUR_RPC_URL
+    forge script script/DeployContractName.s.sol:DeployContractName --broadcast --rpc-url YOUR_RPC_URL --account ACCOUNT_NAME
     ```
     - You can do a dry run before officially deploying by removing the `--broadcast` flag.
     - For chains that don't support 1559 tx's you may need to add a `--legacy` flag.
