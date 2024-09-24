@@ -13,4 +13,4 @@
 [submodule "lib/yearn-vaults-v3"]
 	path = lib/yearn-vaults-v3
 	url = https://github.com/yearn/yearn-vaults-v3
-	branch = master
+	branch = v3.0.3
