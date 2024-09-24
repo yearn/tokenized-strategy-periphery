@@ -9,8 +9,7 @@ contract DeployCommonTrigger is Script {
     Deployer public deployer = Deployer(0x8D85e7c9A4e369E53Acc8d5426aE1568198b0112);
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         // Encode constructor arguments
         bytes memory construct = abi.encode(0x33333333D5eFb92f19a5F94a43456b3cec2797AE);
