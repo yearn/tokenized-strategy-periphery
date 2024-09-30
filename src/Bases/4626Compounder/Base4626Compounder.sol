@@ -71,7 +71,8 @@ contract Base4626Compounder is BaseHealthCheck {
      * @param _amount, The amount of 'asset' to be freed.
      */
     function _freeFunds(uint256 _amount) internal virtual override {
-        uint256 shares = vault.convertToShares(_amount);
+        // Use previewWithdraw to round up.
+        uint256 shares = vault.previewWithdraw(_amount);
 
         uint256 vaultBalance = balanceOfVault();
         if (shares > vaultBalance) {
