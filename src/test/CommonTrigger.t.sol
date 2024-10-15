@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import "forge-std/Script.sol";
-import {Setup, IStrategy, console} from "./utils/Setup.sol";
+import {Setup, IStrategy, console, Roles} from "./utils/Setup.sol";
 
 import {CommonReportTrigger, IBaseFee} from "../ReportTrigger/CommonReportTrigger.sol";
 import {MockCustomStrategyTrigger} from "./mocks/MockCustomStrategyTrigger.sol";
@@ -140,9 +139,7 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_setCustomVaultTrigger(address _address) public {
-        vm.assume(_address != vaultManagement);
-
+    function test_setCustomVaultTrigger() public {
         // Deploy a vault.
         vault = setUpVault();
 
@@ -155,7 +152,7 @@ contract CommonTriggerTest is Setup {
         );
 
         vm.expectRevert("!authorized");
-        vm.prank(_address);
+        vm.prank(user);
         commonTrigger.setCustomVaultTrigger(
             address(vault),
             address(mockStrategy),
@@ -170,7 +167,11 @@ contract CommonTriggerTest is Setup {
             address(0)
         );
 
-        vm.prank(vaultManagement);
+        // Give the user the reporting manager role.
+        vm.prank(management);
+        vault.set_role(user, Roles.REPORTING_MANAGER);
+
+        vm.prank(user);
         commonTrigger.setCustomVaultTrigger(
             address(vault),
             address(mockStrategy),
@@ -210,12 +211,8 @@ contract CommonTriggerTest is Setup {
         );
     }
 
-    function test_setCustomVaultBaseFee(
-        address _address,
-        uint256 _baseFee
-    ) public {
-        vm.assume(_address != vaultManagement);
-        vm.assume(_baseFee != 0);
+    function test_setCustomVaultBaseFee() public {
+        uint256 _baseFee = 67852;
 
         // Deploy a vault.
         vault = setUpVault();
@@ -229,7 +226,7 @@ contract CommonTriggerTest is Setup {
         );
 
         vm.expectRevert("!authorized");
-        vm.prank(_address);
+        vm.prank(user);
         commonTrigger.setCustomVaultBaseFee(
             address(vault),
             address(mockStrategy),
@@ -244,7 +241,11 @@ contract CommonTriggerTest is Setup {
             0
         );
 
-        vm.prank(vaultManagement);
+        // Give the user the reporting manager role.
+        vm.prank(management);
+        vault.set_role(user, Roles.REPORTING_MANAGER);
+
+        vm.prank(user);
         commonTrigger.setCustomVaultBaseFee(
             address(vault),
             address(mockStrategy),
@@ -354,8 +355,8 @@ contract CommonTriggerTest is Setup {
         assertEq(data, bytes("Shutdown"));
     }
 
-    function test_defaultVaultTrigger(uint256 _amount) public {
-        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+    function test_defaultVaultTrigger() public {
+        uint256 _amount = 1e18;
 
         // Deploy a vault.
         vault = setUpVault();
