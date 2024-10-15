@@ -67,7 +67,16 @@ contract AprOracle is Governance {
 
         // If non set check the legacy oracle.
         if (oracle == address(0)) {
-            oracle = AprOracle(LEGACY_ORACLE).oracles(_strategy);
+            // Do a low level call in case the legacy oracle is not deployed.
+            (bool success, bytes memory data) = LEGACY_ORACLE.staticcall(
+                abi.encodeWithSelector(
+                    AprOracle(LEGACY_ORACLE).oracles.selector,
+                    _strategy
+                )
+            );
+            if (success && data.length > 0) {
+                oracle = abi.decode(data, (address));
+            }
         }
 
         // Don't revert if a oracle is not set.
@@ -81,7 +90,7 @@ contract AprOracle is Governance {
 
     /**
      * @notice Set a custom APR `_oracle` for a `_strategy`.
-     * @dev Can only be called by the oracle's `governance` or
+     * @dev Can only be called by the oracle's `governance` Is tor
      *  management of the `_strategy`.
      *
      * The `_oracle` will need to implement the IOracle interface.
@@ -159,11 +168,20 @@ contract AprOracle is Governance {
             assets;
     }
 
-    function getV2Apr(address _vault) external view returns (uint256) {
+    function getWeightedAverageApr(
+        address _vault
+    ) external view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
 
         uint256 totalApr = 0;
         for (uint256 i = 0; i < strategies.length; i++) {
+            uint256 debt = IVault(_vault)
+                .strategies(strategies[i])
+                .current_debt;
+
+            if (debt == 0) continue;
+
+            // Get a performance fee if the strategy has one.
             (, bytes memory fee) = strategies[i].staticcall(
                 abi.encodeWithSelector(
                     IStrategy(strategies[i]).performanceFee.selector
@@ -171,13 +189,13 @@ contract AprOracle is Governance {
             );
             uint256 performanceFee = abi.decode(fee, (uint256));
 
+            // Add the weighted apr of the strategy to the total apr.
             totalApr +=
-                (getStrategyApr(strategies[i], 0) *
-                    IVault(_vault).strategies(strategies[i]).current_debt *
-                    performanceFee) /
+                (getStrategyApr(strategies[i], 0) * debt * performanceFee) /
                 MAX_BPS;
         }
 
+        // Divide by the total assets to get apr as 1e18.
         return totalApr / IVault(_vault).totalAssets();
     }
 }
