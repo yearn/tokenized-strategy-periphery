@@ -83,8 +83,13 @@ contract AprOracle is Governance {
         if (oracle != address(0)) {
             return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
         } else {
-            // This will revert for non v3 vaults.
-            return getExpectedApr(_strategy, _debtChange);
+            // If the vault is a v3 vault, we can get default to the expected apr.
+            try IVault(_strategy).fullProfitUnlockDate() returns (uint256) {
+                return getExpectedApr(_strategy, _debtChange);
+            } catch {
+                // Else just return 0.
+                return 0;
+            }
         }
     }
 
