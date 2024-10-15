@@ -10,13 +10,12 @@ contract DeployAprOracle is BaseScript {
         vm.startBroadcast();
 
         // Encode constructor arguments
-        bytes memory construct = abi.encode(v3Safe);
+        bytes memory construct = abi.encode(initGov);
 
         // Get the bytecode
         bytes memory bytecode =  abi.encodePacked(vm.getCode("AprOracle.sol:AprOracle"), construct);
 
-        // Pick an unique salt
-        bytes32 salt = keccak256("APR Oracle");
+        bytes32 salt;
 
         address contractAddress = deployer.deployCreate2(salt, bytecode);
 
