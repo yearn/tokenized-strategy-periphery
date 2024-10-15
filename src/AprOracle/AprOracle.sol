@@ -180,7 +180,8 @@ contract AprOracle is Governance {
      * @return apr The weighted average apr expressed as 1e18.
      */
     function getWeightedAverageApr(
-        address _vault
+        address _vault,
+        int256 _delta
     ) external view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
         uint256 totalAssets = IVault(_vault).totalAssets();
@@ -215,5 +216,5 @@ contract AprOracle is Governance {
         // Divide by the total assets to get apr as 1e18.
         return totalApr / uint256(int256(totalAssets) + _delta);
     }
-    
+
 }
