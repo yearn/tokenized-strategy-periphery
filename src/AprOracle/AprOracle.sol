@@ -177,6 +177,7 @@ contract AprOracle is Governance {
         address _vault
     ) external view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
+        uint256 totalAssets = IVault(_vault).totalAssets();
 
         uint256 totalApr = 0;
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -194,13 +195,18 @@ contract AprOracle is Governance {
             );
             uint256 performanceFee = abi.decode(fee, (uint256));
 
+            // Get the effective debt change for the strategy.
+            int256 debtChange = (_delta * int256(debt)) / int256(totalAssets);
+
             // Add the weighted apr of the strategy to the total apr.
             totalApr +=
-                (getStrategyApr(strategies[i], 0) * debt * performanceFee) /
+                (getStrategyApr(strategies[i], debtChange) *
+                    uint256(int256(debt) + debtChange) *
+                    (MAX_BPS - performanceFee)) /
                 MAX_BPS;
         }
 
         // Divide by the total assets to get apr as 1e18.
-        return totalApr / IVault(_vault).totalAssets();
+        return totalApr / uint256(int256(totalAssets) + _delta);
     }
 }
