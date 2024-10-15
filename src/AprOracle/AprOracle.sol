@@ -195,12 +195,16 @@ contract AprOracle is Governance {
             if (debt == 0) continue;
 
             // Get a performance fee if the strategy has one.
-            (, bytes memory fee) = strategies[i].staticcall(
+            (bool success, bytes memory fee) = strategies[i].staticcall(
                 abi.encodeWithSelector(
                     IStrategy(strategies[i]).performanceFee.selector
                 )
             );
-            uint256 performanceFee = abi.decode(fee, (uint256));
+
+            uint256 performanceFee;
+            if (success) {
+                performanceFee = abi.decode(fee, (uint256));
+            }
 
             // Get the effective debt change for the strategy.
             int256 debtChange = (_delta * int256(debt)) / int256(totalAssets);
@@ -216,5 +220,4 @@ contract AprOracle is Governance {
         // Divide by the total assets to get apr as 1e18.
         return totalApr / uint256(int256(totalAssets) + _delta);
     }
-
 }
