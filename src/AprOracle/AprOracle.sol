@@ -65,7 +65,7 @@ contract AprOracle is Governance {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
-        // If non set check the legacy oracle.
+        // If not set, check the legacy oracle.
         if (oracle == address(0)) {
             // Do a low level call in case the legacy oracle is not deployed.
             (bool success, bytes memory data) = LEGACY_ORACLE.staticcall(
@@ -83,7 +83,7 @@ contract AprOracle is Governance {
         if (oracle != address(0)) {
             return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
         } else {
-            // If the vault is a v3 vault, we can get default to the expected apr.
+            // If the strategy is a v3 vault, we can default to the expected apr.
             try IVault(_strategy).fullProfitUnlockDate() returns (uint256) {
                 return getExpectedApr(_strategy, _debtChange);
             } catch {
@@ -95,7 +95,7 @@ contract AprOracle is Governance {
 
     /**
      * @notice Set a custom APR `_oracle` for a `_strategy`.
-     * @dev Can only be called by the oracle's `governance` Is tor
+     * @dev Can only be called by the Apr Oracle's `governance` or
      *  management of the `_strategy`.
      *
      * The `_oracle` will need to implement the IOracle interface.
@@ -173,6 +173,12 @@ contract AprOracle is Governance {
             assets;
     }
 
+    /**
+     * @notice Get the current weighted average APR for a V3 vault.
+     * @dev This is the sum of all the current APR's of the strategies in the vault.
+     * @param _vault The address of the vault.
+     * @return apr The weighted average apr expressed as 1e18.
+     */
     function getWeightedAverageApr(
         address _vault
     ) external view virtual returns (uint256) {
