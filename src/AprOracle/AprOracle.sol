@@ -209,4 +209,5 @@ contract AprOracle is Governance {
         // Divide by the total assets to get apr as 1e18.
         return totalApr / uint256(int256(totalAssets) + _delta);
     }
+    
 }
