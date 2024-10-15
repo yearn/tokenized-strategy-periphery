@@ -65,7 +65,7 @@ contract AprOracle is Governance {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
-        // If non set check the legacy oracle.
+        // If not set, check the legacy oracle.
         if (oracle == address(0)) {
             // Do a low level call in case the legacy oracle is not deployed.
             (bool success, bytes memory data) = LEGACY_ORACLE.staticcall(
@@ -83,7 +83,7 @@ contract AprOracle is Governance {
         if (oracle != address(0)) {
             return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
         } else {
-            // If the vault is a v3 vault, we can get default to the expected apr.
+            // If the strategy is a v3 vault, we can default to the expected apr.
             try IVault(_strategy).fullProfitUnlockDate() returns (uint256) {
                 return getExpectedApr(_strategy, _debtChange);
             } catch {
@@ -95,7 +95,7 @@ contract AprOracle is Governance {
 
     /**
      * @notice Set a custom APR `_oracle` for a `_strategy`.
-     * @dev Can only be called by the oracle's `governance` Is tor
+     * @dev Can only be called by the Apr Oracle's `governance` or
      *  management of the `_strategy`.
      *
      * The `_oracle` will need to implement the IOracle interface.
@@ -173,10 +173,18 @@ contract AprOracle is Governance {
             assets;
     }
 
+    /**
+     * @notice Get the current weighted average APR for a V3 vault.
+     * @dev This is the sum of all the current APR's of the strategies in the vault.
+     * @param _vault The address of the vault.
+     * @return apr The weighted average apr expressed as 1e18.
+     */
     function getWeightedAverageApr(
-        address _vault
+        address _vault,
+        int256 _delta
     ) external view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
+        uint256 totalAssets = IVault(_vault).totalAssets();
 
         uint256 totalApr = 0;
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -187,20 +195,29 @@ contract AprOracle is Governance {
             if (debt == 0) continue;
 
             // Get a performance fee if the strategy has one.
-            (, bytes memory fee) = strategies[i].staticcall(
+            (bool success, bytes memory fee) = strategies[i].staticcall(
                 abi.encodeWithSelector(
                     IStrategy(strategies[i]).performanceFee.selector
                 )
             );
-            uint256 performanceFee = abi.decode(fee, (uint256));
+
+            uint256 performanceFee;
+            if (success) {
+                performanceFee = abi.decode(fee, (uint256));
+            }
+
+            // Get the effective debt change for the strategy.
+            int256 debtChange = (_delta * int256(debt)) / int256(totalAssets);
 
             // Add the weighted apr of the strategy to the total apr.
             totalApr +=
-                (getStrategyApr(strategies[i], 0) * debt * performanceFee) /
+                (getStrategyApr(strategies[i], debtChange) *
+                    uint256(int256(debt) + debtChange) *
+                    (MAX_BPS - performanceFee)) /
                 MAX_BPS;
         }
 
         // Divide by the total assets to get apr as 1e18.
-        return totalApr / IVault(_vault).totalAssets();
+        return totalApr / uint256(int256(totalAssets) + _delta);
     }
 }
