@@ -83,12 +83,19 @@ contract AprOracle is Governance {
         if (oracle != address(0)) {
             return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
         } else {
-            // If the strategy is a v3 vault, we can default to the expected apr.
-            try IVault(_strategy).fullProfitUnlockDate() returns (uint256) {
-                return getExpectedApr(_strategy, _debtChange);
+            // If the strategy is a V3 Multi strategy vault user weighted average.
+            try IVault(_strategy).role_manager() returns (address) {
+                return getWeightedAverageApr(_strategy, _debtChange);
             } catch {
-                // Else just return 0.
-                return 0;
+                // If the strategy is a v3 TokenizedStrategy, we can default to the expected apr.
+                try IStrategy(_strategy).fullProfitUnlockDate() returns (
+                    uint256
+                ) {
+                    return getExpectedApr(_strategy, _debtChange);
+                } catch {
+                    // Else just return 0.
+                    return 0;
+                }
             }
         }
     }
@@ -182,7 +189,7 @@ contract AprOracle is Governance {
     function getWeightedAverageApr(
         address _vault,
         int256 _delta
-    ) external view virtual returns (uint256) {
+    ) public view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
         uint256 totalAssets = IVault(_vault).totalAssets();
 
