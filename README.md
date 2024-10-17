@@ -14,6 +14,8 @@ NOTE: If you are on a windows machine it is recommended to use [WSL](https://lea
 
     cd tokenized-strategy-periphery
 
+    pip install vyper==0.3.7
+
     yarn
 
 
@@ -24,7 +26,7 @@ NOTE: you can use other services.
 
 Use .env file
   1. Make a copy of `.env.example`
-  2. Add the values for `ETH_RPC_URL`, `ETHERSCAN_API_KEY` and other example vars
+  2. Add the values for `ETH_RPC_URL`
      NOTE: If you set up a global environment variable, that will take precedence.
 
 
@@ -43,21 +45,8 @@ make test
 
 Deployment of periphery contracts such as the [Apr Oracle](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/AprOracle/AprOracle.sol) or [Common Report Trigger](https://github.com/yearn/tokenized-strategy-periphery/blob/master/src/ReportTrigger/CommonReportTrigger.sol) are done using a create2 factory in order to get a deterministic address that is the same on each EVM chain.
 
-This can be done permissionlessly if the most recent contract has not yet been deployed on a chain you would like to use it on.
+This can be done permissionlessly if the most recent contract has not yet been deployed on a chain you would like to use it on using this repo https://github.com/wavey0x/yearn-v3-deployer
 
-1. If you have not added a keystore private key to foundry before add your address to use
-
-```shell
-$ cast wallet import --interactive <wallet_name>
-```
-
-2. Run the deployment script for the contract you want to deploy.
-    ```sh
-    forge script script/DeployContractName.s.sol:DeployContractName --broadcast --rpc-url YOUR_RPC_URL --account ACCOUNT_NAME
-    ```
-    - You can do a dry run before officially deploying by removing the `--broadcast` flag.
-    - For chains that don't support 1559 tx's you may need to add a `--legacy` flag.
-3. The address the contract was deployed at will print in the console and should match any other chain the same version has been deployed on.
 
 ## Swapper helper contracts
 

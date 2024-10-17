@@ -6,22 +6,21 @@ import "forge-std/Script.sol";
 // Deploy a contract to a deterministic address with create2
 contract DeployCommonTrigger is Script {
 
-    Deployer public deployer = Deployer(0x8D85e7c9A4e369E53Acc8d5426aE1568198b0112);
+    Deployer public deployer = Deployer(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
 
     function run() external {
         vm.startBroadcast();
 
         // Encode constructor arguments
-        bytes memory construct = abi.encode(0x33333333D5eFb92f19a5F94a43456b3cec2797AE);
+        bytes memory construct = abi.encode(0x6f3cBE2ab3483EC4BA7B672fbdCa0E9B33F88db8);
         
         // Append constructor args to the bytecode
         bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
 
+        // Use 0 as salt.
+        bytes32 salt;
 
-        // Pick an unique salt
-        uint256 salt = uint256(keccak256("Common Trigger"));
-
-        address contractAddress = deployer.deploy(bytecode, salt);
+        address contractAddress = deployer.deployCreate2(salt, bytecode);
 
         console.log("Address is ", contractAddress);
 
@@ -30,17 +29,10 @@ contract DeployCommonTrigger is Script {
 }
 
 contract Deployer {
-    event Deployed(address addr, uint256 salt);
+    event ContractCreation(address indexed newContract, bytes32 indexed salt);
 
-    function deploy(bytes memory code, uint256 salt) external  returns (address) {
-        address addr;
-        assembly {
-            addr := create2(0, add(code, 0x20), mload(code), salt)
-            if iszero(extcodesize(addr)) {
-                revert(0, 0)
-            }
-        }
-        emit Deployed(addr, salt);
-        return addr;
-    }
+    function deployCreate2(
+        bytes32 salt,
+        bytes memory initCode
+    ) public payable returns (address newContract) {}
 }

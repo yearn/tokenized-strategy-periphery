@@ -34,8 +34,12 @@ contract AprOracle is Governance {
     mapping(address => address) public oracles;
 
     // Used to get the Current and Expected APR'S.
+    uint256 internal constant MAX_BPS = 10_000;
     uint256 internal constant MAX_BPS_EXTENDED = 1_000_000_000_000;
     uint256 internal constant SECONDS_PER_YEAR = 31_556_952;
+
+    address internal constant LEGACY_ORACLE =
+        0x27aD2fFc74F74Ed27e1C0A19F1858dD0963277aE;
 
     constructor(address _governance) Governance(_governance) {}
 
@@ -61,30 +65,44 @@ contract AprOracle is Governance {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
+        // If not set, check the legacy oracle.
+        if (oracle == address(0)) {
+            // Do a low level call in case the legacy oracle is not deployed.
+            (bool success, bytes memory data) = LEGACY_ORACLE.staticcall(
+                abi.encodeWithSelector(
+                    AprOracle(LEGACY_ORACLE).oracles.selector,
+                    _strategy
+                )
+            );
+            if (success && data.length > 0) {
+                oracle = abi.decode(data, (address));
+            }
+        }
+
         // Don't revert if a oracle is not set.
         if (oracle != address(0)) {
             return IOracle(oracle).aprAfterDebtChange(_strategy, _debtChange);
+        } else {
+            // If the strategy is a V3 Multi strategy vault user weighted average.
+            try IVault(_strategy).role_manager() returns (address) {
+                return getWeightedAverageApr(_strategy, _debtChange);
+            } catch {
+                // If the strategy is a v3 TokenizedStrategy, we can default to the expected apr.
+                try IStrategy(_strategy).fullProfitUnlockDate() returns (
+                    uint256
+                ) {
+                    return getExpectedApr(_strategy, _debtChange);
+                } catch {
+                    // Else just return 0.
+                    return 0;
+                }
+            }
         }
     }
 
     /**
-     * @notice Get the current weighted APR of a strategy.
-     * @dev Gives the apr weighted by its `totalAssets`. This can be used
-     * to get the combined expected return of a collection of strategies.
-     *
-     * @param _strategy Address of the strategy.
-     * @return . The current weighted APR of the strategy.
-     */
-    function weightedApr(
-        address _strategy
-    ) external view virtual returns (uint256) {
-        return
-            IStrategy(_strategy).totalAssets() * getStrategyApr(_strategy, 0);
-    }
-
-    /**
      * @notice Set a custom APR `_oracle` for a `_strategy`.
-     * @dev Can only be called by the oracle's `governance` or
+     * @dev Can only be called by the Apr Oracle's `governance` or
      *  management of the `_strategy`.
      *
      * The `_oracle` will need to implement the IOracle interface.
@@ -160,5 +178,53 @@ contract AprOracle is Governance {
             (1e18 * assetUnlockingRate * SECONDS_PER_YEAR) /
             MAX_BPS_EXTENDED /
             assets;
+    }
+
+    /**
+     * @notice Get the current weighted average APR for a V3 vault.
+     * @dev This is the sum of all the current APR's of the strategies in the vault.
+     * @param _vault The address of the vault.
+     * @return apr The weighted average apr expressed as 1e18.
+     */
+    function getWeightedAverageApr(
+        address _vault,
+        int256 _delta
+    ) public view virtual returns (uint256) {
+        address[] memory strategies = IVault(_vault).get_default_queue();
+        uint256 totalAssets = IVault(_vault).totalAssets();
+
+        uint256 totalApr = 0;
+        for (uint256 i = 0; i < strategies.length; i++) {
+            uint256 debt = IVault(_vault)
+                .strategies(strategies[i])
+                .current_debt;
+
+            if (debt == 0) continue;
+
+            // Get a performance fee if the strategy has one.
+            (bool success, bytes memory fee) = strategies[i].staticcall(
+                abi.encodeWithSelector(
+                    IStrategy(strategies[i]).performanceFee.selector
+                )
+            );
+
+            uint256 performanceFee;
+            if (success) {
+                performanceFee = abi.decode(fee, (uint256));
+            }
+
+            // Get the effective debt change for the strategy.
+            int256 debtChange = (_delta * int256(debt)) / int256(totalAssets);
+
+            // Add the weighted apr of the strategy to the total apr.
+            totalApr +=
+                (getStrategyApr(strategies[i], debtChange) *
+                    uint256(int256(debt) + debtChange) *
+                    (MAX_BPS - performanceFee)) /
+                MAX_BPS;
+        }
+
+        // Divide by the total assets to get apr as 1e18.
+        return totalApr / uint256(int256(totalAssets) + _delta);
     }
 }

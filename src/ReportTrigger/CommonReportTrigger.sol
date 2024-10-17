@@ -158,7 +158,7 @@ contract CommonReportTrigger is Governance {
      * while still using this standard contract for keepers to read the
      * trigger status from.
      *
-     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     * The address calling must have the `REPORTING_MANAGER` role on the vault.
      *
      * The custom trigger contract only needs to implement the `reportTrigger`
      * function to return true or false.
@@ -172,13 +172,9 @@ contract CommonReportTrigger is Governance {
         address _strategy,
         address _trigger
     ) external virtual {
-        // Check that the address has the ADD_STRATEGY_MANAGER role on
-        // the vault. Just check their role has a 1 at the first position.
-        uint256 mask = 1;
-        require(
-            (IVault(_vault).roles(msg.sender) & mask) == mask,
-            "!authorized"
-        );
+        // Check that the address has the REPORTING_MANAGER role on the vault.
+        uint256 mask = 32;
+        require((IVault(_vault).roles(msg.sender) & mask) != 0, "!authorized");
         customVaultTrigger[_vault][_strategy] = _trigger;
 
         emit UpdatedCustomVaultTrigger(_vault, _strategy, _trigger);
@@ -194,7 +190,7 @@ contract CommonReportTrigger is Governance {
      *
      * This will have no effect if a custom trigger is set for the strategy.
      *
-     * The address calling must have the `ADD_STRATEGY_MANAGER` role on the vault.
+     * The address calling must have the `REPORTING_MANAGER` role on the vault.
      *
      * @param _vault The address of the vault.
      * @param _strategy The address of the strategy to customize.
@@ -205,13 +201,9 @@ contract CommonReportTrigger is Governance {
         address _strategy,
         uint256 _baseFee
     ) external virtual {
-        // Check that the address has the ADD_STRATEGY_MANAGER role on
-        // the vault. Just check their role has a 1 at the first position.
-        uint256 mask = 1;
-        require(
-            (IVault(_vault).roles(msg.sender) & mask) == mask,
-            "!authorized"
-        );
+        // Check that the address has the REPORTING_MANAGER role on the vault.
+        uint256 mask = 32;
+        require((IVault(_vault).roles(msg.sender) & mask) != 0, "!authorized");
         customVaultBaseFee[_vault][_strategy] = _baseFee;
 
         emit UpdatedCustomVaultBaseFee(_vault, _strategy, _baseFee);
@@ -432,11 +424,7 @@ contract CommonReportTrigger is Governance {
      * @return . IF the current base fee is acceptable.
      */
     function isCurrentBaseFeeAcceptable() external view virtual returns (bool) {
-        address _baseFeeProvider = baseFeeProvider;
-        // If no provider is set return true.
-        if (_baseFeeProvider == address(0)) return true;
-
-        return IBaseFee(baseFeeProvider).basefee_global() <= acceptableBaseFee;
+        return getCurrentBaseFee() <= acceptableBaseFee;
     }
 
     /*//////////////////////////////////////////////////////////////
