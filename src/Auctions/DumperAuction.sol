@@ -6,6 +6,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ITaker} from "../interfaces/ITaker.sol";
+import {GPv2Order} from "../libraries/GPv2Order.sol";
+
+interface ICowSettlement {
+    function domainSeparator() external view returns (bytes32);
+}
 
 /**
  *   @title Auction
@@ -13,6 +18,7 @@ import {ITaker} from "../interfaces/ITaker.sol";
  *   @notice General use dutch auction contract for token sales.
  */
 contract DumperAuction is Governance2Step, ReentrancyGuard {
+    using GPv2Order for GPv2Order.Data;
     using SafeERC20 for ERC20;
 
     /// @notice Emitted when a new auction is enabled
@@ -32,26 +38,10 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
     /// @notice Store all the auction specific information.
     struct AuctionInfo {
-        uint96 kicked;
-        address receiver;
-        uint64 scaler;
-        uint192 initialAvailable;
-        uint256 currentAvailable;
-    }
-
-    struct GPv2OrderData {
-        ERC20 sellToken;
-        ERC20 buyToken;
-        address receiver;
-        uint256 sellAmount;
-        uint256 buyAmount;
-        uint32 validTo;
-        bytes32 appData;
-        uint256 feeAmount;
-        bytes32 kind;
-        bool partiallyFillable;
-        bytes32 sellTokenBalance;
-        bytes32 buyTokenBalance;
+        uint128 kicked;
+        uint128 scaler;
+        uint128 initialAvailable;
+        uint128 currentAvailable;
     }
 
     uint256 internal constant WAD = 1e18;
@@ -62,8 +52,13 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     address internal constant VAULT_RELAYER =
         0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
 
+    bytes32 internal immutable COW_DOMAIN_SEPARATOR;
+
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
+
+    /// @notice The address that will receive the funds in the auction.
+    address public receiver;
 
     /// @notice The amount to start the auction at.
     uint256 public startingPrice;
@@ -77,17 +72,21 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     /// @notice Array of all the enabled auction for this contract.
     address[] public enabledAuctions;
 
-    constructor() Governance2Step(msg.sender) {}
+    constructor() Governance2Step(msg.sender) {
+        COW_DOMAIN_SEPARATOR = ICowSettlement(COW_SETTLEMENT).domainSeparator();
+    }
 
     /**
      * @notice Initializes the Auction contract with initial parameters.
      * @param _want Address this auction is selling to.
+     * @param _receiver Address that will receive the funds from the auction.
      * @param _governance Address of the contract governance.
      * @param _auctionLength Duration of each auction in seconds.
      * @param _startingPrice Starting price for each auction.
      */
     function initialize(
         address _want,
+        address _receiver,
         address _governance,
         uint256 _auctionLength,
         uint256 _startingPrice
@@ -96,7 +95,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(_want != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
         require(_startingPrice != 0, "starting price");
-
+        require(_receiver != address(0), "receiver");
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_want).decimals();
         require(decimals <= 18, "unsupported decimals");
@@ -107,6 +106,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
             scaler: uint96(WAD / 10 ** decimals)
         });
 
+        receiver = _receiver;
         governance = _governance;
         auctionLength = _auctionLength;
         startingPrice = _startingPrice;
@@ -272,37 +272,19 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Enables a new auction.
-     * @dev Uses governance as the receiver.
      * @param _from The address of the token to be auctioned.
      */
-    function enable(address _from) external virtual {
-        return enable(_from, msg.sender);
-    }
-
-    /**
-     * @notice Enables a new auction.
-     * @param _from The address of the token to be auctioned.
-     * @param _receiver The address that will receive the funds in the auction.
-     */
-    function enable(
-        address _from,
-        address _receiver
-    ) public virtual onlyGovernance {
+    function enable(address _from) external virtual onlyGovernance {
         address _want = want();
         require(_from != address(0) && _from != _want, "ZERO ADDRESS");
-        require(
-            _receiver != address(0) && _receiver != address(this),
-            "receiver"
-        );
+        require(auctions[_from].scaler == 0, "already enabled");
+
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
         require(decimals <= 18, "unsupported decimals");
 
-        require(auctions[_from].receiver == address(0), "already enabled");
-
         // Store all needed info.
-        auctions[_from].scaler = uint64(WAD / 10 ** decimals);
-        auctions[_from].receiver = _receiver;
+        auctions[_from].scaler = uint128(WAD / 10 ** decimals);
 
         ERC20(_from).safeApprove(VAULT_RELAYER, type(uint256).max);
 
@@ -332,7 +314,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         uint256 _index
     ) public virtual onlyGovernance {
         // Make sure the auction was enabled.
-        require(auctions[_from].receiver != address(0), "not enabled");
+        require(auctions[_from].scaler != 0, "not enabled");
 
         // Remove the struct.
         delete auctions[_from];
@@ -373,7 +355,21 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     function setStartingPrice(
         uint256 _startingPrice
     ) external virtual onlyGovernance {
+        require(_startingPrice != 0, "starting price");
         startingPrice = _startingPrice;
+    }
+
+    /**
+     * @notice Sets the auction length.
+     * @param _auctionLength The new auction length.
+     */
+    function setAuctionLength(
+        uint256 _auctionLength
+    ) external virtual onlyGovernance {
+        require(_auctionLength != 0, "length");
+        require(_auctionLength < 1 weeks, "too long");
+
+        auctionLength = _auctionLength;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -388,7 +384,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     function kick(
         address _from
     ) external virtual nonReentrant returns (uint256 _available) {
-        require(auctions[_from].receiver != address(0), "not enabled");
+        require(auctions[_from].scaler != 0, "not enabled");
         require(
             block.timestamp > auctions[_from].kicked + auctionLength,
             "too soon"
@@ -400,9 +396,9 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(_available != 0, "nothing to kick");
 
         // Update the auctions status.
-        auctions[_from].kicked = uint96(block.timestamp);
-        auctions[_from].initialAvailable = uint192(_available);
-        auctions[_from].currentAvailable = _available;
+        auctions[_from].kicked = uint128(block.timestamp);
+        auctions[_from].initialAvailable = uint128(_available);
+        auctions[_from].currentAvailable = uint128(_available);
 
         emit AuctionKicked(_from, _available);
     }
@@ -419,7 +415,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Take the token being sold in a live auction with a specified maximum amount.
-     * @dev Uses the sender's address as the receiver.
+     * @dev Will send the funds to the msg sender.
      * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @return . The amount of fromToken taken in the auction.
@@ -517,31 +513,34 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         address _want = want();
 
         // Pull `want`.
-        ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
+        ERC20(_want).safeTransferFrom(msg.sender, receiver, needed);
     }
 
+    /// @dev Validates a COW order signature.
     function isValidSignature(
         bytes32 _hash,
         bytes calldata signature
     ) external view returns (bytes4) {
         require(!_reentrancyGuardEntered(), "ReentrancyGuard: reentrant call");
 
-        // Decode the signature into GPv2Order_Data
-        GPv2OrderData memory order = abi.decode(signature, (GPv2OrderData));
+        // Decode the signature to get the order.
+        GPv2Order.Data memory order = abi.decode(signature, (GPv2Order.Data));
 
         AuctionInfo memory auction = auctions[address(order.sellToken)];
-        // Verify the auction is valid
+
+        // Get the current amount needed for the auction.
         uint256 paymentAmount = _getAmountNeeded(
             auction,
             order.sellAmount,
             block.timestamp
         );
 
-        // Verify order details
+        // Verify the order details.
+        require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
         require(paymentAmount > 0, "zero amount");
         require(order.buyAmount >= paymentAmount, "bad price");
         require(address(order.buyToken) == want(), "bad token");
-        require(order.receiver == auction.receiver, "bad receiver");
+        require(order.receiver == receiver, "bad receiver");
         require(order.sellAmount == auction.currentAvailable, "bad amount");
         require(
             order.sellToken.balanceOf(address(this)) >=
@@ -550,6 +549,6 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         );
 
         // If all checks pass, return the magic value
-        return DumperAuction.isValidSignature.selector;
+        return this.isValidSignature.selector;
     }
 }
