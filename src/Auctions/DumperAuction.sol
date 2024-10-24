@@ -131,7 +131,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
     function available(address _from) external view virtual returns (uint256) {
         if (auctions[_from].kicked + auctionLength > block.timestamp) {
-            return auctions[_from].initialAvailable;
+            return auctions[_from].currentAvailable;
         }
         return 0;
     }
@@ -141,10 +141,15 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Get the length of the enabled auctions array.
+     * @notice Get all the enabled auctions.
      */
-    function numberOfEnabledAuctions() external view virtual returns (uint256) {
-        return enabledAuctions.length;
+    function getAllEnabledAuctions()
+        external
+        view
+        virtual
+        returns (address[] memory)
+    {
+        return enabledAuctions;
     }
 
     /**
