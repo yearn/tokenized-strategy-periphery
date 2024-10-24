@@ -495,7 +495,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         unchecked {
             left = auction.currentAvailable - _amountTaken;
         }
-        auctions[_from].currentAvailable = left;
+        auctions[_from].currentAvailable = uint128(left);
 
         // If the caller has specified data.
         if (_data.length != 0) {
