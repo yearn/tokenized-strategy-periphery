@@ -3,7 +3,7 @@ pragma solidity >=0.8.18;
 
 interface ITaker {
     function auctionTakeCallback(
-        bytes32 _auctionId,
+        address _from,
         address _sender,
         uint256 _amountTaken,
         uint256 _amountNeeded,
