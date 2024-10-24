@@ -547,7 +547,7 @@ abstract contract BaseAuctioneer is BaseHealthCheck, ReentrancyGuard {
         if (_data.length != 0) {
             // Do the callback.
             ITaker(_receiver).auctionTakeCallback(
-                _auctionId,
+                auction.fromInfo.tokenAddress,
                 msg.sender,
                 _amountTaken,
                 needed,

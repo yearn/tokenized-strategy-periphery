@@ -33,7 +33,7 @@ contract AuctionTest is Setup, ITaker {
     );
 
     event Callback(
-        bytes32 _auctionId,
+        address _from,
         address _sender,
         uint256 _amountTaken,
         uint256 _amountNeeded,
@@ -419,7 +419,7 @@ contract AuctionTest is Setup, ITaker {
         bytes memory _data = new bytes(69);
 
         vm.expectEmit(true, true, true, true, address(this));
-        emit Callback(id, address(this), toTake, needed, _data);
+        emit Callback(from, address(this), toTake, needed, _data);
         uint256 amountTaken = auction.take(id, toTake, address(this), _data);
 
         assertTrue(callbackHit);
@@ -436,13 +436,13 @@ contract AuctionTest is Setup, ITaker {
 
     // Taker call back function
     function auctionTakeCallback(
-        bytes32 _auctionId,
+        address _from,
         address _sender,
         uint256 _amountTaken,
         uint256 _amountNeeded,
         bytes memory _data
     ) external {
         callbackHit = true;
-        emit Callback(_auctionId, _sender, _amountTaken, _amountNeeded, _data);
+        emit Callback(_from, _sender, _amountTaken, _amountNeeded, _data);
     }
 }
