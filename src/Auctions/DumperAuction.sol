@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
+import {Maths} from "../libraries/Maths.sol";
 import {Governance2Step} from "../utils/Governance2Step.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -45,6 +46,10 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
     }
 
     uint256 internal constant WAD = 1e18;
+
+    /// @notice Used for the price decay.
+    uint256 internal constant MINUTE_HALF_LIFE =
+        0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
 
     address internal constant COW_SETTLEMENT =
         0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -260,10 +265,17 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
         if (secondsElapsed > auctionLength) return 0;
 
-        uint256 initialPrice = (startingPrice * WAD * WAD) / _available;
+        // Exponential decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
+        uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
+        uint256 minutesComponent = Maths.rpow(
+            MINUTE_HALF_LIFE,
+            (secondsElapsed % 3600) / 60
+        );
+        uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
 
-        return (initialPrice -
-            ((initialPrice * secondsElapsed) / auctionLength));
+        return
+            (initialPrice * Maths.rmul(hoursComponent, minutesComponent)) /
+            1e27;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -521,6 +533,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         bytes32 _hash,
         bytes calldata signature
     ) external view returns (bytes4) {
+        // Make sure `_take` has not already been entered.
         require(!_reentrancyGuardEntered(), "ReentrancyGuard: reentrant call");
 
         // Decode the signature to get the order.
@@ -538,6 +551,9 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         // Verify the order details.
         require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
         require(paymentAmount > 0, "zero amount");
+        require(order.feeAmount == 0, "fee");
+        require(order.validTo < block.timestamp + 1 days, "expired");
+        require(order.appData == bytes32(0), "app data");
         require(order.buyAmount >= paymentAmount, "bad price");
         require(address(order.buyToken) == want(), "bad token");
         require(order.receiver == receiver, "bad receiver");

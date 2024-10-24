@@ -6,7 +6,7 @@ import {Clonable} from "../utils/Clonable.sol";
 
 /// @title AuctionFactory
 /// @notice Deploy a new Auction.
-contract AuctionFactory is Clonable {
+contract DumperAuctionFactory is Clonable {
     event DeployedNewAuction(address indexed auction, address indexed want);
 
     /// @notice The time that each auction lasts.
