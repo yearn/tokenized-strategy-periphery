@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import {Auction} from "./Auction.sol";
+import {DumperAuction} from "./DumperAuction.sol";
 import {Clonable} from "../utils/Clonable.sol";
 
 /// @title AuctionFactory
@@ -20,7 +20,7 @@ contract AuctionFactory is Clonable {
 
     constructor() {
         // Deploy the original
-        original = address(new Auction());
+        original = address(new DumperAuction());
     }
 
     /**
@@ -144,7 +144,7 @@ contract AuctionFactory is Clonable {
     ) internal returns (address _newAuction) {
         _newAuction = _clone();
 
-        Auction(_newAuction).initialize(
+        DumperAuction(_newAuction).initialize(
             _want,
             _receiver,
             _governance,
