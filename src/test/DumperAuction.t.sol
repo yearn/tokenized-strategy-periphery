@@ -86,17 +86,13 @@ contract DumperAuctionTest is Setup, ITaker {
         assertEq(auction.price(from), 0);
         assertEq(auction.receiver(), address(this));
 
-        (
-            uint128 _kicked,
-            uint128 _scaler,
-            uint128 _available,
-            uint128 _currentAvailable
-        ) = auction.auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
-        assertEq(_available, 0);
-        assertEq(_currentAvailable, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         // Kicking it reverts
         vm.expectRevert("nothing to kick");
@@ -120,17 +116,13 @@ contract DumperAuctionTest is Setup, ITaker {
 
         assertEq(auction.getAllEnabledAuctions().length, 1);
 
-        (
-            uint128 _kicked,
-            uint128 _scaler,
-            uint128 _available,
-            uint128 _currentAvailable
-        ) = auction.auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
-        assertEq(_available, 0);
-        assertEq(_currentAvailable, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         vm.expectRevert("!governance");
         vm.prank(management);
@@ -142,14 +134,12 @@ contract DumperAuctionTest is Setup, ITaker {
 
         assertEq(auction.getAllEnabledAuctions().length, 0);
 
-        (_kicked, _scaler, _available, _currentAvailable) = auction.auctions(
-            from
-        );
+        (_kicked, _scaler, _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 0);
-        assertEq(_available, 0);
-        assertEq(_currentAvailable, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
     }
 
     function test_kickAuction(uint256 _amount) public {
@@ -166,32 +156,28 @@ contract DumperAuctionTest is Setup, ITaker {
         auction.enable(from);
 
         assertEq(auction.kickable(from), 0);
-        (
-            uint128 _kicked,
-            uint128 _scaler,
-            uint128 _available,
-            uint128 _currentAvailable
-        ) = auction.auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e10);
-        assertEq(_available, 0);
-        assertEq(_currentAvailable, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         airdrop(ERC20(from), address(auction), _amount);
 
         assertEq(auction.kickable(from), _amount);
-        (_kicked, , _available, _currentAvailable) = auction.auctions(from);
+        (_kicked, , _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_initialAvailable, 0);
         assertEq(auction.available(from), 0);
 
         uint256 available = auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (_kicked, , _available, _currentAvailable) = auction.auctions(from);
+        (_kicked, , _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, _amount);
+        assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), _amount);
         uint256 startingPrice = ((auction.startingPrice() *
             (WAD / wantScaler)) * 1e18) /
@@ -234,6 +220,7 @@ contract DumperAuctionTest is Setup, ITaker {
 
         assertEq(auction.price(from), 0);
         assertEq(auction.getAmountNeeded(from, _amount), 0);
+        assertEq(auction.available(from), 0);
 
         assertEq(auction.kickable(from), _amount);
     }
@@ -259,16 +246,12 @@ contract DumperAuctionTest is Setup, ITaker {
         uint256 available = auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (
-            uint128 _kicked,
-            uint128 _scaler,
-            uint128 _available,
-            uint128 _currentAvailable
-        ) = auction.auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
-        assertEq(_available, _amount);
-        assertEq(_currentAvailable, _amount);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), _amount);
 
         skip(auction.auctionLength() / 2);
 
@@ -285,9 +268,9 @@ contract DumperAuctionTest is Setup, ITaker {
 
         assertEq(amountTaken, _amount);
 
-        (, , _available, _currentAvailable) = auction.auctions(from);
-        assertEq(_available, _amount);
-        assertEq(_currentAvailable, 0);
+        (, , _initialAvailable) = auction.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), 0);
 
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + _amount);
@@ -318,15 +301,12 @@ contract DumperAuctionTest is Setup, ITaker {
         auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (
-            uint256 _kicked,
-            uint256 _scaler,
-            uint256 _available,
-            uint256 _currentAvailable
-        ) = auction.auctions(from);
+        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction
+            .auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
-        assertEq(_available, _amount);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), _amount);
 
         skip(auction.auctionLength() / 2);
 
@@ -345,9 +325,9 @@ contract DumperAuctionTest is Setup, ITaker {
 
         assertEq(amountTaken, toTake);
 
-        (, , _available, _currentAvailable) = auction.auctions(from);
-        assertEq(_available, _amount);
-        assertEq(_currentAvailable, left);
+        (, , _initialAvailable) = auction.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
@@ -376,16 +356,12 @@ contract DumperAuctionTest is Setup, ITaker {
         auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (
-            uint256 _kicked,
-            uint256 _scaler,
-            uint256 _available,
-            uint256 _currentAvailable
-        ) = auction.auctions(from);
+        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction
+            .auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
-        assertEq(_available, _amount);
-
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), _amount);
         skip(auction.auctionLength() / 2);
 
         uint256 toTake = _amount / 2;
@@ -409,9 +385,9 @@ contract DumperAuctionTest is Setup, ITaker {
         assertTrue(callbackHit);
         assertEq(amountTaken, toTake);
 
-        (, , _available, _currentAvailable) = auction.auctions(from);
-        assertEq(_available, _amount);
-        assertEq(_currentAvailable, left);
+        (, , _initialAvailable) = auction.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);

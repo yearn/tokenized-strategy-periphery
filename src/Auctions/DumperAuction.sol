@@ -39,10 +39,9 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
     /// @notice Store all the auction specific information.
     struct AuctionInfo {
-        uint128 kicked;
-        uint128 scaler;
+        uint64 kicked;
+        uint64 scaler;
         uint128 initialAvailable;
-        uint128 currentAvailable;
     }
 
     uint256 internal constant WAD = 1e18;
@@ -129,15 +128,37 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         return wantInfo.tokenAddress;
     }
 
-    function available(address _from) external view virtual returns (uint256) {
-        if (auctions[_from].kicked + auctionLength > block.timestamp) {
-            return auctions[_from].currentAvailable;
-        }
-        return 0;
+    /**
+     * @notice Get the available amount for the auction.
+     * @param _from The address of the token to be auctioned.
+     * @return . The available amount for the auction.
+     */
+    function available(address _from) public view virtual returns (uint256) {
+        if (!isActive(_from)) return 0;
+
+        return
+            Maths.min(
+                auctions[_from].initialAvailable,
+                ERC20(_from).balanceOf(address(this))
+            );
     }
 
+    /**
+     * @notice Get the kicked timestamp for the auction.
+     * @param _from The address of the token to be auctioned.
+     * @return . The kicked timestamp for the auction.
+     */
     function kicked(address _from) external view virtual returns (uint256) {
         return auctions[_from].kicked;
+    }
+
+    /**
+     * @notice Check if the auction is active.
+     * @param _from The address of the token to be auctioned.
+     * @return . Whether the auction is active.
+     */
+    function isActive(address _from) public view virtual returns (bool) {
+        return auctions[_from].kicked + auctionLength > block.timestamp;
     }
 
     /**
@@ -160,12 +181,26 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
      */
     function kickable(address _from) external view virtual returns (uint256) {
         // If not enough time has passed then `kickable` is 0.
-        if (auctions[_from].kicked + auctionLength > block.timestamp) {
-            return 0;
-        }
+        if (isActive(_from)) return 0;
 
         // Use the full balance of this contract.
         return ERC20(_from).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Gets the amount of `want` needed to buy the available amount of `from`.
+     * @param _from The address of the token to be auctioned.
+     * @return . The amount of `want` needed to fulfill the take amount.
+     */
+    function getAmountNeeded(
+        address _from
+    ) external view virtual returns (uint256) {
+        return
+            _getAmountNeeded(
+                auctions[_from],
+                available(_from),
+                block.timestamp
+            );
     }
 
     /**
@@ -205,10 +240,6 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         uint256 _amountToTake,
         uint256 _timestamp
     ) internal view virtual returns (uint256) {
-        _amountToTake = _amountToTake > _auction.currentAvailable
-            ? _auction.currentAvailable
-            : _amountToTake;
-
         return
             // Scale _amountToTake to 1e18
             (_amountToTake *
@@ -301,7 +332,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(decimals <= 18, "unsupported decimals");
 
         // Store all needed info.
-        auctions[_from].scaler = uint128(WAD / 10 ** decimals);
+        auctions[_from].scaler = uint64(WAD / 10 ** decimals);
 
         ERC20(_from).safeApprove(VAULT_RELAYER, type(uint256).max);
 
@@ -413,9 +444,8 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(_available != 0, "nothing to kick");
 
         // Update the auctions status.
-        auctions[_from].kicked = uint128(block.timestamp);
+        auctions[_from].kicked = uint64(block.timestamp);
         auctions[_from].initialAvailable = uint128(_available);
-        auctions[_from].currentAvailable = uint128(_available);
 
         emit AuctionKicked(_from, _available);
     }
@@ -491,9 +521,8 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         );
 
         // Max amount that can be taken.
-        _amountTaken = auction.currentAvailable > _maxAmount
-            ? _maxAmount
-            : auction.currentAvailable;
+        uint256 available = available(_from);
+        _amountTaken = available > _maxAmount ? _maxAmount : available;
 
         // Get the amount needed
         uint256 needed = _getAmountNeeded(
@@ -506,13 +535,6 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
         // Send `from`.
         ERC20(_from).safeTransfer(_receiver, _amountTaken);
-
-        // How much is left in this auction.
-        uint256 left;
-        unchecked {
-            left = auction.currentAvailable - _amountTaken;
-        }
-        auctions[_from].currentAvailable = uint128(left);
 
         // If the caller has specified data.
         if (_data.length != 0) {
@@ -557,19 +579,32 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
         require(paymentAmount > 0, "zero amount");
         require(order.feeAmount == 0, "fee");
-        require(order.validTo < block.timestamp + 1 days, "expired");
+        require(order.validTo < auction.kicked + auctionLength, "expired");
         require(order.appData == bytes32(0), "app data");
         require(order.buyAmount >= paymentAmount, "bad price");
         require(address(order.buyToken) == want(), "bad token");
         require(order.receiver == receiver, "bad receiver");
-        require(order.sellAmount == auction.currentAvailable, "bad amount");
-        require(
-            order.sellToken.balanceOf(address(this)) >=
-                auction.currentAvailable,
-            "taken"
-        );
+        require(order.sellAmount <= auction.initialAvailable, "bad amount");
 
         // If all checks pass, return the magic value
         return this.isValidSignature.selector;
+    }
+
+    /**
+     * @notice Allows the auction to be stopped if the full amount is taken.
+     * @param _from The address of the token to be auctioned.
+     */
+    function settle(address _from) external virtual {
+        require(isActive(_from), "!active");
+        require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
+
+        auctions[_from].kicked = uint64(0);
+    }
+
+    function sweep(address _token) external virtual onlyGovernance {
+        ERC20(_token).safeTransfer(
+            msg.sender,
+            ERC20(_token).balanceOf(address(this))
+        );
     }
 }
