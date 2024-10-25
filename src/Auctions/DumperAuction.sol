@@ -301,7 +301,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
         if (secondsElapsed > auctionLength) return 0;
 
-        // Exponential decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
+        // Exponential step decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
         uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
         uint256 minutesComponent = Maths.rpow(
             MINUTE_HALF_LIFE,
@@ -521,8 +521,8 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         );
 
         // Max amount that can be taken.
-        uint256 available = available(_from);
-        _amountTaken = available > _maxAmount ? _maxAmount : available;
+        uint256 _available = available(_from);
+        _amountTaken = _available > _maxAmount ? _maxAmount : _available;
 
         // Get the amount needed
         uint256 needed = _getAmountNeeded(
@@ -577,7 +577,8 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
 
         // Verify the order details.
         require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
-        require(paymentAmount > 0, "zero amount");
+        require(paymentAmount != 0, "zero amount");
+        require(available(address(order.sellToken)) != 0, "zero available");
         require(order.feeAmount == 0, "fee");
         require(order.partiallyFillable, "partial fill");
         require(order.validTo < auction.kicked + auctionLength, "expired");
