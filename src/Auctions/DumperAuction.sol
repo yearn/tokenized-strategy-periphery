@@ -158,7 +158,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
      * @return . Whether the auction is active.
      */
     function isActive(address _from) public view virtual returns (bool) {
-        return auctions[_from].kicked + auctionLength > block.timestamp;
+        return auctions[_from].kicked + auctionLength >= block.timestamp;
     }
 
     /**
@@ -579,6 +579,7 @@ contract DumperAuction is Governance2Step, ReentrancyGuard {
         require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
         require(paymentAmount > 0, "zero amount");
         require(order.feeAmount == 0, "fee");
+        require(order.partialFillAllowed, "partial fill");
         require(order.validTo < auction.kicked + auctionLength, "expired");
         require(order.appData == bytes32(0), "app data");
         require(order.buyAmount >= paymentAmount, "bad price");
