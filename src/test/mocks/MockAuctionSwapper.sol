@@ -12,8 +12,6 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
 
     bool public useDefault = true;
 
-    bool public shouldRevert;
-
     uint256 public letKick;
 
     constructor(address _asset) BaseStrategy(_asset, "Mock Uni V3") {}
@@ -30,11 +28,8 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function enableAuction(
-        address _from,
-        address _to
-    ) external returns (bytes32) {
-        return _enableAuction(_from, _to);
+    function enableAuction(address _from, address _to) external {
+        _enableAuction(_from, _to);
     }
 
     function disableAuction(address _from) external {
@@ -46,33 +41,11 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         return letKick;
     }
 
-    function _auctionKicked(
-        address _token
-    ) internal override returns (uint256) {
-        if (useDefault) return super._auctionKicked(_token);
+    function kickAuction(address _token) internal returns (uint256) {
+        if (useDefault) return _kickAuction(_token);
 
         ERC20(_token).safeTransfer(auction, letKick);
         return ERC20(_token).balanceOf(auction);
-    }
-
-    function _preTake(
-        address _token,
-        uint256 _amountToTake,
-        uint256 _amountToPay
-    ) internal override {
-        require(!shouldRevert, "pre take revert");
-        if (useDefault) return;
-        emit PreTake(_token, _amountToTake, _amountToPay);
-    }
-
-    function _postTake(
-        address _token,
-        uint256 _amountTaken,
-        uint256 _amountPayed
-    ) internal override {
-        require(!shouldRevert, "post take revert");
-        if (useDefault) return;
-        emit PostTake(_token, _amountTaken, _amountPayed);
     }
 
     function setUseDefault(bool _useDefault) external {
@@ -81,10 +54,6 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
 
     function setLetKick(uint256 _letKick) external {
         letKick = _letKick;
-    }
-
-    function setShouldRevert(bool _shouldRevert) external {
-        shouldRevert = _shouldRevert;
     }
 }
 
@@ -107,5 +76,5 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
 
     function setLetKick(uint256 _letKick) external;
 
-    function setShouldRevert(bool _shouldRevert) external;
+    function kickAuction(address _token) external returns (uint256);
 }

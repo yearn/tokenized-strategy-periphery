@@ -4,7 +4,7 @@ pragma solidity >=0.8.18;
 import "./BaseScript.s.sol";
 
 // Deploy a contract to a deterministic address with create2
-contract DeployAprOracle is BaseScript {
+contract DeployAuction is BaseScript {
 
     function run() external {
         vm.startBroadcast();

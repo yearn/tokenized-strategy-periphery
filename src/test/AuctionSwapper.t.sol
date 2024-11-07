@@ -15,24 +15,14 @@ contract AuctionSwapperTest is Setup {
 
     event DeployedNewAuction(address indexed auction, address indexed want);
 
-    event AuctionEnabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed strategy
-    );
+    event AuctionEnabled(address indexed from, address indexed to);
 
-    event AuctionDisabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed strategy
-    );
+    event AuctionDisabled(address indexed from, address indexed to);
 
-    event AuctionKicked(bytes32 auctionId, uint256 available);
+    event AuctionKicked(address indexed token, uint256 available);
 
     event AuctionTaken(
-        bytes32 auctionId,
+        address indexed token,
         uint256 amountTaken,
         uint256 amountLeft
     );
@@ -61,35 +51,25 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["USDC"];
         assertEq(swapper.auction(), address(0));
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
         assertNeq(address(auction), address(0));
-        assertEq(auction.kickable(id), 0);
-        assertEq(auction.getAmountNeeded(id, 1e18), 0);
-        assertEq(auction.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        assertEq(auction.getAmountNeeded(from, 1e18), 0);
+        assertEq(auction.price(from), 0);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
+
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
-        assertEq(auction.hook(), address(swapper));
-        (bool hook1, bool hook2, bool hook3, bool hook4) = auction
-            .getHookFlags();
-        assertTrue(hook1);
-        assertTrue(hook2);
-        assertTrue(hook3);
-        assertTrue(hook4);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         // Kicking it reverts
         vm.expectRevert("nothing to kick");
-        auction.kick(id);
+        auction.kick(from);
 
         // Can't re-enable
         vm.expectRevert("already enabled");
@@ -100,89 +80,73 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["USDC"];
         assertEq(swapper.auction(), address(0));
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
         assertNeq(address(auction), address(0));
-        assertEq(auction.kickable(id), 0);
-        assertEq(auction.getAmountNeeded(id, 1e18), 0);
-        assertEq(auction.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        assertEq(auction.getAmountNeeded(from, 1e18), 0);
+        assertEq(auction.price(from), 0);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
+
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         address secondFrom = tokenAddrs["WETH"];
 
         vm.expectRevert("wrong want");
         swapper.enableAuction(secondFrom, from);
 
-        bytes32 expectedId = auction.getAuctionId(secondFrom);
-
         vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionEnabled(
-            expectedId,
-            secondFrom,
-            address(asset),
-            address(auction)
-        );
-        bytes32 secondId = swapper.enableAuction(secondFrom, address(asset));
+        emit AuctionEnabled(secondFrom, address(asset));
+        swapper.enableAuction(secondFrom, address(asset));
 
-        assertEq(expectedId, secondId);
         assertEq(swapper.auction(), address(auction));
-        assertEq(auction.kickable(secondId), 0);
-        assertEq(auction.getAmountNeeded(secondId, 1e18), 0);
-        assertEq(auction.price(secondId), 0);
-        (_from, _to, _kicked, _available) = auction.auctionInfo(secondId);
+        assertEq(auction.kickable(secondFrom), 0);
+        assertEq(auction.getAmountNeeded(secondFrom, 1e18), 0);
+        assertEq(auction.price(secondFrom), 0);
+        (_kicked, _scaler, _initialAvailable) = auction.auctions(secondFrom);
 
-        assertEq(_from, secondFrom);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(secondFrom), 0);
     }
 
     function test_disableAuction() public {
         address from = tokenAddrs["USDC"];
         assertEq(swapper.auction(), address(0));
-
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
         assertNeq(address(auction), address(0));
-        assertEq(auction.kickable(id), 0);
-        assertEq(auction.getAmountNeeded(id, 1e18), 0);
-        assertEq(auction.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        assertEq(auction.getAmountNeeded(from, 1e18), 0);
+        assertEq(auction.price(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
 
         vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionDisabled(id, from, address(asset), address(auction));
+        emit AuctionDisabled(from, address(asset));
         swapper.disableAuction(from);
 
-        (_from, _to, _kicked, _available) = auction.auctionInfo(id);
+        (_kicked, _scaler, _initialAvailable) = auction.auctions(from);
 
-        assertEq(_from, address(0));
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auction.available(from), 0);
     }
 
     function test_kickAuction_default(uint256 _amount) public {
@@ -193,58 +157,53 @@ contract AuctionSwapperTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
-        assertEq(auction.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, fromScaler);
+        assertEq(_initialAvailable, 0);
 
         airdrop(ERC20(from), address(swapper), _amount);
 
-        assertEq(auction.kickable(id), _amount);
-        (, , _kicked, _available) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), _amount);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_initialAvailable, 0);
 
         vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionKicked(id, _amount);
-        uint256 available = auction.kick(id);
+        emit AuctionKicked(from, _amount);
+        uint256 available = auction.kick(from);
 
         assertEq(ERC20(from).balanceOf(address(swapper)), 0);
         assertEq(ERC20(from).balanceOf(address(auction)), _amount);
 
-        assertEq(auction.kickable(id), 0);
-        (, , _kicked, _available) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, _amount);
+        assertEq(_initialAvailable, _amount);
         uint256 startingPrice = ((auction.startingPrice() *
             (WAD / wantScaler)) * 1e18) /
             _amount /
             fromScaler;
-        assertEq(auction.price(id), startingPrice);
+        assertEq(auction.price(from), startingPrice);
         assertRelApproxEq(
-            auction.getAmountNeeded(id, _amount),
+            auction.getAmountNeeded(from, _amount),
             (startingPrice * fromScaler * _amount) /
                 (WAD / wantScaler) /
                 wantScaler,
             MAX_BPS
         );
 
-        uint256 expectedPrice = auction.price(id, block.timestamp + 100);
+        uint256 expectedPrice = auction.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
         uint256 expectedAmount = auction.getAmountNeeded(
-            id,
+            from,
             _amount,
             block.timestamp + 100
         );
@@ -257,20 +216,20 @@ contract AuctionSwapperTest is Setup {
 
         skip(100);
 
-        assertEq(auction.price(id), expectedPrice);
-        assertEq(auction.getAmountNeeded(id, _amount), expectedAmount);
+        assertEq(auction.price(from), expectedPrice);
+        assertEq(auction.getAmountNeeded(from, _amount), expectedAmount);
 
         // Skip full auction
         skip(auction.auctionLength());
 
-        assertEq(auction.price(id), 0);
-        assertEq(auction.getAmountNeeded(id, _amount), 0);
+        assertEq(auction.price(from), 0);
+        assertEq(auction.getAmountNeeded(from, _amount), 0);
 
         // Can't kick a new one yet
         vm.expectRevert("too soon");
-        auction.kick(id);
+        auction.kick(from);
 
-        assertEq(auction.kickable(id), 0);
+        assertEq(auction.kickable(from), 0);
     }
 
     function test_takeAuction_default(uint256 _amount, uint16 _percent) public {
@@ -282,25 +241,20 @@ contract AuctionSwapperTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
         airdrop(ERC20(from), address(swapper), _amount);
 
-        auction.kick(id);
+        auction.kick(from);
 
-        assertEq(auction.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        assertEq(auction.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, _amount);
+        assertEq(_scaler, fromScaler);
+        assertEq(_initialAvailable, _amount);
         assertEq(ERC20(from).balanceOf(address(swapper)), 0);
         assertEq(ERC20(from).balanceOf(address(auction)), _amount);
 
@@ -308,7 +262,7 @@ contract AuctionSwapperTest is Setup {
 
         uint256 toTake = (_amount * _percent) / MAX_BPS;
         uint256 left = _amount - toTake;
-        uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 needed = auction.getAmountNeeded(from, toTake);
         uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
@@ -318,13 +272,14 @@ contract AuctionSwapperTest is Setup {
         uint256 before = ERC20(from).balanceOf(address(this));
 
         vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionTaken(id, toTake, left);
-        uint256 amountTaken = auction.take(id, toTake);
+        emit AuctionTaken(from, toTake, left);
+        uint256 amountTaken = auction.take(from, toTake);
 
         assertEq(amountTaken, toTake);
 
-        (, , , _available) = auction.auctionInfo(id);
-        assertEq(_available, left);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
@@ -341,65 +296,60 @@ contract AuctionSwapperTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
-        assertEq(auction.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, fromScaler);
+        assertEq(_initialAvailable, 0);
 
         airdrop(ERC20(from), address(swapper), _amount);
 
         swapper.setUseDefault(false);
 
-        assertEq(auction.kickable(id), 0);
+        assertEq(auction.kickable(from), 0);
 
         uint256 kickable = _amount / 10;
         swapper.setLetKick(kickable);
 
-        assertEq(auction.kickable(id), kickable);
-        (, , _kicked, _available) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), kickable);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_initialAvailable, 0);
 
         vm.expectEmit(true, true, true, true, address(auction));
-        emit AuctionKicked(id, kickable);
-        uint256 available = auction.kick(id);
+        emit AuctionKicked(from, kickable);
+        uint256 available = auction.kick(from);
 
         assertEq(ERC20(from).balanceOf(address(swapper)), _amount - kickable);
         assertEq(ERC20(from).balanceOf(address(auction)), kickable);
 
-        assertEq(auction.kickable(id), 0);
-        (, , _kicked, _available) = auction.auctionInfo(id);
+        assertEq(auction.kickable(from), 0);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, kickable);
+        assertEq(_initialAvailable, kickable);
         uint256 startingPrice = ((auction.startingPrice() *
             (WAD / wantScaler)) * 1e18) /
             kickable /
             fromScaler;
-        assertEq(auction.price(id), startingPrice);
+        assertEq(auction.price(from), startingPrice);
         assertRelApproxEq(
-            auction.getAmountNeeded(id, kickable),
+            auction.getAmountNeeded(from, kickable),
             (startingPrice * fromScaler * kickable) /
                 (WAD / wantScaler) /
                 wantScaler,
             MAX_BPS
         );
 
-        uint256 expectedPrice = auction.price(id, block.timestamp + 100);
+        uint256 expectedPrice = auction.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
         uint256 expectedAmount = auction.getAmountNeeded(
-            id,
+            from,
             kickable,
             block.timestamp + 100
         );
@@ -412,20 +362,20 @@ contract AuctionSwapperTest is Setup {
 
         skip(100);
 
-        assertEq(auction.price(id), expectedPrice);
-        assertEq(auction.getAmountNeeded(id, kickable), expectedAmount);
+        assertEq(auction.price(from), expectedPrice);
+        assertEq(auction.getAmountNeeded(from, kickable), expectedAmount);
 
         // Skip full auction
         skip(auction.auctionLength());
 
-        assertEq(auction.price(id), 0);
-        assertEq(auction.getAmountNeeded(id, kickable), 0);
+        assertEq(auction.price(from), 0);
+        assertEq(auction.getAmountNeeded(from, kickable), 0);
 
         // Can't kick a new one yet
         vm.expectRevert("too soon");
-        auction.kick(id);
+        auction.kick(from);
 
-        assertEq(auction.kickable(id), 0);
+        assertEq(auction.kickable(from), 0);
     }
 
     function test_takeAuction_custom(uint256 _amount, uint16 _percent) public {
@@ -437,7 +387,7 @@ contract AuctionSwapperTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = swapper.enableAuction(from, address(asset));
+        swapper.enableAuction(from, address(asset));
 
         auction = Auction(swapper.auction());
 
@@ -445,24 +395,20 @@ contract AuctionSwapperTest is Setup {
 
         swapper.setUseDefault(false);
 
-        assertEq(auction.kickable(id), 0);
+        assertEq(auction.kickable(from), 0);
 
         uint256 kickable = _amount / 10;
         swapper.setLetKick(kickable);
 
-        auction.kick(id);
+        auction.kick(from);
 
-        assertEq(auction.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auction.auctionInfo(id);
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        assertEq(auction.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
+            .auctions(from);
+
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, kickable);
+        assertEq(_scaler, fromScaler);
+        assertEq(_initialAvailable, kickable);
         assertEq(ERC20(from).balanceOf(address(swapper)), _amount - kickable);
         assertEq(ERC20(from).balanceOf(address(auction)), kickable);
 
@@ -470,7 +416,7 @@ contract AuctionSwapperTest is Setup {
 
         uint256 toTake = (kickable * _percent) / MAX_BPS;
         uint256 left = kickable - toTake;
-        uint256 needed = auction.getAmountNeeded(id, toTake);
+        uint256 needed = auction.getAmountNeeded(from, toTake);
         uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
@@ -483,75 +429,17 @@ contract AuctionSwapperTest is Setup {
         emit PreTake(from, toTake, needed);
         vm.expectEmit(true, true, true, true, address(swapper));
         emit PostTake(address(asset), toTake, needed);
-        uint256 amountTaken = auction.take(id, toTake);
+        uint256 amountTaken = auction.take(from, toTake);
 
         assertEq(amountTaken, toTake);
 
-        (, , , _available) = auction.auctionInfo(id);
-        assertEq(_available, left);
+        (, _kicked, _initialAvailable) = auction.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(swapper)), needed);
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
-    }
-
-    function test_setFlags(uint256 _amount, uint16 _percent) public {
-        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-        _percent = uint16(bound(uint256(_percent), 1_000, MAX_BPS));
-
-        address from = tokenAddrs["WBTC"];
-
-        fromScaler = WAD / 10 ** ERC20(from).decimals();
-        wantScaler = WAD / 10 ** ERC20(asset).decimals();
-
-        bytes32 id = swapper.enableAuction(from, address(asset));
-
-        auction = Auction(swapper.auction());
-
-        airdrop(ERC20(from), address(swapper), _amount);
-
-        assertEq(auction.kickable(id), _amount);
-
-        vm.prank(address(swapper));
-        auction.setHookFlags(false, false, true, true);
-
-        assertEq(auction.kickable(id), 0);
-
-        vm.expectRevert("nothing to kick");
-        auction.kick(id);
-
-        vm.prank(address(swapper));
-        auction.setHookFlags(false, true, true, true);
-
-        auction.kick(id);
-
-        assertEq(ERC20(from).balanceOf(address(auction)), _amount);
-
-        swapper.setShouldRevert(true);
-
-        skip(auction.auctionLength() / 2);
-
-        uint256 toTake = (_amount * _percent) / MAX_BPS;
-        uint256 left = _amount - toTake;
-        uint256 needed = auction.getAmountNeeded(id, toTake);
-
-        airdrop(ERC20(asset), address(this), needed);
-
-        ERC20(asset).safeApprove(address(auction), needed);
-
-        vm.expectRevert("pre take revert");
-        auction.take(id, toTake);
-
-        vm.prank(address(swapper));
-        auction.setHookFlags(false, true, false, true);
-
-        vm.expectRevert("post take revert");
-        auction.take(id, toTake);
-
-        vm.prank(address(swapper));
-        auction.setHookFlags(false, true, false, false);
-
-        auction.take(id, toTake);
     }
 }

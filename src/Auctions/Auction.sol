@@ -2,29 +2,15 @@
 pragma solidity >=0.8.18;
 
 import {Maths} from "../libraries/Maths.sol";
-import {Governance} from "../utils/Governance.sol";
+import {ITaker} from "../interfaces/ITaker.sol";
+import {GPv2Order} from "../libraries/GPv2Order.sol";
+import {Governance2Step} from "../utils/Governance2Step.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ITaker} from "../interfaces/ITaker.sol";
 
-/// @notice Interface that the optional `hook` contract should implement if the non-standard logic is desired.
-interface IHook {
-    function kickable(address _fromToken) external view returns (uint256);
-
-    function auctionKicked(address _fromToken) external returns (uint256);
-
-    function preTake(
-        address _fromToken,
-        uint256 _amountToTake,
-        uint256 _amountToPay
-    ) external;
-
-    function postTake(
-        address _toToken,
-        uint256 _amountTaken,
-        uint256 _amountPayed
-    ) external;
+interface ICowSettlement {
+    function domainSeparator() external view returns (bytes32);
 }
 
 /**
@@ -32,34 +18,21 @@ interface IHook {
  *   @author yearn.fi
  *   @notice General use dutch auction contract for token sales.
  */
-contract Auction is Governance, ReentrancyGuard {
+contract Auction is Governance2Step, ReentrancyGuard {
+    using GPv2Order for GPv2Order.Data;
     using SafeERC20 for ERC20;
 
     /// @notice Emitted when a new auction is enabled
-    event AuctionEnabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed auctionAddress
-    );
+    event AuctionEnabled(address indexed from, address indexed to);
 
     /// @notice Emitted when an auction is disabled.
-    event AuctionDisabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed auctionAddress
-    );
+    event AuctionDisabled(address indexed from, address indexed to);
 
     /// @notice Emitted when auction has been kicked.
-    event AuctionKicked(bytes32 auctionId, uint256 available);
+    event AuctionKicked(address from, uint256 available);
 
-    /// @notice Emitted when any amount of an active auction was taken.
-    event AuctionTaken(
-        bytes32 auctionId,
-        uint256 amountTaken,
-        uint256 amountLeft
-    );
+    /// @notice Emitted when the starting price is updated.
+    event UpdatedStartingPrice(uint256 startingPrice);
 
     /// @dev Store address and scaler in one slot.
     struct TokenInfo {
@@ -69,20 +42,9 @@ contract Auction is Governance, ReentrancyGuard {
 
     /// @notice Store all the auction specific information.
     struct AuctionInfo {
-        TokenInfo fromInfo;
-        uint96 kicked;
-        address receiver;
+        uint64 kicked;
+        uint64 scaler;
         uint128 initialAvailable;
-        uint128 currentAvailable;
-    }
-
-    /// @notice Store the hook address and each flag in one slot.
-    struct Hook {
-        address hook;
-        bool kickable;
-        bool kick;
-        bool preTake;
-        bool postTake;
     }
 
     uint256 internal constant WAD = 1e18;
@@ -91,11 +53,19 @@ contract Auction is Governance, ReentrancyGuard {
     uint256 internal constant MINUTE_HALF_LIFE =
         0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
 
+    address internal constant COW_SETTLEMENT =
+        0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
+
+    address internal constant VAULT_RELAYER =
+        0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
+
+    bytes32 internal immutable COW_DOMAIN_SEPARATOR;
+
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
 
-    /// @notice Contract to call during write functions.
-    Hook internal hook_;
+    /// @notice The address that will receive the funds in the auction.
+    address public receiver;
 
     /// @notice The amount to start the auction at.
     uint256 public startingPrice;
@@ -103,40 +73,36 @@ contract Auction is Governance, ReentrancyGuard {
     /// @notice The time that each auction lasts.
     uint256 public auctionLength;
 
-    /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public auctionCooldown;
-
-    /// @notice Mapping from an auction ID to its struct.
-    mapping(bytes32 => AuctionInfo) public auctions;
+    /// @notice Mapping from `from` token to its struct.
+    mapping(address => AuctionInfo) public auctions;
 
     /// @notice Array of all the enabled auction for this contract.
-    bytes32[] public enabledAuctions;
+    address[] public enabledAuctions;
 
-    constructor() Governance(msg.sender) {}
+    constructor() Governance2Step(msg.sender) {
+        COW_DOMAIN_SEPARATOR = ICowSettlement(COW_SETTLEMENT).domainSeparator();
+    }
 
     /**
      * @notice Initializes the Auction contract with initial parameters.
      * @param _want Address this auction is selling to.
-     * @param _hook Address of the hook contract (optional).
+     * @param _receiver Address that will receive the funds from the auction.
      * @param _governance Address of the contract governance.
      * @param _auctionLength Duration of each auction in seconds.
-     * @param _auctionCooldown Cooldown period between auctions in seconds.
      * @param _startingPrice Starting price for each auction.
      */
     function initialize(
         address _want,
-        address _hook,
+        address _receiver,
         address _governance,
         uint256 _auctionLength,
-        uint256 _auctionCooldown,
         uint256 _startingPrice
-    ) external virtual {
+    ) public virtual {
         require(auctionLength == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
         require(_auctionLength != 0, "length");
-        require(_auctionLength <= _auctionCooldown, "cooldown");
         require(_startingPrice != 0, "starting price");
-
+        require(_receiver != address(0), "receiver");
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_want).decimals();
         require(decimals <= 18, "unsupported decimals");
@@ -147,22 +113,11 @@ contract Auction is Governance, ReentrancyGuard {
             scaler: uint96(WAD / 10 ** decimals)
         });
 
-        // If we are using a hook.
-        if (_hook != address(0)) {
-            // All flags default to true.
-            hook_ = Hook({
-                hook: _hook,
-                kickable: true,
-                kick: true,
-                preTake: true,
-                postTake: true
-            });
-        }
-
+        receiver = _receiver;
         governance = _governance;
         auctionLength = _auctionLength;
-        auctionCooldown = _auctionCooldown;
         startingPrice = _startingPrice;
+        emit UpdatedStartingPrice(_startingPrice);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -178,142 +133,107 @@ contract Auction is Governance, ReentrancyGuard {
     }
 
     /**
-     * @notice Get the address of the hook if any.
-     * @return . The hook.
+     * @notice Get the available amount for the auction.
+     * @param _from The address of the token to be auctioned.
+     * @return . The available amount for the auction.
      */
-    function hook() external view virtual returns (address) {
-        return hook_.hook;
+    function available(address _from) public view virtual returns (uint256) {
+        if (!isActive(_from)) return 0;
+
+        return
+            Maths.min(
+                auctions[_from].initialAvailable,
+                ERC20(_from).balanceOf(address(this))
+            );
     }
 
     /**
-     * @notice Get the current status of which hooks are being used.
-     * @return . If the kickable hook is used.
-     * @return . If the kick hook is used.
-     * @return . If the preTake hook is used.
-     * @return . If the postTake hook is used.
+     * @notice Get the kicked timestamp for the auction.
+     * @param _from The address of the token to be auctioned.
+     * @return . The kicked timestamp for the auction.
      */
-    function getHookFlags()
+    function kicked(address _from) external view virtual returns (uint256) {
+        return auctions[_from].kicked;
+    }
+
+    /**
+     * @notice Check if the auction is active.
+     * @param _from The address of the token to be auctioned.
+     * @return . Whether the auction is active.
+     */
+    function isActive(address _from) public view virtual returns (bool) {
+        return auctions[_from].kicked + auctionLength >= block.timestamp;
+    }
+
+    /**
+     * @notice Get all the enabled auctions.
+     */
+    function getAllEnabledAuctions()
         external
         view
         virtual
-        returns (bool, bool, bool, bool)
+        returns (address[] memory)
     {
-        Hook memory _hook = hook_;
-        return (_hook.kickable, _hook.kick, _hook.preTake, _hook.postTake);
-    }
-
-    /**
-     * @notice Get the length of the enabled auctions array.
-     */
-    function numberOfEnabledAuctions() external view virtual returns (uint256) {
-        return enabledAuctions.length;
-    }
-
-    /**
-     * @notice Get the unique auction identifier.
-     * @param _from The address of the token to sell.
-     * @return bytes32 A unique auction identifier.
-     */
-    function getAuctionId(address _from) public view virtual returns (bytes32) {
-        return keccak256(abi.encodePacked(_from, want(), address(this)));
-    }
-
-    /**
-     * @notice Retrieves information about a specific auction.
-     * @param _auctionId The unique identifier of the auction.
-     * @return _from The address of the token to sell.
-     * @return _to The address of the token to buy.
-     * @return _kicked The timestamp of the last kick.
-     * @return _available The current available amount for the auction.
-     */
-    function auctionInfo(
-        bytes32 _auctionId
-    )
-        public
-        view
-        virtual
-        returns (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        )
-    {
-        AuctionInfo memory auction = auctions[_auctionId];
-
-        return (
-            auction.fromInfo.tokenAddress,
-            want(),
-            auction.kicked,
-            auction.kicked + auctionLength > block.timestamp
-                ? auction.currentAvailable
-                : 0
-        );
+        return enabledAuctions;
     }
 
     /**
      * @notice Get the pending amount available for the next auction.
      * @dev Defaults to the auctions balance of the from token if no hook.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @return uint256 The amount that can be kicked into the auction.
      */
-    function kickable(
-        bytes32 _auctionId
-    ) external view virtual returns (uint256) {
+    function kickable(address _from) external view virtual returns (uint256) {
         // If not enough time has passed then `kickable` is 0.
-        if (auctions[_auctionId].kicked + auctionCooldown > block.timestamp) {
-            return 0;
-        }
+        if (isActive(_from)) return 0;
 
-        // Check if we have a hook to call.
-        Hook memory _hook = hook_;
-        if (_hook.kickable) {
-            // If so default to the hooks logic.
-            return
-                IHook(_hook.hook).kickable(
-                    auctions[_auctionId].fromInfo.tokenAddress
-                );
-        } else {
-            // Else just use the full balance of this contract.
-            return
-                ERC20(auctions[_auctionId].fromInfo.tokenAddress).balanceOf(
-                    address(this)
-                );
-        }
+        // Use the full balance of this contract.
+        return ERC20(_from).balanceOf(address(this));
     }
 
     /**
-     * @notice Gets the amount of `want` needed to buy a specific amount of `from`.
-     * @param _auctionId The unique identifier of the auction.
-     * @param _amountToTake The amount of `from` to take in the auction.
+     * @notice Gets the amount of `want` needed to buy the available amount of `from`.
+     * @param _from The address of the token to be auctioned.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
     function getAmountNeeded(
-        bytes32 _auctionId,
-        uint256 _amountToTake
+        address _from
     ) external view virtual returns (uint256) {
         return
             _getAmountNeeded(
-                auctions[_auctionId],
-                _amountToTake,
+                auctions[_from],
+                available(_from),
                 block.timestamp
             );
     }
 
     /**
+     * @notice Gets the amount of `want` needed to buy a specific amount of `from`.
+     * @param _from The address of the token to be auctioned.
+     * @param _amountToTake The amount of `from` to take in the auction.
+     * @return . The amount of `want` needed to fulfill the take amount.
+     */
+    function getAmountNeeded(
+        address _from,
+        uint256 _amountToTake
+    ) external view virtual returns (uint256) {
+        return
+            _getAmountNeeded(auctions[_from], _amountToTake, block.timestamp);
+    }
+
+    /**
      * @notice Gets the amount of `want` needed to buy a specific amount of `from` at a specific timestamp.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @param _amountToTake The amount `from` to take in the auction.
      * @param _timestamp The specific timestamp for calculating the amount needed.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
     function getAmountNeeded(
-        bytes32 _auctionId,
+        address _from,
         uint256 _amountToTake,
         uint256 _timestamp
     ) external view virtual returns (uint256) {
-        return
-            _getAmountNeeded(auctions[_auctionId], _amountToTake, _timestamp);
+        return _getAmountNeeded(auctions[_from], _amountToTake, _timestamp);
     }
 
     /**
@@ -327,11 +247,11 @@ contract Auction is Governance, ReentrancyGuard {
         return
             // Scale _amountToTake to 1e18
             (_amountToTake *
-                _auction.fromInfo.scaler *
+                _auction.scaler *
                 // Price is always 1e18
                 _price(
                     _auction.kicked,
-                    _auction.initialAvailable * _auction.fromInfo.scaler,
+                    _auction.initialAvailable * _auction.scaler,
                     _timestamp
                 )) /
             1e18 /
@@ -341,29 +261,28 @@ contract Auction is Governance, ReentrancyGuard {
 
     /**
      * @notice Gets the price of the auction at the current timestamp.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @return . The price of the auction.
      */
-    function price(bytes32 _auctionId) external view virtual returns (uint256) {
-        return price(_auctionId, block.timestamp);
+    function price(address _from) external view virtual returns (uint256) {
+        return price(_from, block.timestamp);
     }
 
     /**
      * @notice Gets the price of the auction at a specific timestamp.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @param _timestamp The specific timestamp for calculating the price.
      * @return . The price of the auction.
      */
     function price(
-        bytes32 _auctionId,
+        address _from,
         uint256 _timestamp
     ) public view virtual returns (uint256) {
         // Get unscaled price and scale it down.
         return
             _price(
-                auctions[_auctionId].kicked,
-                auctions[_auctionId].initialAvailable *
-                    auctions[_auctionId].fromInfo.scaler,
+                auctions[_from].kicked,
+                auctions[_from].initialAvailable * auctions[_from].scaler,
                 _timestamp
             ) / wantInfo.scaler;
     }
@@ -386,7 +305,7 @@ contract Auction is Governance, ReentrancyGuard {
 
         if (secondsElapsed > auctionLength) return 0;
 
-        // Exponential decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
+        // Exponential step decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
         uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
         uint256 minutesComponent = Maths.rpow(
             MINUTE_HALF_LIFE,
@@ -405,53 +324,26 @@ contract Auction is Governance, ReentrancyGuard {
 
     /**
      * @notice Enables a new auction.
-     * @dev Uses governance as the receiver.
      * @param _from The address of the token to be auctioned.
-     * @return . The unique identifier of the enabled auction.
      */
-    function enable(address _from) external virtual returns (bytes32) {
-        return enable(_from, msg.sender);
-    }
-
-    /**
-     * @notice Enables a new auction.
-     * @param _from The address of the token to be auctioned.
-     * @param _receiver The address that will receive the funds in the auction.
-     * @return _auctionId The unique identifier of the enabled auction.
-     */
-    function enable(
-        address _from,
-        address _receiver
-    ) public virtual onlyGovernance returns (bytes32 _auctionId) {
+    function enable(address _from) external virtual onlyGovernance {
         address _want = want();
         require(_from != address(0) && _from != _want, "ZERO ADDRESS");
-        require(
-            _receiver != address(0) && _receiver != address(this),
-            "receiver"
-        );
+        require(auctions[_from].scaler == 0, "already enabled");
+
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_from).decimals();
         require(decimals <= 18, "unsupported decimals");
 
-        // Calculate the id.
-        _auctionId = getAuctionId(_from);
-
-        require(
-            auctions[_auctionId].fromInfo.tokenAddress == address(0),
-            "already enabled"
-        );
-
         // Store all needed info.
-        auctions[_auctionId].fromInfo = TokenInfo({
-            tokenAddress: _from,
-            scaler: uint96(WAD / 10 ** decimals)
-        });
-        auctions[_auctionId].receiver = _receiver;
+        auctions[_from].scaler = uint64(WAD / 10 ** decimals);
+
+        ERC20(_from).safeApprove(VAULT_RELAYER, type(uint256).max);
 
         // Add to the array.
-        enabledAuctions.push(_auctionId);
+        enabledAuctions.push(_from);
 
-        emit AuctionEnabled(_auctionId, _from, _want, address(this));
+        emit AuctionEnabled(_from, _want);
     }
 
     /**
@@ -473,23 +365,20 @@ contract Auction is Governance, ReentrancyGuard {
         address _from,
         uint256 _index
     ) public virtual onlyGovernance {
-        bytes32 _auctionId = getAuctionId(_from);
-
         // Make sure the auction was enabled.
-        require(
-            auctions[_auctionId].fromInfo.tokenAddress != address(0),
-            "not enabled"
-        );
+        require(auctions[_from].scaler != 0, "not enabled");
 
         // Remove the struct.
-        delete auctions[_auctionId];
+        delete auctions[_from];
+
+        ERC20(_from).safeApprove(VAULT_RELAYER, 0);
 
         // Remove the auction ID from the array.
-        bytes32[] memory _enabledAuctions = enabledAuctions;
-        if (_enabledAuctions[_index] != _auctionId) {
+        address[] memory _enabledAuctions = enabledAuctions;
+        if (_enabledAuctions[_index] != _from) {
             // If the _index given is not the id find it.
             for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
-                if (_enabledAuctions[i] == _auctionId) {
+                if (_enabledAuctions[i] == _from) {
                     _index = i;
                     break;
                 }
@@ -508,32 +397,27 @@ contract Auction is Governance, ReentrancyGuard {
         // Pop the id off the array.
         enabledAuctions.pop();
 
-        emit AuctionDisabled(_auctionId, _from, want(), address(this));
+        emit AuctionDisabled(_from, want());
     }
 
     /**
-     * @notice Set the flags to be used with hook.
-     * @param _kickable If the kickable hook should be used.
-     * @param _kick If the kick hook should be used.
-     * @param _preTake If the preTake hook should be used.
-     * @param _postTake If the postTake should be used.
+     * @notice Sets the starting price for the auction.
+     * @param _startingPrice The new starting price for the auction.
      */
-    function setHookFlags(
-        bool _kickable,
-        bool _kick,
-        bool _preTake,
-        bool _postTake
+    function setStartingPrice(
+        uint256 _startingPrice
     ) external virtual onlyGovernance {
-        address _hook = hook_.hook;
-        require(_hook != address(0), "no hook set");
+        require(_startingPrice != 0, "starting price");
 
-        hook_ = Hook({
-            hook: _hook,
-            kickable: _kickable,
-            kick: _kick,
-            preTake: _preTake,
-            postTake: _postTake
-        });
+        // Don't change the price when an auction is active.
+        address[] memory _enabledAuctions = enabledAuctions;
+        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+            require(!isActive(_enabledAuctions[i]), "active auction");
+        }
+
+        startingPrice = _startingPrice;
+
+        emit UpdatedStartingPrice(_startingPrice);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -542,102 +426,94 @@ contract Auction is Governance, ReentrancyGuard {
 
     /**
      * @notice Kicks off an auction, updating its status and making funds available for bidding.
-     * @param _auctionId The unique identifier of the auction.
-     * @return available The available amount for bidding on in the auction.
+     * @param _from The address of the token to be auctioned.
+     * @return _available The available amount for bidding on in the auction.
      */
     function kick(
-        bytes32 _auctionId
-    ) external virtual nonReentrant returns (uint256 available) {
-        address _fromToken = auctions[_auctionId].fromInfo.tokenAddress;
-        require(_fromToken != address(0), "not enabled");
+        address _from
+    ) external virtual nonReentrant returns (uint256 _available) {
+        require(auctions[_from].scaler != 0, "not enabled");
         require(
-            block.timestamp > auctions[_auctionId].kicked + auctionCooldown,
+            block.timestamp > auctions[_from].kicked + auctionLength,
             "too soon"
         );
 
-        Hook memory _hook = hook_;
-        // Use hook if defined.
-        if (_hook.kick) {
-            available = IHook(_hook.hook).auctionKicked(_fromToken);
-        } else {
-            // Else just use current balance.
-            available = ERC20(_fromToken).balanceOf(address(this));
-        }
+        // Just use current balance.
+        _available = ERC20(_from).balanceOf(address(this));
 
-        require(available != 0, "nothing to kick");
+        require(_available != 0, "nothing to kick");
 
         // Update the auctions status.
-        auctions[_auctionId].kicked = uint96(block.timestamp);
-        auctions[_auctionId].initialAvailable = uint128(available);
-        auctions[_auctionId].currentAvailable = uint128(available);
+        auctions[_from].kicked = uint64(block.timestamp);
+        auctions[_from].initialAvailable = uint128(_available);
 
-        emit AuctionKicked(_auctionId, available);
+        emit AuctionKicked(_from, _available);
     }
 
     /**
      * @notice Take the token being sold in a live auction.
      * @dev Defaults to taking the full amount and sending to the msg sender.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @return . The amount of fromToken taken in the auction.
      */
-    function take(bytes32 _auctionId) external virtual returns (uint256) {
-        return _take(_auctionId, type(uint256).max, msg.sender, new bytes(0));
+    function take(address _from) external virtual returns (uint256) {
+        return _take(_from, type(uint256).max, msg.sender, new bytes(0));
     }
 
     /**
      * @notice Take the token being sold in a live auction with a specified maximum amount.
-     * @dev Uses the sender's address as the receiver.
-     * @param _auctionId The unique identifier of the auction.
+     * @dev Will send the funds to the msg sender.
+     * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @return . The amount of fromToken taken in the auction.
      */
     function take(
-        bytes32 _auctionId,
+        address _from,
         uint256 _maxAmount
     ) external virtual returns (uint256) {
-        return _take(_auctionId, _maxAmount, msg.sender, new bytes(0));
+        return _take(_from, _maxAmount, msg.sender, new bytes(0));
     }
 
     /**
      * @notice Take the token being sold in a live auction.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @param _receiver The address that will receive the fromToken.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
     function take(
-        bytes32 _auctionId,
+        address _from,
         uint256 _maxAmount,
         address _receiver
     ) external virtual returns (uint256) {
-        return _take(_auctionId, _maxAmount, _receiver, new bytes(0));
+        return _take(_from, _maxAmount, _receiver, new bytes(0));
     }
 
     /**
      * @notice Take the token being sold in a live auction.
-     * @param _auctionId The unique identifier of the auction.
+     * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @param _receiver The address that will receive the fromToken.
      * @param _data The data signify the callback should be used and sent with it.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
     function take(
-        bytes32 _auctionId,
+        address _from,
         uint256 _maxAmount,
         address _receiver,
         bytes calldata _data
     ) external virtual returns (uint256) {
-        return _take(_auctionId, _maxAmount, _receiver, _data);
+        return _take(_from, _maxAmount, _receiver, _data);
     }
 
     /// @dev Implements the take of the auction.
     function _take(
-        bytes32 _auctionId,
+        address _from,
         uint256 _maxAmount,
         address _receiver,
         bytes memory _data
     ) internal virtual nonReentrant returns (uint256 _amountTaken) {
-        AuctionInfo memory auction = auctions[_auctionId];
+        AuctionInfo memory auction = auctions[_from];
         // Make sure the auction is active.
         require(
             auction.kicked + auctionLength >= block.timestamp,
@@ -645,9 +521,8 @@ contract Auction is Governance, ReentrancyGuard {
         );
 
         // Max amount that can be taken.
-        _amountTaken = auction.currentAvailable > _maxAmount
-            ? _maxAmount
-            : auction.currentAvailable;
+        uint256 _available = available(_from);
+        _amountTaken = _available > _maxAmount ? _maxAmount : _available;
 
         // Get the amount needed
         uint256 needed = _getAmountNeeded(
@@ -658,34 +533,14 @@ contract Auction is Governance, ReentrancyGuard {
 
         require(needed != 0, "zero needed");
 
-        // How much is left in this auction.
-        uint256 left;
-        unchecked {
-            left = auction.currentAvailable - _amountTaken;
-        }
-        auctions[_auctionId].currentAvailable = uint128(left);
-
-        Hook memory _hook = hook_;
-        if (_hook.preTake) {
-            // Use hook if defined.
-            IHook(_hook.hook).preTake(
-                auction.fromInfo.tokenAddress,
-                _amountTaken,
-                needed
-            );
-        }
-
         // Send `from`.
-        ERC20(auction.fromInfo.tokenAddress).safeTransfer(
-            _receiver,
-            _amountTaken
-        );
+        ERC20(_from).safeTransfer(_receiver, _amountTaken);
 
         // If the caller has specified data.
         if (_data.length != 0) {
             // Do the callback.
             ITaker(_receiver).auctionTakeCallback(
-                auction.fromInfo.tokenAddress,
+                _from,
                 msg.sender,
                 _amountTaken,
                 needed,
@@ -697,13 +552,61 @@ contract Auction is Governance, ReentrancyGuard {
         address _want = want();
 
         // Pull `want`.
-        ERC20(_want).safeTransferFrom(msg.sender, auction.receiver, needed);
+        ERC20(_want).safeTransferFrom(msg.sender, receiver, needed);
+    }
 
-        // Post take hook if defined.
-        if (_hook.postTake) {
-            IHook(_hook.hook).postTake(_want, _amountTaken, needed);
-        }
+    /// @dev Validates a COW order signature.
+    function isValidSignature(
+        bytes32 _hash,
+        bytes calldata signature
+    ) external view returns (bytes4) {
+        // Make sure `_take` has not already been entered.
+        require(!_reentrancyGuardEntered(), "ReentrancyGuard: reentrant call");
 
-        emit AuctionTaken(_auctionId, _amountTaken, left);
+        // Decode the signature to get the order.
+        GPv2Order.Data memory order = abi.decode(signature, (GPv2Order.Data));
+
+        AuctionInfo memory auction = auctions[address(order.sellToken)];
+
+        // Get the current amount needed for the auction.
+        uint256 paymentAmount = _getAmountNeeded(
+            auction,
+            order.sellAmount,
+            block.timestamp
+        );
+
+        // Verify the order details.
+        require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
+        require(paymentAmount != 0, "zero amount");
+        require(available(address(order.sellToken)) != 0, "zero available");
+        require(order.feeAmount == 0, "fee");
+        require(order.partiallyFillable, "partial fill");
+        require(order.validTo < auction.kicked + auctionLength, "expired");
+        require(order.appData == bytes32(0), "app data");
+        require(order.buyAmount >= paymentAmount, "bad price");
+        require(address(order.buyToken) == want(), "bad token");
+        require(order.receiver == receiver, "bad receiver");
+        require(order.sellAmount <= auction.initialAvailable, "bad amount");
+
+        // If all checks pass, return the magic value
+        return this.isValidSignature.selector;
+    }
+
+    /**
+     * @notice Allows the auction to be stopped if the full amount is taken.
+     * @param _from The address of the token to be auctioned.
+     */
+    function settle(address _from) external virtual {
+        require(isActive(_from), "!active");
+        require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
+
+        auctions[_from].kicked = uint64(0);
+    }
+
+    function sweep(address _token) external virtual onlyGovernance {
+        ERC20(_token).safeTransfer(
+            msg.sender,
+            ERC20(_token).balanceOf(address(this))
+        );
     }
 }
