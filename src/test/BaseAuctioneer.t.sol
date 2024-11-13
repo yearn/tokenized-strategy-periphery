@@ -14,27 +14,11 @@ contract BaseAuctioneerTest is Setup {
 
     event DeployedNewAuction(address indexed auction, address indexed want);
 
-    event AuctionEnabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed strategy
-    );
+    event AuctionEnabled(address indexed from, address indexed to);
 
-    event AuctionDisabled(
-        bytes32 auctionId,
-        address indexed from,
-        address indexed to,
-        address indexed strategy
-    );
+    event AuctionDisabled(address indexed from, address indexed to);
 
-    event AuctionKicked(bytes32 auctionId, uint256 available);
-
-    event AuctionTaken(
-        bytes32 auctionId,
-        uint256 amountTaken,
-        uint256 amountLeft
-    );
+    event AuctionKicked(address indexed from, uint256 available);
 
     IMockAuctioneer public auctioneer;
 
@@ -54,107 +38,88 @@ contract BaseAuctioneerTest is Setup {
     function test_enableAuction() public {
         address from = tokenAddrs["USDC"];
 
-        bytes32 id = auctioneer.enableAuction(from);
+        auctioneer.enable(from);
 
-        assertEq(auctioneer.kickable(id), 0);
-        assertEq(auctioneer.getAmountNeeded(id, 1e18), 0);
-        assertEq(auctioneer.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), 0);
+        assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
+        assertEq(auctioneer.price(from), 0);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
+            .auctions(from);
+
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(from), 0);
 
         // Kicking it reverts
         vm.expectRevert("nothing to kick");
-        auctioneer.kick(id);
+        auctioneer.kick(from);
 
         // Can't re-enable
         vm.expectRevert("already enabled");
-        auctioneer.enableAuction(from);
+        auctioneer.enable(from);
     }
 
     function test_enableSecondAuction() public {
         address from = tokenAddrs["USDC"];
 
-        bytes32 id = auctioneer.enableAuction(from);
+        auctioneer.enable(from);
 
-        assertEq(auctioneer.kickable(id), 0);
-        assertEq(auctioneer.getAmountNeeded(id, 1e18), 0);
-        assertEq(auctioneer.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), 0);
+        assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
+        assertEq(auctioneer.price(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(from), 0);
 
         address secondFrom = tokenAddrs["WETH"];
 
-        bytes32 expectedId = auctioneer.getAuctionId(secondFrom);
-
         vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit AuctionEnabled(
-            expectedId,
-            secondFrom,
-            address(asset),
-            address(auctioneer)
-        );
-        bytes32 secondId = auctioneer.enableAuction(secondFrom);
+        emit AuctionEnabled(secondFrom, address(asset));
+        auctioneer.enable(secondFrom);
 
-        assertEq(expectedId, secondId);
-        assertEq(auctioneer.kickable(secondId), 0);
-        assertEq(auctioneer.getAmountNeeded(secondId, 1e18), 0);
-        assertEq(auctioneer.price(secondId), 0);
-        (_from, _to, _kicked, _available) = auctioneer.auctionInfo(secondId);
+        assertEq(auctioneer.kickable(secondFrom), 0);
+        assertEq(auctioneer.getAmountNeeded(secondFrom, 1e18), 0);
+        assertEq(auctioneer.price(secondFrom), 0);
+        (_kicked, _scaler, _initialAvailable) = auctioneer.auctions(secondFrom);
 
-        assertEq(_from, secondFrom);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(secondFrom), 0);
     }
 
     function test_disableAuction() public {
         address from = tokenAddrs["USDC"];
 
-        bytes32 id = auctioneer.enableAuction(from);
+        auctioneer.enable(from);
 
-        assertEq(auctioneer.kickable(id), 0);
-        assertEq(auctioneer.getAmountNeeded(id, 1e18), 0);
-        assertEq(auctioneer.price(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), 0);
+        assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
+        assertEq(auctioneer.price(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e12);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(from), 0);
 
         vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit AuctionDisabled(id, from, address(asset), address(auctioneer));
-        auctioneer.disableAuction(from);
+        emit AuctionDisabled(from, address(asset));
+        auctioneer.disable(from);
 
-        (_from, _to, _kicked, _available) = auctioneer.auctionInfo(id);
+        (_kicked, _scaler, _initialAvailable) = auctioneer.auctions(from);
 
-        assertEq(_from, address(0));
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 0);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(from), 0);
     }
 
     function test_kickAuction_default(uint256 _amount) public {
@@ -165,56 +130,52 @@ contract BaseAuctioneerTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = auctioneer.enableAuction(from);
+        auctioneer.enable(from);
 
-        assertEq(auctioneer.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
+            .auctions(from);
 
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_scaler, 1e10);
+        assertEq(_initialAvailable, 0);
+        assertEq(auctioneer.available(from), 0);
 
         airdrop(ERC20(from), address(auctioneer), _amount);
 
-        assertEq(auctioneer.kickable(id), _amount);
-        (, , _kicked, _available) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), _amount);
+        (_kicked, , _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, 0);
-        assertEq(_available, 0);
+        assertEq(_initialAvailable, 0);
 
         vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit AuctionKicked(id, _amount);
-        uint256 available = auctioneer.kick(id);
+        emit AuctionKicked(from, _amount);
+        uint256 available = auctioneer.kick(from);
 
         assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
         assertEq(ERC20(from).balanceOf(address(auctioneer)), available);
 
-        assertEq(auctioneer.kickable(id), 0);
-        (, , _kicked, _available) = auctioneer.auctionInfo(id);
+        assertEq(auctioneer.kickable(from), 0);
+        (_kicked, , _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, _amount);
-        uint256 startingPrice = ((auctioneer.auctionStartingPrice() *
+        assertEq(_initialAvailable, _amount);
+        uint256 startingPrice = ((auctioneer.startingPrice() *
             (WAD / wantScaler)) * 1e18) /
             _amount /
             fromScaler;
-        assertEq(auctioneer.price(id), startingPrice);
+        assertEq(auctioneer.price(from), startingPrice);
         assertRelApproxEq(
-            auctioneer.getAmountNeeded(id, _amount),
+            auctioneer.getAmountNeeded(from, _amount),
             (startingPrice * fromScaler * _amount) /
                 (WAD / wantScaler) /
                 wantScaler,
             MAX_BPS
         );
 
-        uint256 expectedPrice = auctioneer.price(id, block.timestamp + 100);
+        uint256 expectedPrice = auctioneer.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
         uint256 expectedAmount = auctioneer.getAmountNeeded(
-            id,
+            from,
             _amount,
             block.timestamp + 100
         );
@@ -227,20 +188,14 @@ contract BaseAuctioneerTest is Setup {
 
         skip(100);
 
-        assertEq(auctioneer.price(id), expectedPrice);
-        assertEq(auctioneer.getAmountNeeded(id, _amount), expectedAmount);
+        assertEq(auctioneer.price(from), expectedPrice);
+        assertEq(auctioneer.getAmountNeeded(from, _amount), expectedAmount);
 
         // Skip full auction
         skip(auctioneer.auctionLength());
 
-        assertEq(auctioneer.price(id), 0);
-        assertEq(auctioneer.getAmountNeeded(id, _amount), 0);
-
-        // Can't kick a new one yet
-        vm.expectRevert("too soon");
-        auctioneer.kick(id);
-
-        assertEq(auctioneer.kickable(id), 0);
+        assertEq(auctioneer.price(from), 0);
+        assertEq(auctioneer.getAmountNeeded(from, _amount), 0);
     }
 
     function test_takeAuction_default(uint256 _amount, uint16 _percent) public {
@@ -252,30 +207,25 @@ contract BaseAuctioneerTest is Setup {
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
-        bytes32 id = auctioneer.enableAuction(from);
+        auctioneer.enable(from);
 
         airdrop(ERC20(from), address(auctioneer), _amount);
 
-        auctioneer.kick(id);
+        auctioneer.kick(from);
 
-        assertEq(auctioneer.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
+        assertEq(auctioneer.kickable(from), 0);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
+            .auctions(from);
         assertEq(_kicked, block.timestamp);
-        assertEq(_available, _amount);
+        assertEq(_scaler, 1e10);
+        assertEq(_initialAvailable, _amount);
         assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
 
         skip(auctioneer.auctionLength() / 2);
 
         uint256 toTake = (_amount * _percent) / MAX_BPS;
         uint256 left = _amount - toTake;
-        uint256 needed = auctioneer.getAmountNeeded(id, toTake);
+        uint256 needed = auctioneer.getAmountNeeded(from, toTake);
         uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
 
         airdrop(ERC20(asset), address(this), needed);
@@ -284,171 +234,13 @@ contract BaseAuctioneerTest is Setup {
 
         uint256 before = ERC20(from).balanceOf(address(this));
 
-        vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit AuctionTaken(id, toTake, left);
-        uint256 amountTaken = auctioneer.take(id, toTake);
+        uint256 amountTaken = auctioneer.take(from, toTake);
 
         assertEq(amountTaken, toTake);
 
-        (, , , _available) = auctioneer.auctionInfo(id);
-        assertEq(_available, left);
-        assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
-        assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
-        assertEq(ERC20(from).balanceOf(address(auctioneer)), left);
-        assertEq(ERC20(asset).balanceOf(address(auctioneer)), needed);
-    }
-
-    function test_kickAuction_custom(uint256 _amount) public {
-        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-
-        address from = tokenAddrs["WBTC"];
-
-        fromScaler = WAD / 10 ** ERC20(from).decimals();
-        wantScaler = WAD / 10 ** ERC20(asset).decimals();
-
-        bytes32 id = auctioneer.enableAuction(from);
-
-        assertEq(auctioneer.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
-
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
-        assertEq(_kicked, 0);
-        assertEq(_available, 0);
-
-        airdrop(ERC20(from), address(auctioneer), _amount);
-
-        auctioneer.setUseDefault(false);
-
-        assertEq(auctioneer.kickable(id), 0);
-
-        uint256 kickable = _amount / 10;
-        auctioneer.setLetKick(kickable);
-
-        assertEq(auctioneer.kickable(id), kickable);
-        (, , _kicked, _available) = auctioneer.auctionInfo(id);
-        assertEq(_kicked, 0);
-        assertEq(_available, 0);
-
-        vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit AuctionKicked(id, kickable);
-        uint256 available = auctioneer.kick(id);
-
-        assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
-        assertEq(kickable, available);
-
-        assertEq(auctioneer.kickable(id), 0);
-        (, , _kicked, _available) = auctioneer.auctionInfo(id);
-        assertEq(_kicked, block.timestamp);
-        assertEq(_available, kickable);
-        uint256 startingPrice = ((auctioneer.auctionStartingPrice() *
-            (WAD / wantScaler)) * 1e18) /
-            kickable /
-            fromScaler;
-        assertEq(auctioneer.price(id), startingPrice);
-        assertRelApproxEq(
-            auctioneer.getAmountNeeded(id, kickable),
-            (startingPrice * fromScaler * kickable) /
-                (WAD / wantScaler) /
-                wantScaler,
-            MAX_BPS
-        );
-
-        uint256 expectedPrice = auctioneer.price(id, block.timestamp + 100);
-        assertLt(expectedPrice, startingPrice);
-        uint256 expectedAmount = auctioneer.getAmountNeeded(
-            id,
-            kickable,
-            block.timestamp + 100
-        );
-        assertLt(
-            expectedAmount,
-            (startingPrice * fromScaler * kickable) /
-                (WAD / wantScaler) /
-                wantScaler
-        );
-
-        skip(100);
-
-        assertEq(auctioneer.price(id), expectedPrice);
-        assertEq(auctioneer.getAmountNeeded(id, kickable), expectedAmount);
-
-        // Skip full auction
-        skip(auctioneer.auctionLength());
-
-        assertEq(auctioneer.price(id), 0);
-        assertEq(auctioneer.getAmountNeeded(id, kickable), 0);
-
-        // Can't kick a new one yet
-        vm.expectRevert("too soon");
-        auctioneer.kick(id);
-
-        assertEq(auctioneer.kickable(id), 0);
-    }
-
-    function test_takeAuction_custom(uint256 _amount, uint16 _percent) public {
-        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-        _percent = uint16(bound(uint256(_percent), 1_000, MAX_BPS));
-
-        address from = tokenAddrs["WBTC"];
-
-        fromScaler = WAD / 10 ** ERC20(from).decimals();
-        wantScaler = WAD / 10 ** ERC20(asset).decimals();
-
-        bytes32 id = auctioneer.enableAuction(from);
-
-        airdrop(ERC20(from), address(auctioneer), _amount);
-
-        auctioneer.setUseDefault(false);
-
-        assertEq(auctioneer.kickable(id), 0);
-
-        uint256 kickable = _amount / 10;
-        auctioneer.setLetKick(kickable);
-
-        auctioneer.kick(id);
-
-        assertEq(auctioneer.kickable(id), 0);
-        (
-            address _from,
-            address _to,
-            uint256 _kicked,
-            uint256 _available
-        ) = auctioneer.auctionInfo(id);
-        assertEq(_from, from);
-        assertEq(_to, address(asset));
-        assertEq(_kicked, block.timestamp);
-        assertEq(_available, kickable);
-        assertEq(ERC20(from).balanceOf(address(auctioneer)), _amount);
-
-        skip(auctioneer.auctionLength() / 2);
-
-        uint256 toTake = (kickable * _percent) / MAX_BPS;
-        uint256 left = _amount - toTake;
-        uint256 needed = auctioneer.getAmountNeeded(id, toTake);
-        uint256 beforeAsset = ERC20(asset).balanceOf(address(this));
-
-        airdrop(ERC20(asset), address(this), needed);
-
-        ERC20(asset).safeApprove(address(auctioneer), needed);
-
-        uint256 before = ERC20(from).balanceOf(address(this));
-
-        vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit PreTake(from, toTake, needed);
-        vm.expectEmit(true, true, true, true, address(auctioneer));
-        emit PostTake(address(asset), toTake, needed);
-        uint256 amountTaken = auctioneer.take(id, toTake);
-
-        assertEq(amountTaken, toTake);
-
-        (, , , _available) = auctioneer.auctionInfo(id);
-        assertEq(_available, kickable - toTake);
+        (, , _initialAvailable) = auctioneer.auctions(from);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auctioneer.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
         assertEq(ERC20(from).balanceOf(address(auctioneer)), left);

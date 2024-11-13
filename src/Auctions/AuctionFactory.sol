@@ -12,9 +12,6 @@ contract AuctionFactory is Clonable {
     /// @notice The time that each auction lasts.
     uint256 public constant DEFAULT_AUCTION_LENGTH = 1 days;
 
-    /// @notice The minimum time to wait between auction 'kicks'.
-    uint256 public constant DEFAULT_AUCTION_COOLDOWN = 5 days;
-
     /// @notice The amount to start the auction with.
     uint256 public constant DEFAULT_STARTING_PRICE = 1_000_000;
 
@@ -35,10 +32,9 @@ contract AuctionFactory is Clonable {
         return
             _createNewAuction(
                 _want,
-                address(0),
+                msg.sender,
                 msg.sender,
                 DEFAULT_AUCTION_LENGTH,
-                DEFAULT_AUCTION_COOLDOWN,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -46,20 +42,19 @@ contract AuctionFactory is Clonable {
     /**
      * @notice Creates a new auction contract.
      * @param _want Address of the token users will bid with.
-     * @param _hook Address of the hook contract if any.
+     * @param _receiver Address that will receive the funds in the auction.
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(
         address _want,
-        address _hook
+        address _receiver
     ) external returns (address) {
         return
             _createNewAuction(
                 _want,
-                _hook,
+                _receiver,
                 msg.sender,
                 DEFAULT_AUCTION_LENGTH,
-                DEFAULT_AUCTION_COOLDOWN,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -67,22 +62,21 @@ contract AuctionFactory is Clonable {
     /**
      * @notice Creates a new auction contract.
      * @param _want Address of the token users will bid with.
-     * @param _hook Address of the hook contract if any.
+     * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(
         address _want,
-        address _hook,
+        address _receiver,
         address _governance
     ) external returns (address) {
         return
             _createNewAuction(
                 _want,
-                _hook,
+                _receiver,
                 _governance,
                 DEFAULT_AUCTION_LENGTH,
-                DEFAULT_AUCTION_COOLDOWN,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -90,24 +84,23 @@ contract AuctionFactory is Clonable {
     /**
      * @notice Creates a new auction contract.
      * @param _want Address of the token users will bid with.
-     * @param _hook Address of the hook contract if any.
+     * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
      * @param _auctionLength Length of the auction in seconds.
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(
         address _want,
-        address _hook,
+        address _receiver,
         address _governance,
         uint256 _auctionLength
     ) external returns (address) {
         return
             _createNewAuction(
                 _want,
-                _hook,
+                _receiver,
                 _governance,
                 _auctionLength,
-                DEFAULT_AUCTION_COOLDOWN,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -115,56 +108,26 @@ contract AuctionFactory is Clonable {
     /**
      * @notice Creates a new auction contract.
      * @param _want Address of the token users will bid with.
-     * @param _hook Address of the hook contract if any.
+     * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
      * @param _auctionLength Length of the auction in seconds.
-     * @param _auctionCooldown Minimum time period between kicks in seconds.
-     * @return _newAuction Address of the newly created auction contract.
-     */
-    function createNewAuction(
-        address _want,
-        address _hook,
-        address _governance,
-        uint256 _auctionLength,
-        uint256 _auctionCooldown
-    ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _hook,
-                _governance,
-                _auctionLength,
-                _auctionCooldown,
-                DEFAULT_STARTING_PRICE
-            );
-    }
-
-    /**
-     * @notice Creates a new auction contract.
-     * @param _want Address of the token users will bid with.
-     * @param _hook Address of the hook contract if any.
-     * @param _governance Address allowed to enable and disable auctions.
-     * @param _auctionLength Length of the auction in seconds.
-     * @param _auctionCooldown Minimum time period between kicks in seconds.
      * @param _startingPrice Starting price for the auction (no decimals).
      *  NOTE: The starting price should be without decimals (1k == 1_000).
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(
         address _want,
-        address _hook,
+        address _receiver,
         address _governance,
         uint256 _auctionLength,
-        uint256 _auctionCooldown,
         uint256 _startingPrice
     ) external returns (address) {
         return
             _createNewAuction(
                 _want,
-                _hook,
+                _receiver,
                 _governance,
                 _auctionLength,
-                _auctionCooldown,
                 _startingPrice
             );
     }
@@ -174,20 +137,18 @@ contract AuctionFactory is Clonable {
      */
     function _createNewAuction(
         address _want,
-        address _hook,
+        address _receiver,
         address _governance,
         uint256 _auctionLength,
-        uint256 _auctionCooldown,
         uint256 _startingPrice
     ) internal returns (address _newAuction) {
         _newAuction = _clone();
 
         Auction(_newAuction).initialize(
             _want,
-            _hook,
+            _receiver,
             _governance,
             _auctionLength,
-            _auctionCooldown,
             _startingPrice
         );
 
