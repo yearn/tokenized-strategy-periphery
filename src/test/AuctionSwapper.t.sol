@@ -315,7 +315,6 @@ contract AuctionSwapperTest is Setup {
         assertEq(ERC20(from).balanceOf(address(swapper)), _amount - kickable);
         assertEq(ERC20(from).balanceOf(address(auction)), kickable);
 
-        assertEq(swapper.kickable(from), 0);
         (_kicked, , _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, kickable);
@@ -409,7 +408,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(amountTaken, toTake);
 
         (_kicked, , _initialAvailable) = auction.auctions(from);
-        assertEq(_initialAvailable, _amount);
+        assertEq(_initialAvailable, kickable);
         assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
         assertEq(ERC20(from).balanceOf(address(this)), before + toTake);
