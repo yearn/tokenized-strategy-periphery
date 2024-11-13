@@ -10,7 +10,7 @@ contract DeployAuction is BaseScript {
         vm.startBroadcast();
     
         // Get the bytecode
-        bytes memory bytecode = vm.getCode("DumperAuctionFactory.sol:DumperAuctionFactory");
+        bytes memory bytecode = vm.getCode("AuctionFactory.sol:AuctionFactory");
 
         bytes32 salt;
 

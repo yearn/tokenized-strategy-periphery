@@ -29,7 +29,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     event AuctionDisabled(address indexed from, address indexed to);
 
     /// @notice Emitted when auction has been kicked.
-    event AuctionKicked(address from, uint256 available);
+    event AuctionKicked(address indexed from, uint256 available);
 
     /// @notice Emitted when the starting price is updated.
     event UpdatedStartingPrice(uint256 startingPrice);

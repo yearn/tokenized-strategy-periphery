@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.18;
 
-import {AuctionSwapper, SafeERC20} from "../../swappers/AuctionSwapper.sol";
+import {AuctionSwapper, Auction, SafeERC20} from "../../swappers/AuctionSwapper.sol";
 import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
 contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
@@ -41,11 +41,11 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         return letKick;
     }
 
-    function kickAuction(address _token) internal returns (uint256) {
+    function kickAuction(address _token) external returns (uint256) {
         if (useDefault) return _kickAuction(_token);
 
         ERC20(_token).safeTransfer(auction, letKick);
-        return ERC20(_token).balanceOf(auction);
+        return Auction(auction).kick(_token);
     }
 
     function setUseDefault(bool _useDefault) external {
@@ -61,10 +61,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IAuctionSwapper} from "../../swappers/interfaces/IAuctionSwapper.sol";
 
 interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
-    function enableAuction(
-        address _from,
-        address _to
-    ) external returns (bytes32);
+    function enableAuction(address _from, address _to) external;
 
     function disableAuction(address _from) external;
 
@@ -77,4 +74,6 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
     function setLetKick(uint256 _letKick) external;
 
     function kickAuction(address _token) external returns (uint256);
+
+    function kickable(address _token) external view returns (uint256);
 }
