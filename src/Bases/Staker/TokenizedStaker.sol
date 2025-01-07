@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console.sol";
 import {BaseHooks, ERC20} from "../Hooks/BaseHooks.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-// TODO dont update values twice in the same block
 abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
@@ -151,7 +149,6 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         } else {
             uint256 remaining = periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardRate;
-            console.log("leftover", leftover);
             rewardRate = reward + leftover / rewardsDuration;
         }
 
@@ -160,11 +157,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint256 balance = rewardToken.balanceOf(address(this));
-        console.log("balance", balance);
-        console.log("rewardRate", rewardRate);
-        console.log("rewardsDuration", rewardsDuration);
         require(
-            true, // rewardRate <= balance / rewardsDuration,
+            rewardRate <= balance / rewardsDuration,
             "Provided reward too high"
         );
 
