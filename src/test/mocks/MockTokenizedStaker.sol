@@ -7,9 +7,8 @@ import {ITokenizedStaker} from "../../Bases/Staker/ITokenizedStaker.sol";
 contract MockTokenizedStaker is TokenizedStaker {
     constructor(
         address _asset,
-        string memory _name,
-        address _rewardToken
-    ) TokenizedStaker(_asset, _name, _rewardToken) {}
+        string memory _name
+    ) TokenizedStaker(_asset, _name) {}
 
     function _deployFunds(uint256) internal override {}
 

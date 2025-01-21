@@ -8,11 +8,32 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
+    struct Reward {
+        /// @notice The only address able to top up rewards for a token (aka notifyRewardAmount()).
+        address rewardsDistributor;
+        /// @notice The duration of our rewards distribution for staking, default is 7 days.
+        uint256 rewardsDuration;
+        /// @notice The end (timestamp) of our current or most recent reward period.
+        uint256 periodFinish;
+        /// @notice The distribution rate of reward token per second.
+        uint256 rewardRate;
+        /**
+         * @notice The last time rewards were updated, triggered by updateReward() or notifyRewardAmount().
+         * @dev  Will be the timestamp of the update or the end of the period, whichever is earlier.
+         */
+        uint256 lastUpdateTime;
+        /**
+         * @notice The most recent stored amount for rewardPerToken().
+         * @dev Updated every time anyone calls the updateReward() modifier.
+         */
+        uint256 rewardPerTokenStored;
+    }
+
     /* ========== EVENTS ========== */
 
-    event RewardAdded(uint256 reward);
-    event RewardPaid(address indexed user, uint256 reward);
-    event RewardsDurationUpdated(uint256 newDuration);
+    event RewardAdded(address rewardToken, uint256 reward);
+    event RewardPaid(address indexed user, address rewardToken, uint256 reward);
+    event RewardsDurationUpdated(address rewardToken, uint256 newDuration);
 
     /* ========== MODIFIERS ========== */
 
@@ -22,46 +43,43 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     }
 
     function _updateReward(address account) internal virtual {
-        rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
-        if (account != address(0)) {
-            rewards[account] = earned(account);
-            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            address rewardToken = rewardTokens[i];
+            rewardData[rewardToken].rewardPerTokenStored = rewardPerToken(
+                rewardToken
+            );
+            rewardData[rewardToken].lastUpdateTime = lastTimeRewardApplicable(
+                rewardToken
+            );
+            if (account != address(0)) {
+                rewards[account][rewardToken] = earned(account, rewardToken);
+                userRewardPerTokenPaid[account][rewardToken] = rewardData[
+                    rewardToken
+                ].rewardPerTokenStored;
+            }
         }
     }
 
-    ERC20 public immutable rewardToken;
+    /// @notice Array containing the addresses of all of our reward tokens.
+    address[] public rewardTokens;
 
-    uint256 public periodFinish;
+    /// @notice The address of our reward token => reward info.
+    mapping(address => Reward) public rewardData;
 
-    /// @notice The distribution rate of rewardToken per second.
-    uint256 public rewardRate;
+    /**
+     * @notice The amount of rewards allocated to a user per whole token staked.
+     * @dev Note that this is not the same as amount of rewards claimed. Mapping order is user -> reward token -> amount
+     */
+    mapping(address => mapping(address => uint256))
+        public userRewardPerTokenPaid;
 
-    /// @notice The duration of our rewards distribution for staking, default is 7 days.
-    uint256 public rewardsDuration = 7 days;
+    /**
+     * @notice The amount of unclaimed rewards an account is owed.
+     * @dev Mapping order is user -> reward token -> amount
+     */
+    mapping(address => mapping(address => uint256)) public rewards;
 
-    /// @notice The last time rewards were updated, triggered by updateReward() or notifyRewardAmount().
-    /// @dev Will be the timestamp of the update or the end of the period, whichever is earlier.
-    uint256 public lastUpdateTime;
-
-    /// @notice The most recent stored amount for rewardPerToken().
-    /// @dev Updated every time anyone calls the updateReward() modifier.
-    uint256 public rewardPerTokenStored;
-
-    // @notice The amount of rewards allocated to a user per whole token staked.
-    /// @dev Note that this is not the same as amount of rewards claimed.
-    mapping(address => uint256) public userRewardPerTokenPaid;
-
-    /// @notice The amount of unclaimed rewards an account is owed.
-    mapping(address => uint256) public rewards;
-
-    constructor(
-        address _asset,
-        string memory _name,
-        address _rewardToken
-    ) BaseHooks(_asset, _name) {
-        rewardToken = ERC20(_rewardToken);
-    }
+    constructor(address _asset, string memory _name) BaseHooks(_asset, _name) {}
 
     function _preDepositHook(
         uint256 /* assets */,
@@ -91,15 +109,22 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     }
 
     /// @notice Either the current timestamp or end of the most recent period.
-    function lastTimeRewardApplicable() public view virtual returns (uint256) {
-        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
+    function lastTimeRewardApplicable(
+        address rewardToken
+    ) public view virtual returns (uint256) {
+        return
+            block.timestamp < rewardData[rewardToken].periodFinish
+                ? block.timestamp
+                : rewardData[rewardToken].periodFinish;
     }
 
     /// @notice Reward paid out per whole token.
-    function rewardPerToken() public view virtual returns (uint256) {
+    function rewardPerToken(
+        address rewardToken
+    ) public view virtual returns (uint256) {
         uint256 _totalSupply = TokenizedStrategy.totalSupply();
         if (_totalSupply == 0) {
-            return rewardPerTokenStored;
+            return rewardData[rewardToken].rewardPerTokenStored;
         }
 
         if (TokenizedStrategy.isShutdown()) {
@@ -107,74 +132,108 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         }
 
         return
-            rewardPerTokenStored +
-            (((lastTimeRewardApplicable() - lastUpdateTime) *
-                rewardRate *
+            rewardData[rewardToken].rewardPerTokenStored +
+            (((lastTimeRewardApplicable(rewardToken) -
+                rewardData[rewardToken].lastUpdateTime) *
+                rewardData[rewardToken].rewardRate *
                 1e18) / _totalSupply);
     }
 
     /// @notice Amount of reward token pending claim by an account.
-    function earned(address account) public view virtual returns (uint256) {
+    function earned(
+        address account,
+        address rewardToken
+    ) public view virtual returns (uint256) {
         if (TokenizedStrategy.isShutdown()) {
             return 0;
         }
 
         return
             (TokenizedStrategy.balanceOf(account) *
-                (rewardPerToken() - userRewardPerTokenPaid[account])) /
+                (rewardPerToken(rewardToken) -
+                    userRewardPerTokenPaid[account][rewardToken])) /
             1e18 +
-            rewards[account];
+            rewards[account][rewardToken];
     }
 
     /// @notice Reward tokens emitted over the entire rewardsDuration.
-    function getRewardForDuration() external view virtual returns (uint256) {
-        return rewardRate * rewardsDuration;
-    }
-
-    function notifyRewardAmount(
-        uint256 reward
-    ) external virtual onlyManagement {
-        _notifyRewardAmount(reward);
+    function getRewardForDuration(
+        address rewardToken
+    ) external view virtual returns (uint256) {
+        return
+            rewardData[rewardToken].rewardRate *
+            rewardData[rewardToken].rewardsDuration;
     }
 
     /// @notice Notify staking contract that it has more reward to account for.
     /// @dev Reward tokens must be sent to contract before notifying. May only be called
     ///  by rewards distribution role.
+    /// @param rewardToken Address of the reward token.
+    /// @param reward Amount of reward tokens to add.
+    function notifyRewardAmount(
+        address rewardToken,
+        uint256 reward
+    ) external virtual onlyManagement {
+        _notifyRewardAmount(rewardToken, reward);
+    }
+
+    /// @notice Notify staking contract that it has more reward to account for.
+    /// @dev Reward tokens must be sent to contract before notifying. May only be called
+    ///  by rewards distribution role.
+    /// @param rewardToken Address of the reward token.
     /// @param reward Amount of reward tokens to add.
     function _notifyRewardAmount(
+        address rewardToken,
         uint256 reward
     ) internal virtual updateReward(address(0)) {
-        if (block.timestamp >= periodFinish) {
-            rewardRate = reward / rewardsDuration;
+        if (block.timestamp >= rewardData[rewardToken].periodFinish) {
+            rewardData[rewardToken].rewardRate =
+                reward /
+                rewardData[rewardToken].rewardsDuration;
         } else {
-            uint256 remaining = periodFinish - block.timestamp;
-            uint256 leftover = remaining * rewardRate;
-            rewardRate = reward + leftover / rewardsDuration;
+            uint256 remaining = rewardData[rewardToken].periodFinish -
+                block.timestamp;
+            uint256 leftover = remaining * rewardData[rewardToken].rewardRate;
+            rewardData[rewardToken].rewardRate =
+                reward +
+                leftover /
+                rewardData[rewardToken].rewardsDuration;
         }
 
-        // Ensure the provided reward amount is not more than the balance in the contract.
-        // This keeps the reward rate in the right range, preventing overflows due to
-        // very high values of rewardRate in the earned and rewardsPerToken functions;
-        // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint256 balance = rewardToken.balanceOf(address(this));
-        require(
-            rewardRate <= balance / rewardsDuration,
-            "Provided reward too high"
-        );
-
-        lastUpdateTime = block.timestamp;
-        periodFinish = block.timestamp + rewardsDuration;
-        emit RewardAdded(reward);
+        rewardData[rewardToken].lastUpdateTime = block.timestamp;
+        rewardData[rewardToken].periodFinish =
+            block.timestamp +
+            rewardData[rewardToken].rewardsDuration;
+        emit RewardAdded(rewardToken, reward);
     }
 
     /// @notice Claim any earned reward tokens.
     /// @dev Can claim rewards even if no tokens still staked.
     function getReward() public virtual nonReentrant updateReward(msg.sender) {
-        uint256 reward = rewards[msg.sender];
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            address rewardToken = rewardTokens[i];
+            uint256 reward = rewards[msg.sender][rewardToken];
+            if (reward > 0) {
+                rewards[msg.sender][rewardToken] = 0;
+                ERC20(rewardToken).safeTransfer(msg.sender, reward);
+                emit RewardPaid(msg.sender, rewardToken, reward);
+            }
+        }
+    }
+
+    /**
+     * @notice Claim any one earned reward token.
+     * @dev Can claim rewards even if no tokens still staked.
+     * @param _rewardsToken Address of the rewards token to claim.
+     */
+    function getOneReward(
+        address _rewardsToken
+    ) external nonReentrant updateReward(msg.sender) {
+        uint256 reward = rewards[msg.sender][_rewardsToken];
         if (reward > 0) {
-            rewards[msg.sender] = 0;
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
+            rewards[msg.sender][_rewardsToken] = 0;
+            ERC20(_rewardsToken).safeTransfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, _rewardsToken, reward);
         }
     }
 
@@ -189,21 +248,62 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         getReward();
     }
 
+    /**
+     * @notice Add a new reward token to the staking contract.
+     * @dev May only be called by owner, and can't be set to zero address. Add reward tokens sparingly, as each new one
+     *  will increase gas costs. This must be set before notifyRewardAmount can be used.
+     * @param _rewardsToken Address of the rewards token.
+     * @param _rewardsDistributor Address of the rewards distributor.
+     * @param _rewardsDuration The duration of our rewards distribution for staking in seconds.
+     */
+    function addReward(
+        address _rewardsToken,
+        address _rewardsDistributor,
+        uint256 _rewardsDuration
+    ) external onlyManagement {
+        _addReward(_rewardsToken, _rewardsDistributor, _rewardsDuration);
+    }
+
+    /// @dev Internal function to add a new reward token to the staking contract.
+    function _addReward(
+        address _rewardsToken,
+        address _rewardsDistributor,
+        uint256 _rewardsDuration
+    ) internal {
+        require(
+            _rewardsToken != address(0) && _rewardsDistributor != address(0),
+            "No zero address"
+        );
+        require(_rewardsDuration > 0, "Must be >0");
+        require(
+            rewardData[_rewardsToken].rewardsDuration == 0,
+            "Reward already added"
+        );
+
+        rewardTokens.push(_rewardsToken);
+        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
+        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
+    }
+
     /// @notice Set the duration of our rewards period.
     /// @dev May only be called by owner, and must be done after most recent period ends.
     /// @param _rewardsDuration New length of period in seconds.
     function setRewardsDuration(
+        address rewardToken,
         uint256 _rewardsDuration
     ) external virtual onlyManagement {
-        _setRewardsDuration(_rewardsDuration);
+        _setRewardsDuration(rewardToken, _rewardsDuration);
     }
 
-    function _setRewardsDuration(uint256 _rewardsDuration) internal virtual {
+    function _setRewardsDuration(
+        address rewardToken,
+        uint256 _rewardsDuration
+    ) internal virtual {
         require(
-            block.timestamp > periodFinish,
+            block.timestamp > rewardData[rewardToken].periodFinish,
             "Previous rewards period must be complete before changing the duration for the new period"
         );
-        rewardsDuration = _rewardsDuration;
-        emit RewardsDurationUpdated(rewardsDuration);
+        rewardData[rewardToken].rewardsDuration = _rewardsDuration;
+        emit RewardsDurationUpdated(rewardToken, _rewardsDuration);
     }
 }
