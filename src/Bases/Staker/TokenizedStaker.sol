@@ -27,6 +27,13 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev Updated every time anyone calls the updateReward() modifier.
          */
         uint256 rewardPerTokenStored;
+        /**
+         * @notice The last time a notifyRewardAmount was called.
+         * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
+         */
+        uint256 lastNotifyTime;
+        /// @notice The last rewardRate before a notifyRewardAmount was called
+        uint256 lastRewardRate;
     }
 
     /* ========== EVENTS ========== */
@@ -34,6 +41,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     event RewardAdded(address rewardToken, uint256 reward);
     event RewardPaid(address indexed user, address rewardToken, uint256 reward);
     event RewardsDurationUpdated(address rewardToken, uint256 newDuration);
+    event NotifiedWithZeroSupply(address rewardToken, uint256 reward);
 
     /* ========== MODIFIERS ========== */
 
@@ -123,7 +131,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address rewardToken
     ) public view virtual returns (uint256) {
         uint256 _totalSupply = TokenizedStrategy.totalSupply();
-        if (_totalSupply == 0) {
+        if (_totalSupply == 0 || rewardData[rewardToken].rewardsDuration == 1) {
             return rewardData[rewardToken].rewardPerTokenStored;
         }
 
@@ -186,6 +194,16 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address rewardToken,
         uint256 reward
     ) internal virtual updateReward(address(0)) {
+        /// @dev A rewardsDuration of 1 dictates instant release of rewards
+        if (rewardData[rewardToken].rewardsDuration == 1) {
+            _notifyRewardInstant(rewardToken, reward);
+            return;
+        }
+
+        rewardData[rewardToken].lastRewardRate = rewardData[rewardToken]
+            .rewardRate;
+        rewardData[rewardToken].lastNotifyTime = block.timestamp;
+
         if (block.timestamp >= rewardData[rewardToken].periodFinish) {
             rewardData[rewardToken].rewardRate =
                 reward /
@@ -204,6 +222,45 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         rewardData[rewardToken].periodFinish =
             block.timestamp +
             rewardData[rewardToken].rewardsDuration;
+        emit RewardAdded(rewardToken, reward);
+    }
+
+    function _notifyRewardInstant(
+        address rewardToken,
+        uint256 reward
+    ) internal {
+        // Update lastNotifyTime and lastRewardRate if needed
+        uint256 lastNotifyTime = rewardData[rewardToken].lastNotifyTime;
+        if (block.timestamp != lastNotifyTime) {
+            rewardData[rewardToken].lastRewardRate =
+                reward /
+                (block.timestamp - lastNotifyTime);
+            rewardData[rewardToken].lastNotifyTime = block.timestamp;
+        }
+
+        // Update rewardRate, lastUpdateTime, periodFinish
+        rewardData[rewardToken].rewardRate = 0;
+        rewardData[rewardToken].lastUpdateTime = block.timestamp;
+        rewardData[rewardToken].periodFinish = block.timestamp;
+
+        uint256 _totalSupply = TokenizedStrategy.totalSupply();
+
+        // If total supply is 0, send tokens to management instead of reverting.
+        // Prevent footguns if _notifyRewardInstant() is part of predeposit hooks.
+        if (_totalSupply == 0) {
+            address management = TokenizedStrategy.management();
+
+            ERC20(rewardToken).safeTransfer(management, reward);
+            emit NotifiedWithZeroSupply(rewardToken, reward);
+            return;
+        }
+
+        // Instantly release rewards by modifying rewardPerTokenStored
+        rewardData[rewardToken].rewardPerTokenStored =
+            rewardData[rewardToken].rewardPerTokenStored +
+            (reward * 1e18) /
+            _totalSupply;
+
         emit RewardAdded(rewardToken, reward);
     }
 
@@ -252,6 +309,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @notice Add a new reward token to the staking contract.
      * @dev May only be called by owner, and can't be set to zero address. Add reward tokens sparingly, as each new one
      *  will increase gas costs. This must be set before notifyRewardAmount can be used.
+     * @dev A rewardsDuration of 1 dictates instant release of rewards.
      * @param _rewardsToken Address of the rewards token.
      * @param _rewardsDistributor Address of the rewards distributor.
      * @param _rewardsDuration The duration of our rewards distribution for staking in seconds.
@@ -287,6 +345,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     /// @notice Set the duration of our rewards period.
     /// @dev May only be called by owner, and must be done after most recent period ends.
+    /// @dev A rewardsDuration of 1 dictates instant release of rewards.
     /// @param _rewardsDuration New length of period in seconds.
     function setRewardsDuration(
         address rewardToken,
