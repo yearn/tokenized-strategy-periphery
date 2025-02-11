@@ -4,6 +4,9 @@ out = 'out'
 solc = "0.8.18"
 libs = ['lib']
 
+optimizer = true
+optimizer_runs = 200
+
 auto_detect_remappings = false
 
 remappings = [

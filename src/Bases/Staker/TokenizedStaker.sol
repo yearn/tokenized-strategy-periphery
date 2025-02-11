@@ -213,8 +213,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
                 block.timestamp;
             uint256 leftover = remaining * rewardData[rewardToken].rewardRate;
             rewardData[rewardToken].rewardRate =
-                reward +
-                leftover /
+                (reward + leftover) /
                 rewardData[rewardToken].rewardsDuration;
         }
 
@@ -228,7 +227,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function _notifyRewardInstant(
         address rewardToken,
         uint256 reward
-    ) internal {
+    ) internal virtual {
         // Update lastNotifyTime and lastRewardRate if needed
         uint256 lastNotifyTime = rewardData[rewardToken].lastNotifyTime;
         if (block.timestamp != lastNotifyTime) {
@@ -285,7 +284,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      */
     function getOneReward(
         address _rewardsToken
-    ) external nonReentrant updateReward(msg.sender) {
+    ) external virtual nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender][_rewardsToken];
         if (reward > 0) {
             rewards[msg.sender][_rewardsToken] = 0;
@@ -318,7 +317,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address _rewardsToken,
         address _rewardsDistributor,
         uint256 _rewardsDuration
-    ) external onlyManagement {
+    ) external virtual onlyManagement {
         _addReward(_rewardsToken, _rewardsDistributor, _rewardsDuration);
     }
 
@@ -327,7 +326,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address _rewardsToken,
         address _rewardsDistributor,
         uint256 _rewardsDuration
-    ) internal {
+    ) internal virtual {
         require(
             _rewardsToken != address(0) && _rewardsDistributor != address(0),
             "No zero address"

@@ -23,6 +23,13 @@ interface ITokenizedStaker is IStrategy {
          * @dev Updated every time anyone calls the updateReward() modifier.
          */
         uint256 rewardPerTokenStored;
+        /**
+         * @notice The last time a notifyRewardAmount was called.
+         * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
+         */
+        uint256 lastNotifyTime;
+        /// @notice The last rewardRate before a notifyRewardAmount was called
+        uint256 lastRewardRate;
     }
 
     /* ========== EVENTS ========== */
@@ -30,6 +37,7 @@ interface ITokenizedStaker is IStrategy {
     event RewardAdded(address rewardToken, uint256 reward);
     event RewardPaid(address indexed user, address rewardToken, uint256 reward);
     event RewardsDurationUpdated(address rewardToken, uint256 newDuration);
+    event NotifiedWithZeroSupply(address rewardToken, uint256 reward);
 
     /* ========== STATE VARIABLES ========== */
 
