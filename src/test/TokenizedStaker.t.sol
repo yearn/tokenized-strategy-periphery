@@ -189,4 +189,123 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken2)), rewardAmount / 2);
     }
+
+    function test_TokenizedStaker_feesAndRewards() public {
+        uint256 amount = 1_000e6;
+        uint16 performanceFee = 1_000;
+        uint16 protocolFee = 1_000;
+        setFees(protocolFee, performanceFee);
+
+        mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
+
+        uint256 rewardAmount = 100e18;
+        airdrop(rewardToken, address(management), rewardAmount);
+
+        vm.prank(management);
+        rewardToken.approve(address(staker), rewardAmount);
+
+        vm.prank(management);
+        staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+
+        // Simulate yield on underlying asset
+        uint256 profit = 100e6;
+        airdrop(asset, address(staker), profit);
+
+        // Skip half the reward duration
+        skip(duration / 2);
+
+        // Process report which should accrue fees
+        vm.prank(management);
+        staker.report();
+
+        // Check reward token accrual for fee recipients
+        uint256 expectedPerformanceFeeShares = (profit * performanceFee) /
+            MAX_BPS;
+        uint256 expectedProtocolFeeShares = (expectedPerformanceFeeShares *
+            protocolFee) / MAX_BPS;
+        expectedPerformanceFeeShares =
+            expectedPerformanceFeeShares -
+            expectedProtocolFeeShares;
+
+        assertEq(
+            staker.balanceOf(performanceFeeRecipient),
+            expectedPerformanceFeeShares
+        );
+        assertEq(
+            staker.balanceOf(protocolFeeRecipient),
+            expectedProtocolFeeShares
+        );
+
+        // Should have no rewards yet
+        assertApproxEqRel(
+            staker.earned(performanceFeeRecipient, address(rewardToken)),
+            0,
+            0.001e18 // 0.1% tolerance
+        );
+        assertApproxEqRel(
+            staker.earned(protocolFeeRecipient, address(rewardToken)),
+            0,
+            0.001e18 // 0.1% tolerance
+        );
+        assertApproxEqRel(
+            staker.earned(user, address(rewardToken)),
+            rewardAmount / 2,
+            0.001e18 // 0.1% tolerance
+        );
+
+        // Skip the rest of the reward period
+        skip(duration / 2);
+
+        uint256 expectedPerformanceFeeReward = ((rewardAmount / 2) *
+            expectedPerformanceFeeShares) / staker.totalSupply();
+        uint256 expectedProtocolFeeReward = ((rewardAmount / 2) *
+            expectedProtocolFeeShares) / staker.totalSupply();
+
+        assertApproxEqRel(
+            staker.earned(performanceFeeRecipient, address(rewardToken)),
+            expectedPerformanceFeeReward,
+            0.001e18 // 0.1% tolerance
+        );
+
+        assertApproxEqRel(
+            staker.earned(protocolFeeRecipient, address(rewardToken)),
+            expectedProtocolFeeReward,
+            0.001e18 // 0.1% tolerance
+        );
+
+        // Claim rewards for fee recipients
+        vm.prank(performanceFeeRecipient);
+        staker.getReward();
+
+        vm.prank(protocolFeeRecipient);
+        staker.getReward();
+
+        // Verify reward token balances
+        assertApproxEqRel(
+            rewardToken.balanceOf(performanceFeeRecipient),
+            expectedPerformanceFeeReward,
+            0.001e18
+        );
+
+        assertApproxEqRel(
+            rewardToken.balanceOf(protocolFeeRecipient),
+            expectedProtocolFeeReward,
+            0.001e18
+        );
+
+        assertApproxEqRel(
+            rewardToken.balanceOf(user),
+            rewardAmount -
+                expectedPerformanceFeeReward -
+                expectedProtocolFeeReward,
+            0.001e18
+        );
+
+        // Verify rewards were properly distributed
+        assertEq(
+            staker.rewards(performanceFeeRecipient, address(rewardToken)),
+            0
+        );
+        assertEq(staker.rewards(protocolFeeRecipient, address(rewardToken)), 0);
+    }
 }

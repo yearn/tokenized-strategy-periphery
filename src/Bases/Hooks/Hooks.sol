@@ -48,4 +48,10 @@ contract TransferHooks {
     ) internal virtual {}
 }
 
-contract Hooks is DepositHooks, WithdrawHooks, TransferHooks {}
+contract ReportHooks {
+    function _preReportHook() internal virtual {}
+
+    function _postReportHook(uint256 profit, uint256 loss) internal virtual {}
+}
+
+contract Hooks is DepositHooks, WithdrawHooks, TransferHooks, ReportHooks {}

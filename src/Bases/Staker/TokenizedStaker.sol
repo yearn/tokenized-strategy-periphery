@@ -5,6 +5,8 @@ import {BaseHooks, ERC20} from "../Hooks/BaseHooks.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
+
 abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     using SafeERC20 for ERC20;
 
@@ -114,6 +116,29 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     ) internal virtual override {
         _updateReward(from);
         _updateReward(to);
+    }
+
+    // Need to update fee recipients before reporting to ensure accurate accounting
+    function _preReportHook() internal virtual override {
+        _updateFeeRecipients();
+    }
+    
+    // If their is a gain, balances may have updated.
+    function _postReportHook(
+        uint256 profit,
+        uint256
+    ) internal virtual override {
+        if (profit > 0) {
+            _updateFeeRecipients();
+        }
+    }
+
+    function _updateFeeRecipients() internal virtual {
+        _updateReward(TokenizedStrategy.performanceFeeRecipient());
+        (, address protocolFeeRecipient) = IVaultFactory(
+            TokenizedStrategy.FACTORY()
+        ).protocol_fee_config();
+        _updateReward(protocolFeeRecipient);
     }
 
     /// @notice Either the current timestamp or end of the most recent period.

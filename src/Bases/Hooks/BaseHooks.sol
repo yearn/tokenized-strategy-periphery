@@ -145,4 +145,13 @@ abstract contract BaseHooks is BaseHealthCheck, Hooks {
         );
         _postTransferHook(msg.sender, to, amount, success);
     }
+
+    function report() external virtual returns (uint256 profit, uint256 loss) {
+        _preReportHook();
+        (profit, loss) = abi.decode(
+            _delegateCall(abi.encodeCall(TokenizedStrategy.report, ())),
+            (uint256, uint256)
+        );
+        _postReportHook(profit, loss);
+    }
 }

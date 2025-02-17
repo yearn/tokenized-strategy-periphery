@@ -37,6 +37,7 @@ contract Setup is ExtendedTest, Clonable {
     address public management = address(1);
     address public vaultManagement = address(2);
     address public performanceFeeRecipient = address(3);
+    address public protocolFeeRecipient;
 
     mapping(string => address) public tokenAddrs;
 
@@ -201,6 +202,7 @@ contract Setup is ExtendedTest, Clonable {
 
     function setFees(uint16 _protocolFee, uint16 _performanceFee) public {
         address gov = vaultFactory.governance();
+        protocolFeeRecipient = gov;
 
         // Need to make sure there is a protocol fee recipient to set the fee.
         vm.prank(gov);
