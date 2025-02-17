@@ -224,6 +224,11 @@ contract TokenizedStakerTest is Setup {
             expectedPerformanceFeeShares -
             expectedProtocolFeeShares;
 
+        // Get the effective totalSupply minus locked profit shares
+        uint256 realShares = amount +
+            expectedPerformanceFeeShares +
+            expectedProtocolFeeShares;
+
         assertEq(
             staker.balanceOf(performanceFeeRecipient),
             expectedPerformanceFeeShares
@@ -254,9 +259,9 @@ contract TokenizedStakerTest is Setup {
         skip(duration / 2);
 
         uint256 expectedPerformanceFeeReward = ((rewardAmount / 2) *
-            expectedPerformanceFeeShares) / staker.totalSupply();
+            expectedPerformanceFeeShares) / realShares;
         uint256 expectedProtocolFeeReward = ((rewardAmount / 2) *
-            expectedProtocolFeeShares) / staker.totalSupply();
+            expectedProtocolFeeShares) / realShares;
 
         assertApproxEqRel(
             staker.earned(performanceFeeRecipient, address(rewardToken)),
@@ -295,8 +300,9 @@ contract TokenizedStakerTest is Setup {
 
         assertApproxEqRel(
             rewardToken.balanceOf(user),
-            (rewardAmount / 2) +
-                (((rewardAmount / 2) * amount) / staker.totalSupply()),
+            rewardAmount -
+                expectedPerformanceFeeReward -
+                expectedProtocolFeeReward,
             0.001e18
         );
 
@@ -311,5 +317,8 @@ contract TokenizedStakerTest is Setup {
         );
         assertEq(staker.rewards(protocolFeeRecipient, address(rewardToken)), 0);
         assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
+
+        // All rewards should be gone minus precision loss
+        assertLt(rewardToken.balanceOf(address(staker)), 10);
     }
 }

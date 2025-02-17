@@ -119,6 +119,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     }
 
     // Need to update fee recipients before reporting to ensure accurate accounting
+    // since fees are issued as shares to the recipients outside normal functionality.
     function _preReportHook() internal virtual override {
         _updateReward(TokenizedStrategy.performanceFeeRecipient());
         (uint16 feeBps, address protocolFeeRecipient) = IVaultFactory(
@@ -143,8 +144,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function rewardPerToken(
         address rewardToken
     ) public view virtual returns (uint256) {
-        uint256 _totalSupply = TokenizedStrategy.totalSupply();
-        if (_totalSupply == 0 || rewardData[rewardToken].rewardsDuration == 1) {
+        uint256 totalSupply_ = _totalSupply();
+        if (totalSupply_ == 0 || rewardData[rewardToken].rewardsDuration == 1) {
             return rewardData[rewardToken].rewardPerTokenStored;
         }
 
@@ -157,7 +158,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             (((lastTimeRewardApplicable(rewardToken) -
                 rewardData[rewardToken].lastUpdateTime) *
                 rewardData[rewardToken].rewardRate *
-                1e18) / _totalSupply);
+                1e18) / totalSupply_);
     }
 
     /// @notice Amount of reward token pending claim by an account.
@@ -184,6 +185,13 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         return
             rewardData[rewardToken].rewardRate *
             rewardData[rewardToken].rewardsDuration;
+    }
+
+    /// @notice Correct Total supply for the locked shares from profits
+    function _totalSupply() internal view virtual returns (uint256) {
+        return
+            TokenizedStrategy.totalSupply() -
+            TokenizedStrategy.balanceOf(address(this));
     }
 
     /// @notice Notify staking contract that it has more reward to account for.
@@ -255,11 +263,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         rewardData[rewardToken].lastUpdateTime = block.timestamp;
         rewardData[rewardToken].periodFinish = block.timestamp;
 
-        uint256 _totalSupply = TokenizedStrategy.totalSupply();
+        uint256 totalSupply_ = _totalSupply();
 
         // If total supply is 0, send tokens to management instead of reverting.
         // Prevent footguns if _notifyRewardInstant() is part of predeposit hooks.
-        if (_totalSupply == 0) {
+        if (totalSupply_ == 0) {
             address management = TokenizedStrategy.management();
 
             ERC20(rewardToken).safeTransfer(management, reward);
@@ -271,7 +279,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         rewardData[rewardToken].rewardPerTokenStored =
             rewardData[rewardToken].rewardPerTokenStored +
             (reward * 1e18) /
-            _totalSupply;
+            totalSupply_;
 
         emit RewardAdded(rewardToken, reward);
     }
