@@ -122,7 +122,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function _preReportHook() internal virtual override {
         _updateFeeRecipients();
     }
-    
+
     // If their is a gain, balances may have updated.
     function _postReportHook(
         uint256 profit,
@@ -135,10 +135,12 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     function _updateFeeRecipients() internal virtual {
         _updateReward(TokenizedStrategy.performanceFeeRecipient());
-        (, address protocolFeeRecipient) = IVaultFactory(
+        (uint16 feeBps, address protocolFeeRecipient) = IVaultFactory(
             TokenizedStrategy.FACTORY()
         ).protocol_fee_config();
-        _updateReward(protocolFeeRecipient);
+        if (feeBps > 0) {
+            _updateReward(protocolFeeRecipient);
+        }
     }
 
     /// @notice Either the current timestamp or end of the most recent period.

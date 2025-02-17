@@ -190,7 +190,7 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.rewards(user, address(rewardToken2)), rewardAmount / 2);
     }
 
-    function test_TokenizedStaker_feesAndRewards() public {
+    function test_feesAndRewards() public {
         uint256 amount = 1_000e6;
         uint16 performanceFee = 1_000;
         uint16 protocolFee = 1_000;
@@ -199,10 +199,7 @@ contract TokenizedStakerTest is Setup {
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
         uint256 rewardAmount = 100e18;
-        airdrop(rewardToken, address(management), rewardAmount);
-
-        vm.prank(management);
-        rewardToken.approve(address(staker), rewardAmount);
+        airdrop(rewardToken, address(staker), rewardAmount);
 
         vm.prank(management);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
@@ -280,6 +277,9 @@ contract TokenizedStakerTest is Setup {
         vm.prank(protocolFeeRecipient);
         staker.getReward();
 
+        vm.prank(user);
+        staker.getReward();
+
         // Verify reward token balances
         assertApproxEqRel(
             rewardToken.balanceOf(performanceFeeRecipient),
@@ -295,9 +295,8 @@ contract TokenizedStakerTest is Setup {
 
         assertApproxEqRel(
             rewardToken.balanceOf(user),
-            rewardAmount -
-                expectedPerformanceFeeReward -
-                expectedProtocolFeeReward,
+            (rewardAmount / 2) +
+                (((rewardAmount / 2) * amount) / staker.totalSupply()),
             0.001e18
         );
 
@@ -306,6 +305,11 @@ contract TokenizedStakerTest is Setup {
             staker.rewards(performanceFeeRecipient, address(rewardToken)),
             0
         );
+        assertEq(
+            staker.earned(performanceFeeRecipient, address(rewardToken)),
+            0
+        );
         assertEq(staker.rewards(protocolFeeRecipient, address(rewardToken)), 0);
+        assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
     }
 }
