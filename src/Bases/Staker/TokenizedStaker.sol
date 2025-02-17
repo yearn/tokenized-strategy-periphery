@@ -149,10 +149,6 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             return rewardData[rewardToken].rewardPerTokenStored;
         }
 
-        if (TokenizedStrategy.isShutdown()) {
-            return 0;
-        }
-
         return
             rewardData[rewardToken].rewardPerTokenStored +
             (((lastTimeRewardApplicable(rewardToken) -
@@ -166,10 +162,6 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address account,
         address rewardToken
     ) public view virtual returns (uint256) {
-        if (TokenizedStrategy.isShutdown()) {
-            return 0;
-        }
-
         return
             (TokenizedStrategy.balanceOf(account) *
                 (rewardPerToken(rewardToken) -
