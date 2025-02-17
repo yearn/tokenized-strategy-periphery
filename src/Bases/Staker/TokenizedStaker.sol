@@ -120,20 +120,6 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     // Need to update fee recipients before reporting to ensure accurate accounting
     function _preReportHook() internal virtual override {
-        _updateFeeRecipients();
-    }
-
-    // If their is a gain, balances may have updated.
-    function _postReportHook(
-        uint256 profit,
-        uint256
-    ) internal virtual override {
-        if (profit > 0) {
-            _updateFeeRecipients();
-        }
-    }
-
-    function _updateFeeRecipients() internal virtual {
         _updateReward(TokenizedStrategy.performanceFeeRecipient());
         (uint16 feeBps, address protocolFeeRecipient) = IVaultFactory(
             TokenizedStrategy.FACTORY()
