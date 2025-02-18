@@ -22,7 +22,7 @@ contract AuctionSwapperTest is Setup {
 
     Auction public auction;
     AuctionFactory public auctionFactory =
-        AuctionFactory(0xa076c247AfA44f8F006CA7f21A4EF59f7e4dc605);
+        AuctionFactory(0xCfA510188884F199fcC6e750764FAAbE6e56ec40);
 
     uint256 public wantScaler;
     uint256 public fromScaler;
