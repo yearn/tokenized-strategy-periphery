@@ -80,7 +80,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
     address[] public enabledAuctions;
 
     constructor() Governance2Step(msg.sender) {
-        COW_DOMAIN_SEPARATOR = ICowSettlement(COW_SETTLEMENT).domainSeparator();
+        bytes32 domainSeparator;
+        if (COW_SETTLEMENT.code.length > 0) {
+            domainSeparator = ICowSettlement(COW_SETTLEMENT).domainSeparator();
+        } else {
+            domainSeparator = bytes32(0);
+        }
+
+        COW_DOMAIN_SEPARATOR = domainSeparator;
     }
 
     /**
