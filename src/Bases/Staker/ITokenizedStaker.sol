@@ -8,28 +8,28 @@ interface ITokenizedStaker is IStrategy {
         /// @notice The only address able to top up rewards for a token (aka notifyRewardAmount()).
         address rewardsDistributor;
         /// @notice The duration of our rewards distribution for staking, default is 7 days.
-        uint256 rewardsDuration;
+        uint96 rewardsDuration;
         /// @notice The end (timestamp) of our current or most recent reward period.
-        uint256 periodFinish;
-        /// @notice The distribution rate of reward token per second.
-        uint256 rewardRate;
+        uint96 periodFinish;
         /**
-         * @notice The last time rewards were updated, triggered by updateReward() or notifyRewardAmount().
+         * @notice The last time r  ewards were updated, triggered by updateReward() or notifyRewardAmount().
          * @dev  Will be the timestamp of the update or the end of the period, whichever is earlier.
          */
-        uint256 lastUpdateTime;
+        uint96 lastUpdateTime;
+        /// @notice The distribution rate of reward token per second.
+        uint128 rewardRate;
         /**
          * @notice The most recent stored amount for rewardPerToken().
          * @dev Updated every time anyone calls the updateReward() modifier.
          */
-        uint256 rewardPerTokenStored;
+        uint128 rewardPerTokenStored;
         /**
          * @notice The last time a notifyRewardAmount was called.
          * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
          */
-        uint256 lastNotifyTime;
+        uint96 lastNotifyTime;
         /// @notice The last rewardRate before a notifyRewardAmount was called
-        uint256 lastRewardRate;
+        uint128 lastRewardRate;
     }
 
     /* ========== EVENTS ========== */
