@@ -13,28 +13,28 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         /// @notice The only address able to top up rewards for a token (aka notifyRewardAmount()).
         address rewardsDistributor;
         /// @notice The duration of our rewards distribution for staking, default is 7 days.
-        uint256 rewardsDuration;
+        uint96 rewardsDuration;
         /// @notice The end (timestamp) of our current or most recent reward period.
-        uint256 periodFinish;
-        /// @notice The distribution rate of reward token per second.
-        uint256 rewardRate;
+        uint96 periodFinish;
         /**
          * @notice The last time rewards were updated, triggered by updateReward() or notifyRewardAmount().
          * @dev  Will be the timestamp of the update or the end of the period, whichever is earlier.
          */
-        uint256 lastUpdateTime;
+        uint96 lastUpdateTime;
+        /// @notice The distribution rate of reward token per second.
+        uint128 rewardRate;
         /**
          * @notice The most recent stored amount for rewardPerToken().
          * @dev Updated every time anyone calls the updateReward() modifier.
          */
-        uint256 rewardPerTokenStored;
+        uint128 rewardPerTokenStored;
         /**
          * @notice The last time a notifyRewardAmount was called.
          * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
          */
-        uint256 lastNotifyTime;
+        uint96 lastNotifyTime;
         /// @notice The last rewardRate before a notifyRewardAmount was called
-        uint256 lastRewardRate;
+        uint128 lastRewardRate;
     }
 
     /* ========== EVENTS ========== */
@@ -62,11 +62,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function _updateReward(address _account) internal virtual {
         for (uint256 i; i < rewardTokens.length; ++i) {
             address rewardToken = rewardTokens[i];
-            rewardData[rewardToken].rewardPerTokenStored = rewardPerToken(
-                rewardToken
+            rewardData[rewardToken].rewardPerTokenStored = uint128(
+                rewardPerToken(rewardToken)
             );
-            rewardData[rewardToken].lastUpdateTime = lastTimeRewardApplicable(
-                rewardToken
+            rewardData[rewardToken].lastUpdateTime = uint96(
+                lastTimeRewardApplicable(rewardToken)
             );
             if (_account != address(0)) {
                 rewards[_account][rewardToken] = earned(_account, rewardToken);
@@ -177,15 +177,15 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     /// @notice Amount of reward token pending claim by an account.
     function earned(
-        address account,
+        address _account,
         address _rewardToken
     ) public view virtual returns (uint256) {
         return
-            (TokenizedStrategy.balanceOf(account) *
+            (TokenizedStrategy.balanceOf(_account) *
                 (rewardPerToken(_rewardToken) -
-                    userRewardPerTokenPaid[account][_rewardToken])) /
+                    userRewardPerTokenPaid[_account][_rewardToken])) /
             PRECISION +
-            rewards[account][_rewardToken];
+            rewards[_account][_rewardToken];
     }
 
     /**
@@ -268,46 +268,52 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             return;
         }
 
-        _rewardData.lastNotifyTime = block.timestamp;
-        _rewardData.lastUpdateTime = block.timestamp;
+        // this is the only part of the struct that will be the same for instant or normal
+        _rewardData.lastUpdateTime = uint96(block.timestamp);
 
         /// @dev A rewardsDuration of 1 dictates instant release of rewards
         if (_rewardData.rewardsDuration == 1) {
-            _rewardData.lastRewardRate =
-                _rewardAmount /
-                (block.timestamp - _rewardData.lastNotifyTime);
-            _rewardData.lastNotifyTime = block.timestamp;
+            // Update lastNotifyTime and lastRewardRate if needed (would revert if in the same block otherwise)
+            if (uint96(block.timestamp) != _rewardData.lastNotifyTime) {
+                _rewardData.lastRewardRate = uint128(
+                    _rewardAmount /
+                        (block.timestamp - _rewardData.lastNotifyTime)
+                );
+                _rewardData.lastNotifyTime = uint96(block.timestamp);
+            }
 
             // Update rewardRate, lastUpdateTime, periodFinish
             _rewardData.rewardRate = 0;
-            _rewardData.periodFinish = block.timestamp;
+            _rewardData.periodFinish = uint96(block.timestamp);
 
             // Instantly release rewards by modifying rewardPerTokenStored
-            _rewardData.rewardPerTokenStored =
+            _rewardData.rewardPerTokenStored = uint128(
                 _rewardData.rewardPerTokenStored +
-                (_rewardAmount * PRECISION) /
-                totalSupply;
+                    (_rewardAmount * PRECISION) /
+                    totalSupply
+            );
         } else {
             // store current rewardRate
             _rewardData.lastRewardRate = _rewardData.rewardRate;
-
-            // update time-based struct fields
-            _rewardData.periodFinish =
-                block.timestamp +
-                _rewardData.rewardsDuration;
+            _rewardData.lastNotifyTime = uint96(block.timestamp);
 
             // update our rewardData with our new rewardRate
             if (block.timestamp >= _rewardData.periodFinish) {
-                _rewardData.rewardRate =
-                    _rewardAmount /
-                    _rewardData.rewardsDuration;
+                _rewardData.rewardRate = uint128(
+                    _rewardAmount / _rewardData.rewardsDuration
+                );
             } else {
-                _rewardData.rewardRate =
+                _rewardData.rewardRate = uint128(
                     (_rewardAmount +
                         (_rewardData.periodFinish - block.timestamp) *
-                        _rewardData.rewardRate) /
-                    _rewardData.rewardsDuration;
+                        _rewardData.rewardRate) / _rewardData.rewardsDuration
+                );
             }
+
+            // update time-based struct fields
+            _rewardData.periodFinish = uint96(
+                block.timestamp + _rewardData.rewardsDuration
+            );
         }
 
         // make sure we have enough reward token for our new rewardRate
@@ -419,7 +425,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
         rewardTokens.push(_rewardToken);
         rewardData[_rewardToken].rewardsDistributor = _rewardsDistributor;
-        rewardData[_rewardToken].rewardsDuration = _rewardsDuration;
+        rewardData[_rewardToken].rewardsDuration = uint96(_rewardsDuration);
     }
 
     /**
@@ -445,7 +451,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             "!period"
         );
         require(_rewardsDuration > 0, "Must be >0");
-        rewardData[_rewardToken].rewardsDuration = _rewardsDuration;
+        rewardData[_rewardToken].rewardsDuration = uint96(_rewardsDuration);
         emit RewardsDurationUpdated(_rewardToken, _rewardsDuration);
     }
 
