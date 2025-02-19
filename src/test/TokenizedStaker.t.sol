@@ -96,15 +96,21 @@ contract TokenizedStakerTest is Setup {
         assertEq(rewardData.rewardRate, 0);
         assertEq(rewardData.rewardsDuration, duration);
 
+        // test out notifying; user should fail
         uint256 rewardAmount = 100e18;
-
-        vm.expectRevert("!management");
+        airdrop(rewardToken, user, rewardAmount);
+        vm.startPrank(user);
+        rewardToken.approve(address(staker), rewardAmount);
+        vm.expectRevert("!authorized");
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        vm.stopPrank();
 
-        airdrop(rewardToken, address(staker), rewardAmount);
-
-        vm.prank(management);
+        // management should succeed
+        airdrop(rewardToken, management, rewardAmount);
+        vm.startPrank(management);
+        rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        vm.stopPrank();
 
         rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.lastUpdateTime, block.timestamp);
@@ -116,9 +122,11 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.earned(user, address(rewardToken)), rewardAmount / 2);
 
         // Add more rewards mid-period
-        airdrop(rewardToken, address(staker), rewardAmount);
-        vm.prank(management);
+        airdrop(rewardToken, management, rewardAmount);
+        vm.startPrank(management);
+        rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        vm.stopPrank();
 
         rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.lastUpdateTime, block.timestamp);
@@ -139,11 +147,13 @@ contract TokenizedStakerTest is Setup {
 
         uint256 rewardAmount = 100e18;
         // Add rewards for both tokens
-        airdrop(rewardToken, address(staker), rewardAmount);
-        airdrop(rewardToken2, address(staker), rewardAmount);
+        airdrop(rewardToken, management, rewardAmount);
+        airdrop(rewardToken2, management, rewardAmount);
 
         vm.startPrank(management);
+        rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        rewardToken2.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken2), rewardAmount);
         vm.stopPrank();
 
@@ -171,11 +181,13 @@ contract TokenizedStakerTest is Setup {
 
         uint256 rewardAmount = 100e18;
         // Add rewards for both tokens
-        airdrop(rewardToken, address(staker), rewardAmount);
-        airdrop(rewardToken2, address(staker), rewardAmount);
+        airdrop(rewardToken, management, rewardAmount);
+        airdrop(rewardToken2, management, rewardAmount);
 
         vm.startPrank(management);
+        rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        rewardToken2.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken2), rewardAmount);
         vm.stopPrank();
 
@@ -199,10 +211,11 @@ contract TokenizedStakerTest is Setup {
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
         uint256 rewardAmount = 100e18;
-        airdrop(rewardToken, address(staker), rewardAmount);
-
-        vm.prank(management);
+        airdrop(rewardToken, management, rewardAmount);
+        vm.startPrank(management);
+        rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
+        vm.stopPrank();
 
         // Simulate yield on underlying asset
         uint256 profit = 100e6;

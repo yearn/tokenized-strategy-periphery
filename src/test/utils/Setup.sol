@@ -67,6 +67,7 @@ contract Setup is ExtendedTest, Clonable {
         vaultFactory = IVaultFactory(mockStrategy.FACTORY());
 
         // label all the used addresses for traces
+        vm.label(user, "user");
         vm.label(daddy, "daddy");
         vm.label(keeper, "keeper");
         vm.label(address(asset), "asset");
