@@ -37,6 +37,7 @@ contract Setup is ExtendedTest, Clonable {
     address public management = address(1);
     address public vaultManagement = address(2);
     address public performanceFeeRecipient = address(3);
+    address public protocolFeeRecipient = address(56);
 
     mapping(string => address) public tokenAddrs;
 
@@ -66,6 +67,7 @@ contract Setup is ExtendedTest, Clonable {
         vaultFactory = IVaultFactory(mockStrategy.FACTORY());
 
         // label all the used addresses for traces
+        vm.label(user, "user");
         vm.label(daddy, "daddy");
         vm.label(keeper, "keeper");
         vm.label(address(asset), "asset");
@@ -204,7 +206,7 @@ contract Setup is ExtendedTest, Clonable {
 
         // Need to make sure there is a protocol fee recipient to set the fee.
         vm.prank(gov);
-        vaultFactory.set_protocol_fee_recipient(gov);
+        vaultFactory.set_protocol_fee_recipient(protocolFeeRecipient);
 
         vm.prank(gov);
         vaultFactory.set_protocol_fee_bps(_protocolFee);
