@@ -474,7 +474,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @dev Useful if we want to add in complex logic following rewards claim such as staking.
      * @param _recipient Address to claim and receive extra rewards on behalf of msg.sender.
      */
-    function setClaimForSender(address _recipient) external virtual {
+    function setClaimForSelf(address _recipient) external virtual {
         _setClaimFor(msg.sender, _recipient);
     }
 

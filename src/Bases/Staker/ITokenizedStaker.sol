@@ -34,10 +34,18 @@ interface ITokenizedStaker is IStrategy {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(address rewardToken, uint256 reward);
-    event RewardPaid(address indexed user, address rewardToken, uint256 reward);
-    event RewardsDurationUpdated(address rewardToken, uint256 newDuration);
-    event NotifiedWithZeroSupply(address rewardToken, uint256 reward);
+    event RewardAdded(address indexed rewardToken, uint256 reward);
+    event RewardPaid(
+        address indexed user,
+        address indexed rewardToken,
+        uint256 reward
+    );
+    event RewardsDurationUpdated(
+        address indexed rewardToken,
+        uint256 newDuration
+    );
+    event NotifiedWithZeroSupply(address indexed rewardToken, uint256 reward);
+    event Recovered(address token, uint256 amount);
 
     /* ========== STATE VARIABLES ========== */
 
@@ -56,53 +64,68 @@ interface ITokenizedStaker is IStrategy {
     function rewardPerTokenStored(address) external view returns (uint256);
 
     function userRewardPerTokenPaid(
-        address account,
-        address rewardToken
+        address _account,
+        address _rewardToken
     ) external view returns (uint256);
 
     function rewards(
-        address account,
-        address rewardToken
+        address _account,
+        address _rewardToken
     ) external view returns (uint256);
+
+    function claimForRecipient(address) external view returns (address);
 
     /* ========== FUNCTIONS ========== */
     function lastTimeRewardApplicable(
-        address rewardToken
+        address _rewardToken
     ) external view returns (uint256);
 
     function rewardPerToken(
-        address rewardToken
+        address _rewardToken
     ) external view returns (uint256);
 
     function earned(
-        address account,
-        address rewardToken
+        address _account,
+        address _rewardToken
     ) external view returns (uint256);
+
+    function earnedMulti(
+        address _account
+    ) external view returns (uint256[] memory);
 
     function getRewardForDuration(
-        address rewardToken
+        address _rewardToken
     ) external view returns (uint256);
 
-    function notifyRewardAmount(address rewardToken, uint256 reward) external;
+    function notifyRewardAmount(
+        address _rewardToken,
+        uint256 _rewardAmount
+    ) external;
 
     function getReward() external;
 
     function exit() external;
 
     function setRewardsDuration(
-        address rewardToken,
+        address _rewardToken,
         uint256 _rewardsDuration
     ) external;
+
+    function setClaimFor(address _staker, address _recipient) external;
+
+    function setClaimForSelf(address _recipient) external;
 
     function rewardData(
         address rewardToken
     ) external view returns (Reward memory);
 
     function addReward(
-        address rewardToken,
-        address rewardsDistributor,
-        uint256 rewardsDuration
+        address _rewardToken,
+        address _rewardsDistributor,
+        uint256 _rewardsDuration
     ) external;
 
-    function getOneReward(address rewardToken) external;
+    function getOneReward(address _rewardToken) external;
+
+    function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external;
 }
