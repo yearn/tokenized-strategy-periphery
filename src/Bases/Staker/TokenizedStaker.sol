@@ -445,6 +445,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address _rewardToken,
         uint256 _rewardsDuration
     ) internal virtual {
+        _updateReward(address(0));
         // Previous rewards period must be complete before changing the duration for the new period
         require(
             block.timestamp > rewardData[_rewardToken].periodFinish,
