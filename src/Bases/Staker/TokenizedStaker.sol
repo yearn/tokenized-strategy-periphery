@@ -333,7 +333,12 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @notice Claim any (and all) earned reward tokens.
      * @dev Can claim rewards even if no tokens still staked.
      */
-    function getReward() external nonReentrant updateReward(msg.sender) {
+    function getReward()
+        external
+        virtual
+        nonReentrant
+        updateReward(msg.sender)
+    {
         _getRewardFor(msg.sender, msg.sender);
     }
 
@@ -344,13 +349,16 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      */
     function getRewardFor(
         address _staker
-    ) external nonReentrant updateReward(_staker) {
+    ) external virtual nonReentrant updateReward(_staker) {
         require(claimForRecipient[_staker] == msg.sender, "!recipient");
         _getRewardFor(_staker, msg.sender);
     }
 
     // internal function to get rewards.
-    function _getRewardFor(address _staker, address _recipient) internal {
+    function _getRewardFor(
+        address _staker,
+        address _recipient
+    ) internal virtual {
         for (uint256 i; i < rewardTokens.length; ++i) {
             address _rewardToken = rewardTokens[i];
             uint256 reward = rewards[_staker][_rewardToken];
@@ -496,7 +504,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function recoverERC20(
         address _tokenAddress,
         uint256 _tokenAmount
-    ) external onlyManagement {
+    ) external virtual onlyManagement {
         require(_tokenAddress != address(asset), "!asset");
 
         // can only recover reward tokens 90 days after last reward token ends
