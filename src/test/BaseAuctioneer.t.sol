@@ -230,7 +230,7 @@ contract BaseAuctioneerTest is Setup {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auctioneer), needed);
+        ERC20(asset).forceApprove(address(auctioneer), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 

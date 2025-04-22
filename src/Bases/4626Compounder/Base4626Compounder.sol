@@ -26,7 +26,7 @@ contract Base4626Compounder is BaseHealthCheck {
         require(IStrategy(_vault).asset() == _asset, "wrong vault");
         vault = IStrategy(_vault);
 
-        asset.safeApprove(_vault, type(uint256).max);
+        asset.forceApprove(_vault, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////

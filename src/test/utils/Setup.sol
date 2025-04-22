@@ -131,7 +131,7 @@ contract Setup is ExtendedTest, Clonable {
         uint256 _amount
     ) public {
         vm.startPrank(_user);
-        asset.safeApprove(address(_strategy), _amount);
+        asset.forceApprove(address(_strategy), _amount);
 
         _strategy.deposit(_amount, _user);
         vm.stopPrank();
