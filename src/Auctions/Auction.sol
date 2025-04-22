@@ -345,7 +345,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // Store all needed info.
         auctions[_from].scaler = uint64(WAD / 10 ** decimals);
 
-        ERC20(_from).safeApprove(VAULT_RELAYER, type(uint256).max);
+        ERC20(_from).forceApprove(VAULT_RELAYER, type(uint256).max);
 
         // Add to the array.
         enabledAuctions.push(_from);
@@ -378,7 +378,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // Remove the struct.
         delete auctions[_from];
 
-        ERC20(_from).safeApprove(VAULT_RELAYER, 0);
+        ERC20(_from).forceApprove(VAULT_RELAYER, 0);
 
         // Remove the auction ID from the array.
         address[] memory _enabledAuctions = enabledAuctions;

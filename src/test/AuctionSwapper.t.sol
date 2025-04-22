@@ -257,7 +257,7 @@ contract AuctionSwapperTest is Setup {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auction), needed);
+        ERC20(asset).forceApprove(address(auction), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 
@@ -399,7 +399,7 @@ contract AuctionSwapperTest is Setup {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auction), needed);
+        ERC20(asset).forceApprove(address(auction), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 

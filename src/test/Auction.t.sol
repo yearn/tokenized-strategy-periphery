@@ -252,7 +252,7 @@ contract AuctionTest is Setup, ITaker {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auction), needed);
+        ERC20(asset).forceApprove(address(auction), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 
@@ -309,7 +309,7 @@ contract AuctionTest is Setup, ITaker {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auction), needed);
+        ERC20(asset).forceApprove(address(auction), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 
@@ -363,7 +363,7 @@ contract AuctionTest is Setup, ITaker {
 
         airdrop(ERC20(asset), address(this), needed);
 
-        ERC20(asset).safeApprove(address(auction), needed);
+        ERC20(asset).forceApprove(address(auction), needed);
 
         uint256 before = ERC20(from).balanceOf(address(this));
 

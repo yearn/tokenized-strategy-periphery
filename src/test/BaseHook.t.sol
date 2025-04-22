@@ -28,7 +28,7 @@ contract BaseHookTest is Setup, HookEvents {
         airdrop(asset, user, _amount);
 
         vm.startPrank(user);
-        asset.safeApprove(address(mockStrategy), _amount);
+        asset.forceApprove(address(mockStrategy), _amount);
         vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
@@ -51,7 +51,7 @@ contract BaseHookTest is Setup, HookEvents {
         airdrop(asset, user, _amount);
 
         vm.startPrank(user);
-        asset.safeApprove(address(mockStrategy), _amount);
+        asset.forceApprove(address(mockStrategy), _amount);
         vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
@@ -182,7 +182,7 @@ contract BaseHookTest is Setup, HookEvents {
 
         // Approve daddy to move funds
         vm.startPrank(user);
-        mockStrategy.safeApprove(daddy, _amount);
+        mockStrategy.forceApprove(daddy, _amount);
         vm.stopPrank();
 
         // Make sure we get both events with the correct amounts.
