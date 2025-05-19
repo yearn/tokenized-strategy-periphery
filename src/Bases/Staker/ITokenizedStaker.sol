@@ -34,15 +34,28 @@ interface ITokenizedStaker is IStrategy {
 
     /* ========== EVENTS ========== */
 
+    event RewardTokenAdded(
+        address indexed rewardToken,
+        address indexed rewardsDistributor,
+        uint256 rewardsDuration
+    );
     event RewardAdded(address indexed rewardToken, uint256 reward);
     event RewardPaid(
         address indexed user,
         address indexed rewardToken,
         uint256 reward
     );
+    event RewardsDistributorUpdated(
+        address indexed rewardToken,
+        address indexed rewardsDistributor
+    );
     event RewardsDurationUpdated(
         address indexed rewardToken,
         uint256 newDuration
+    );
+    event ClaimForRecipientUpdated(
+        address indexed staker,
+        address indexed recipient
     );
     event NotifiedWithZeroSupply(address indexed rewardToken, uint256 reward);
     event Recovered(address token, uint256 amount);
@@ -62,6 +75,8 @@ interface ITokenizedStaker is IStrategy {
     function lastUpdateTime(address) external view returns (uint256);
 
     function rewardPerTokenStored(address) external view returns (uint256);
+
+    function getRewardTokens() external view returns (address[] memory);
 
     function userRewardPerTokenPaid(
         address _account,
@@ -104,7 +119,14 @@ interface ITokenizedStaker is IStrategy {
 
     function getReward() external;
 
+    function getRewardFor(address _staker) external;
+
     function exit() external;
+
+    function setRewardsDistributor(
+        address _rewardToken,
+        address _rewardsDistributor
+    ) external;
 
     function setRewardsDuration(
         address _rewardToken,
@@ -126,6 +148,8 @@ interface ITokenizedStaker is IStrategy {
     ) external;
 
     function getOneReward(address _rewardToken) external;
+
+    function getOneRewardFor(address _rewardToken, address _staker) external;
 
     function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external;
 }
