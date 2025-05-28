@@ -39,15 +39,28 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     /* ========== EVENTS ========== */
 
+    event RewardTokenAdded(
+        address indexed rewardToken,
+        address indexed rewardsDistributor,
+        uint256 rewardsDuration
+    );
     event RewardAdded(address indexed rewardToken, uint256 reward);
     event RewardPaid(
         address indexed user,
         address indexed rewardToken,
         uint256 reward
     );
+    event RewardsDistributorUpdated(
+        address indexed rewardToken,
+        address indexed rewardsDistributor
+    );
     event RewardsDurationUpdated(
         address indexed rewardToken,
         uint256 newDuration
+    );
+    event ClaimForRecipientUpdated(
+        address indexed staker,
+        address indexed recipient
     );
     event NotifiedWithZeroSupply(address indexed rewardToken, uint256 reward);
     event Recovered(address token, uint256 amount);
@@ -143,6 +156,19 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         if (feeBps > 0) {
             _updateReward(protocolFeeRecipient);
         }
+    }
+
+    /**
+     * @notice Get all reward tokens.
+     * @return rewardTokens Array of reward token addresses.
+     */
+    function getRewardTokens()
+        external
+        view
+        virtual
+        returns (address[] memory)
+    {
+        return rewardTokens;
     }
 
     /// @notice Either the current timestamp or end of the most recent period.
@@ -361,12 +387,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     ) internal virtual {
         for (uint256 i; i < rewardTokens.length; ++i) {
             address _rewardToken = rewardTokens[i];
-            uint256 reward = rewards[_staker][_rewardToken];
-            if (reward > 0) {
-                rewards[_staker][_rewardToken] = 0;
-                ERC20(_rewardToken).safeTransfer(_recipient, reward);
-                emit RewardPaid(_staker, _rewardToken, reward);
-            }
+            _getOneReward(_rewardToken, _staker, _recipient);
         }
     }
 
@@ -378,11 +399,33 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function getOneReward(
         address _rewardToken
     ) external virtual nonReentrant updateReward(msg.sender) {
-        uint256 reward = rewards[msg.sender][_rewardToken];
+        _getOneReward(_rewardToken, msg.sender, msg.sender);
+    }
+
+    /**
+     * @notice Claim any one earned reward token for another user.
+     * @dev Can claim rewards even if no tokens still staked.
+     * @param _rewardToken Address of the rewards token to claim.
+     * @param _staker Address of the user to claim rewards for.
+     */
+    function getOneRewardFor(
+        address _rewardToken,
+        address _staker
+    ) external virtual nonReentrant updateReward(_staker) {
+        require(claimForRecipient[_staker] == msg.sender, "!recipient");
+        _getOneReward(_rewardToken, _staker, msg.sender);
+    }
+
+    function _getOneReward(
+        address _rewardToken,
+        address _staker,
+        address _recipient
+    ) internal virtual {
+        uint256 reward = rewards[_staker][_rewardToken];
         if (reward > 0) {
-            rewards[msg.sender][_rewardToken] = 0;
-            ERC20(_rewardToken).safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, _rewardToken, reward);
+            rewards[_staker][_rewardToken] = 0;
+            ERC20(_rewardToken).safeTransfer(_recipient, reward);
+            emit RewardPaid(_staker, _rewardToken, reward);
         }
     }
 
@@ -434,6 +477,40 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         rewardTokens.push(_rewardToken);
         rewardData[_rewardToken].rewardsDistributor = _rewardsDistributor;
         rewardData[_rewardToken].rewardsDuration = uint96(_rewardsDuration);
+
+        emit RewardTokenAdded(
+            _rewardToken,
+            _rewardsDistributor,
+            _rewardsDuration
+        );
+    }
+
+    /**
+     * @notice Set the rewards distributor for a reward token.
+     * @dev May only be called by management.
+     * @param _rewardToken Address of the rewards token.
+     * @param _rewardsDistributor Address of the rewards distributor.
+     */
+    function setRewardsDistributor(
+        address _rewardToken,
+        address _rewardsDistributor
+    ) external virtual onlyManagement {
+        _setRewardsDistributor(_rewardToken, _rewardsDistributor);
+    }
+
+    function _setRewardsDistributor(
+        address _rewardToken,
+        address _rewardsDistributor
+    ) internal virtual {
+        require(
+            rewardData[_rewardToken].rewardsDistributor != address(0),
+            "Reward token not added"
+        );
+        require(_rewardsDistributor != address(0), "No zero address");
+
+        rewardData[_rewardToken].rewardsDistributor = _rewardsDistributor;
+
+        emit RewardsDistributorUpdated(_rewardToken, _rewardsDistributor);
     }
 
     /**
@@ -493,6 +570,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     ) internal virtual {
         require(_staker != address(0), "No zero address");
         claimForRecipient[_staker] = _recipient;
+        emit ClaimForRecipientUpdated(_staker, _recipient);
     }
 
     /**
