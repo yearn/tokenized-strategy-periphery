@@ -86,10 +86,10 @@ The profit and loss ratios can adjusted by management through their specific set
 ## Apr Oracle
 For easy integration with on chain debt allocator's as well as off chain interfaces, strategist's can implement their own custom 'AprOracle'.
 
-The goal of the APR oracle to is to return the expected current APY the strategy is expecting to be earning given some `debtChange`.
+The goal of the APR oracle to is to return the expected current APR the strategy is expecting to be earning given some `debtChange`.
 
 
 ## Report Triggers
 The default use of the Tokenized Strategies and V3 Vaults is for report cycles to be based off of the individual `maxProfitUnlockTime`. The triggers are an easy way for keepers to monitor the status of each strategy and know when `report` should be called on each.
 
-However, if a strategist wants to implement a custom trigger for their strategy or vault you can use the simple `CustomTriggerBase` contracts to inherit the proper interface. Then return the expected APY represented as 1e18 (1e17 == 10%).
+However, if a strategist wants to implement a custom trigger for their strategy or vault you can use the simple `CustomTriggerBase` contracts to inherit the proper interface. Then return the expected APR scaled to 1e18 (1e17 == 10%).
