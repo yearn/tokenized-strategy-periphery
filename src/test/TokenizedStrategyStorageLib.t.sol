@@ -642,26 +642,26 @@ contract TokenizedStrategyStorageLibTest is Setup {
 
     function test_slotCalculations() public pure {
         bytes32 baseSlot = TokenizedStrategyStorageLib.strategyStorageSlot();
-        
+
         // Test that slot calculations are deterministic and correct
         assertEq(
             TokenizedStrategyStorageLib.assetSlot(),
             baseSlot,
             "Asset slot should equal base slot"
         );
-        
+
         assertEq(
             TokenizedStrategyStorageLib.nameSlot(),
             bytes32(uint256(baseSlot) + 1),
             "Name slot should be base + 1"
         );
-        
+
         assertEq(
             TokenizedStrategyStorageLib.totalSupplySlot(),
             bytes32(uint256(baseSlot) + 2),
             "Total supply slot should be base + 2"
         );
-        
+
         assertEq(
             TokenizedStrategyStorageLib.totalAssetsSlot(),
             bytes32(uint256(baseSlot) + 6),
@@ -672,22 +672,45 @@ contract TokenizedStrategyStorageLibTest is Setup {
     function test_mappingSlotsUnit() public pure {
         address testAddr1 = address(0x123);
         address testAddr2 = address(0x456);
-        
+
         // Test that mapping slots are calculated consistently
         bytes32 balance1 = TokenizedStrategyStorageLib.balancesSlot(testAddr1);
         bytes32 balance2 = TokenizedStrategyStorageLib.balancesSlot(testAddr1);
-        assertEq(balance1, balance2, "Balance slot calculation should be deterministic");
-        
+        assertEq(
+            balance1,
+            balance2,
+            "Balance slot calculation should be deterministic"
+        );
+
         bytes32 balance3 = TokenizedStrategyStorageLib.balancesSlot(testAddr2);
-        assertTrue(balance1 != balance3, "Different addresses should have different balance slots");
-        
+        assertTrue(
+            balance1 != balance3,
+            "Different addresses should have different balance slots"
+        );
+
         // Test allowance slots
-        bytes32 allowance1 = TokenizedStrategyStorageLib.allowancesSlot(testAddr1, testAddr2);
-        bytes32 allowance2 = TokenizedStrategyStorageLib.allowancesSlot(testAddr1, testAddr2);
-        assertEq(allowance1, allowance2, "Allowance slot calculation should be deterministic");
-        
-        bytes32 allowance3 = TokenizedStrategyStorageLib.allowancesSlot(testAddr2, testAddr1);
-        assertTrue(allowance1 != allowance3, "Order should matter for allowance slots");
+        bytes32 allowance1 = TokenizedStrategyStorageLib.allowancesSlot(
+            testAddr1,
+            testAddr2
+        );
+        bytes32 allowance2 = TokenizedStrategyStorageLib.allowancesSlot(
+            testAddr1,
+            testAddr2
+        );
+        assertEq(
+            allowance1,
+            allowance2,
+            "Allowance slot calculation should be deterministic"
+        );
+
+        bytes32 allowance3 = TokenizedStrategyStorageLib.allowancesSlot(
+            testAddr2,
+            testAddr1
+        );
+        assertTrue(
+            allowance1 != allowance3,
+            "Order should matter for allowance slots"
+        );
     }
 
     // ============ Cross-Validation Test ============
