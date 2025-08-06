@@ -640,7 +640,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
 
     // ============ Unit Tests from TokenizedStrategyStorageLibUnit.t.sol ============
 
-    function test_slotCalculations() public pure {
+    function test_slotCalculations() public {
         bytes32 baseSlot = TokenizedStrategyStorageLib.strategyStorageSlot();
 
         // Test that slot calculations are deterministic and correct
@@ -669,7 +669,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         );
     }
 
-    function test_mappingSlotsUnit() public pure {
+    function test_mappingSlotsUnit() public {
         address testAddr1 = address(0x123);
         address testAddr2 = address(0x456);
 
