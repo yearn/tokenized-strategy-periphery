@@ -22,41 +22,44 @@ library TokenizedStrategyStorageLib {
         bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
 
     /**
-     * @dev The StrategyData struct that holds all storage for TokenizedStrategy.
+     * @dev The StrategyData struct that holds all storage for TokenizedStrategy v3.0.4.
      * This must match the exact layout in TokenizedStrategy.sol to ensure compatibility.
      */
     struct StrategyData {
-        // The ERC20 compliant underlying asset that will be
-        // used by the Strategy
+        // Slot 0: ERC20 asset (160 bits) + decimals (8 bits) + 88 bits unused
         ERC20 asset;
-        // These are the corresponding ERC20 variables needed for the
-        // strategies token that is issued and burned on each deposit or withdraw.
-        uint8 decimals; // The amount of decimals that `asset` and strategy use.
-        uint88 INITIAL_CHAIN_ID; // The initial chain id when the strategy was created.
-        string name; // The name of the token for the strategy.
-        uint256 totalSupply; // The total amount of shares currently issued.
-        bytes32 INITIAL_DOMAIN_SEPARATOR; // The domain separator used for permits on the initial chain.
-        mapping(address => uint256) nonces; // Mapping of nonces used for permit functions.
-        mapping(address => uint256) balances; // Mapping to track current balances for each account that holds shares.
-        mapping(address => mapping(address => uint256)) allowances; // Mapping to track the allowances for the strategies shares.
-        // We manually track `totalAssets` to prevent PPS manipulation through airdrops.
+        uint8 decimals;
+        // Slot 1: string name (dynamic storage)
+        string name;
+        // Slot 2: uint256 totalSupply
+        uint256 totalSupply;
+        // Slot 3: mapping nonces
+        mapping(address => uint256) nonces;
+        // Slot 4: mapping balances
+        mapping(address => uint256) balances;
+        // Slot 5: mapping allowances
+        mapping(address => mapping(address => uint256)) allowances;
+        // Slot 6: uint256 totalAssets
         uint256 totalAssets;
-        // Variables for profit reporting and locking.
-        // We use uint96 for timestamps to fit in the same slot as an address. That overflows in 2.5e+21 years.
-        uint256 profitUnlockingRate; // The rate at which locked profit is unlocking.
-        uint96 fullProfitUnlockDate; // The timestamp at which all locked shares will unlock.
-        address keeper; // Address given permission to call {report} and {tend}.
-        uint32 profitMaxUnlockTime; // The amount of seconds that the reported profit unlocks over.
-        uint16 performanceFee; // The percent in basis points of profit that is charged as a fee.
-        address performanceFeeRecipient; // The address to pay the `performanceFee` to.
-        uint96 lastReport; // The last time a {report} was called.
-        // Access management variables.
-        address management; // Main address that can set all configurable variables.
-        address pendingManagement; // Address that is pending to take over `management`.
-        address emergencyAdmin; // Address to act in emergencies as well as `management`.
-        // Strategy Status
-        uint8 entered; // To prevent reentrancy. Use uint8 for gas savings.
-        bool shutdown; // Bool that can be used to stop deposits into the strategy.
+        // Slot 7: uint256 profitUnlockingRate
+        uint256 profitUnlockingRate;
+        // Slot 8: uint96 fullProfitUnlockDate (96 bits) + address keeper (160 bits)
+        uint96 fullProfitUnlockDate;
+        address keeper;
+        // Slot 9: uint32 profitMaxUnlockTime + uint16 performanceFee + address performanceFeeRecipient (208 bits total)
+        uint32 profitMaxUnlockTime;
+        uint16 performanceFee;
+        address performanceFeeRecipient;
+        // Slot 10: uint96 lastReport + address management
+        uint96 lastReport;
+        address management;
+        // Slot 11: address pendingManagement
+        address pendingManagement;
+        // Slot 12: address emergencyAdmin
+        address emergencyAdmin;
+        // Slot 13: uint8 entered + bool shutdown
+        uint8 entered;
+        bool shutdown;
     }
 
     /**
@@ -68,8 +71,8 @@ library TokenizedStrategyStorageLib {
     }
 
     /**
-     * @notice Get the storage slot for asset, decimals, and INITIAL_CHAIN_ID (packed)
-     * @return slot The storage slot containing asset (20 bytes), decimals (1 byte), and INITIAL_CHAIN_ID (11 bytes)
+     * @notice Get the storage slot for asset and decimals (packed)
+     * @return slot The storage slot containing asset (20 bytes) and decimals (1 byte)
      */
     function assetSlot() internal pure returns (bytes32 slot) {
         return BASE_STRATEGY_STORAGE;
@@ -92,19 +95,11 @@ library TokenizedStrategyStorageLib {
     }
 
     /**
-     * @notice Get the storage slot for INITIAL_DOMAIN_SEPARATOR
-     * @return slot The storage slot for INITIAL_DOMAIN_SEPARATOR
-     */
-    function initialDomainSeparatorSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 3);
-    }
-
-    /**
      * @notice Get the storage slot for totalAssets
      * @return slot The storage slot for totalAssets
      */
     function totalAssetsSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 7);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 6);
     }
 
     /**
@@ -112,7 +107,7 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot for profitUnlockingRate
      */
     function profitUnlockingRateSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 8);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 7);
     }
 
     /**
@@ -124,7 +119,7 @@ library TokenizedStrategyStorageLib {
         pure
         returns (bytes32 slot)
     {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 9);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 8);
     }
 
     /**
@@ -132,7 +127,7 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot containing profitMaxUnlockTime (uint32), performanceFee (uint16), and performanceFeeRecipient (address)
      */
     function profitConfigSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 10);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 9);
     }
 
     /**
@@ -144,7 +139,7 @@ library TokenizedStrategyStorageLib {
         pure
         returns (bytes32 slot)
     {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 11);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 10);
     }
 
     /**
@@ -152,7 +147,7 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot for pendingManagement address
      */
     function pendingManagementSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 12);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 11);
     }
 
     /**
@@ -160,7 +155,7 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot for emergencyAdmin address
      */
     function emergencyAdminSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 13);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 12);
     }
 
     /**
@@ -168,7 +163,7 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot containing entered (uint8) and shutdown (bool)
      */
     function statusSlot() internal pure returns (bytes32 slot) {
-        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 14);
+        return bytes32(uint256(BASE_STRATEGY_STORAGE) + 13);
     }
 
     /**
@@ -177,8 +172,8 @@ library TokenizedStrategyStorageLib {
      * @return slot The storage slot for the owner's nonce
      */
     function noncesSlot(address owner) internal pure returns (bytes32 slot) {
-        // nonces mapping is at slot position 4 from BASE_STRATEGY_STORAGE
-        bytes32 noncesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 4);
+        // nonces mapping is at slot position 3 from BASE_STRATEGY_STORAGE
+        bytes32 noncesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 3);
         return keccak256(abi.encode(owner, noncesPosition));
     }
 
@@ -190,8 +185,8 @@ library TokenizedStrategyStorageLib {
     function balancesSlot(
         address account
     ) internal pure returns (bytes32 slot) {
-        // balances mapping is at slot position 5 from BASE_STRATEGY_STORAGE
-        bytes32 balancesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 5);
+        // balances mapping is at slot position 4 from BASE_STRATEGY_STORAGE
+        bytes32 balancesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 4);
         return keccak256(abi.encode(account, balancesPosition));
     }
 
@@ -205,9 +200,9 @@ library TokenizedStrategyStorageLib {
         address owner,
         address spender
     ) internal pure returns (bytes32 slot) {
-        // allowances mapping is at slot position 6 from BASE_STRATEGY_STORAGE
+        // allowances mapping is at slot position 5 from BASE_STRATEGY_STORAGE
         bytes32 allowancesPosition = bytes32(
-            uint256(BASE_STRATEGY_STORAGE) + 6
+            uint256(BASE_STRATEGY_STORAGE) + 5
         );
         // For nested mappings: keccak256(spender . keccak256(owner . slot))
         bytes32 ownerSlot = keccak256(abi.encode(owner, allowancesPosition));
