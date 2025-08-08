@@ -15,14 +15,14 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
 
         // Deploy implementation
         healthCheckImpl = address(new MockHealthCheckUpgradeable());
-        
+
         // Deploy proxy and initialize
         address proxy = deployUpgradeableStrategy(
             healthCheckImpl,
             address(asset),
             "Mock Health Check"
         );
-        
+
         healthCheck = IMockHealthCheckUpgradeable(proxy);
         vm.prank(management);
         healthCheck.setKeeper(keeper);
@@ -142,7 +142,9 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
         healthCheck.setDoHealthCheck(false);
     }
 
-    function test_reportTurnsHealthCheckBackOnUpgradeable(uint256 _amount) public {
+    function test_reportTurnsHealthCheckBackOnUpgradeable(
+        uint256 _amount
+    ) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         mintAndDepositIntoStrategy(
@@ -183,12 +185,14 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
         // Normal report should succeed
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = healthCheck.report();
-        
+
         assertEq(profit, 0);
         assertEq(loss, 0);
     }
 
-    function test__toMuchProfit_reverts__increaseLimitUpgradeable(uint256 _amount) public {
+    function test__toMuchProfit_reverts__increaseLimitUpgradeable(
+        uint256 _amount
+    ) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         mintAndDepositIntoStrategy(
@@ -215,12 +219,14 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
 
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = healthCheck.report();
-        
+
         assertEq(profit, _amount);
         assertEq(loss, 0);
     }
 
-    function test_loss_reverts_increaseLimitUpgradeable(uint256 _amount) public {
+    function test_loss_reverts_increaseLimitUpgradeable(
+        uint256 _amount
+    ) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         mintAndDepositIntoStrategy(
@@ -235,7 +241,9 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
 
         // Simulate loss
         vm.prank(management);
-        MockHealthCheckUpgradeable(address(healthCheck)).simulateLoss(_amount / 2);
+        MockHealthCheckUpgradeable(address(healthCheck)).simulateLoss(
+            _amount / 2
+        );
 
         // Report should revert due to health check
         vm.prank(keeper);
@@ -248,12 +256,14 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
 
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = healthCheck.report();
-        
+
         assertEq(profit, 0);
         assertEq(loss, _amount / 2);
     }
 
-    function test_toMuchProfit_reverts_turnOffCheckUpgradeable(uint256 _amount) public {
+    function test_toMuchProfit_reverts_turnOffCheckUpgradeable(
+        uint256 _amount
+    ) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         mintAndDepositIntoStrategy(
@@ -281,10 +291,10 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
         // Now report should succeed
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = healthCheck.report();
-        
+
         assertEq(profit, _amount);
         assertEq(loss, 0);
-        
+
         // Health check should be back on
         assertEq(healthCheck.doHealthCheck(), true);
     }
@@ -304,7 +314,9 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
 
         // Simulate loss
         vm.prank(management);
-        MockHealthCheckUpgradeable(address(healthCheck)).simulateLoss(_amount / 2);
+        MockHealthCheckUpgradeable(address(healthCheck)).simulateLoss(
+            _amount / 2
+        );
 
         // Report should revert
         vm.prank(keeper);
@@ -318,10 +330,10 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
         // Now report should succeed
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = healthCheck.report();
-        
+
         assertEq(profit, 0);
         assertEq(loss, _amount / 2);
-        
+
         // Health check should be back on
         assertEq(healthCheck.doHealthCheck(), true);
     }
@@ -331,18 +343,18 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
         // Verify storage slots
         // Slots 0-9: from BaseStrategyUpgradeable
         // Slot 10: doHealthCheck (bool) + _profitLimitRatio (uint16) + _lossLimitRatio (uint16)
-        
+
         bytes32 slot10 = readStorageSlot(address(healthCheck), 10);
-        
+
         // Extract values from packed slot
         bool doHealthCheck = uint8(uint256(slot10)) != 0;
         uint16 profitRatio = uint16(uint256(slot10) >> 8);
         uint16 lossRatio = uint16(uint256(slot10) >> 24);
-        
+
         assertEq(doHealthCheck, true);
         assertEq(profitRatio, 10_000);
         assertEq(lossRatio, 0);
-        
+
         // Verify gap slots are empty (11-19)
         for (uint256 i = 11; i <= 19; i++) {
             bytes32 gapSlot = readStorageSlot(address(healthCheck), i);
@@ -353,25 +365,25 @@ contract BaseHealthCheckUpgradeableTest is UpgradeableSetup {
     function test_upgradeFromBaseStrategy() public {
         // Deploy a basic strategy first
         MockHealthCheckUpgradeable newImpl = new MockHealthCheckUpgradeable();
-        
+
         // Deposit some funds
         mintAndDepositIntoStrategy(
             IStrategy(address(healthCheck)),
             user,
             maxFuzzAmount
         );
-        
+
         // Store current state
         uint256 totalAssets = healthCheck.totalAssets();
         uint256 userBalance = healthCheck.balanceOf(user);
-        
+
         // Upgrade (would need admin access in real scenario)
         upgradeProxy(address(healthCheck), address(newImpl));
-        
+
         // Verify state preserved
         assertEq(healthCheck.totalAssets(), totalAssets);
         assertEq(healthCheck.balanceOf(user), userBalance);
-        
+
         // Verify health check functionality still works
         assertEq(healthCheck.doHealthCheck(), true);
         assertEq(healthCheck.profitLimitRatio(), 10_000);

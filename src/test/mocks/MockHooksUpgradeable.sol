@@ -36,7 +36,7 @@ contract HookEvents {
 
 contract MockHooksUpgradeable is BaseHooksUpgradeable, HookEvents {
     constructor() BaseHooksUpgradeable() {}
-    
+
     function initialize(
         address _asset,
         string memory _name,
@@ -44,7 +44,13 @@ contract MockHooksUpgradeable is BaseHooksUpgradeable, HookEvents {
         address _performanceFeeRecipient,
         address _keeper
     ) public initializer {
-        __BaseHooks_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
+        __BaseHooks_init(
+            _asset,
+            _name,
+            _management,
+            _performanceFeeRecipient,
+            _keeper
+        );
     }
 
     function _preDepositHook(
@@ -111,7 +117,7 @@ contract MockHooksUpgradeable is BaseHooksUpgradeable, HookEvents {
     {
         _totalAssets = asset.balanceOf(address(this));
     }
-    
+
     // Upgrade function to initialize health check values when upgrading from a non-health check strategy
     // Hooks inherits from HealthCheck, so we need to ensure health check values are set
     function initializeHealthCheck() external onlyManagement {

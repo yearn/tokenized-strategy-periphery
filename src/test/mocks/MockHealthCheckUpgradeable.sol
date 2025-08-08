@@ -7,14 +7,14 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
     using SafeERC20 for ERC20;
-    
+
     bool public healthy = true;
     // Keep deployedFunds for storage layout compatibility
     // But don't use it in _harvestAndReport to avoid double-counting
     uint256 public deployedFunds;
 
     constructor() BaseHealthCheckUpgradeable() {}
-    
+
     function initialize(
         address _asset,
         string memory _name,
@@ -22,7 +22,13 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) public initializer {
-        __BaseHealthCheck_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
+        __BaseHealthCheck_init(
+            _asset,
+            _name,
+            _management,
+            _performanceFeeRecipient,
+            _keeper
+        );
     }
 
     function _deployFunds(uint256 _amount) internal override {
@@ -48,7 +54,7 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         // This matches the non-upgradeable MockHealthCheck behavior
         _totalAssets = asset.balanceOf(address(this));
     }
-    
+
     // Upgrade function to initialize health check values when upgrading from a non-health check strategy
     function initializeHealthCheck() external onlyManagement {
         // Initialize health check variables if they haven't been set
@@ -59,7 +65,7 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
             _setLossLimitRatio(0);
         }
     }
-    
+
     // Function to simulate losses for testing
     function simulateLoss(uint256 _amount) external onlyManagement {
         uint256 available = asset.balanceOf(address(this));

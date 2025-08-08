@@ -15,14 +15,14 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
 
         // Deploy implementation
         hooksImpl = address(new MockHooksUpgradeable());
-        
+
         // Deploy proxy and initialize
         address proxy = deployUpgradeableStrategy(
             hooksImpl,
             address(asset),
             "Hooked"
         );
-        
+
         mockStrategy = IStrategy(proxy);
         vm.prank(management);
         mockStrategy.setKeeper(keeper);
@@ -205,13 +205,13 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
     // Upgrade-specific tests
     function test_hooksWithProxy() public {
         uint256 _amount = maxFuzzAmount / 2;
-        
+
         // Verify hooks work through proxy
         mintAndDepositIntoStrategy(mockStrategy, user, _amount);
-        
+
         // All hook events should have been emitted during deposit
         // (tested above in test_depositHooksUpgradeable)
-        
+
         // Verify proxy delegation is working
         verifyProxy(address(mockStrategy), hooksImpl);
     }
@@ -219,35 +219,43 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
     function test_upgradeFromHealthCheck() public {
         // Deploy with health check first, then upgrade to hooks
         uint256 _amount = maxFuzzAmount / 2;
-        
+
         // Deposit some funds
         mintAndDepositIntoStrategy(mockStrategy, user, _amount);
-        
+
         // Store current state
         uint256 totalAssets = mockStrategy.totalAssets();
         uint256 userBalance = mockStrategy.balanceOf(user);
-        bool doHealthCheck = MockHooksUpgradeable(address(mockStrategy)).doHealthCheck();
-        uint256 profitLimit = MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio();
-        
+        bool doHealthCheck = MockHooksUpgradeable(address(mockStrategy))
+            .doHealthCheck();
+        uint256 profitLimit = MockHooksUpgradeable(address(mockStrategy))
+            .profitLimitRatio();
+
         // Deploy new hooks implementation
         MockHooksUpgradeable newImpl = new MockHooksUpgradeable();
-        
+
         // Upgrade
         upgradeProxy(address(mockStrategy), address(newImpl));
-        
+
         // Verify state preserved
         assertEq(mockStrategy.totalAssets(), totalAssets);
         assertEq(mockStrategy.balanceOf(user), userBalance);
-        assertEq(MockHooksUpgradeable(address(mockStrategy)).doHealthCheck(), doHealthCheck);
-        assertEq(MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio(), profitLimit);
-        
+        assertEq(
+            MockHooksUpgradeable(address(mockStrategy)).doHealthCheck(),
+            doHealthCheck
+        );
+        assertEq(
+            MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio(),
+            profitLimit
+        );
+
         // Verify hooks work after upgrade
         vm.expectEmit(true, true, true, true, address(mockStrategy));
         emit PreWithdrawHook(_amount, 0, user, user, 0);
-        
+
         vm.expectEmit(true, true, true, true, address(mockStrategy));
         emit PostWithdrawHook(_amount, _amount, user, user, 0);
-        
+
         vm.prank(user);
         mockStrategy.withdraw(_amount, user, user);
     }
@@ -256,10 +264,14 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
         // Verify hooks don't add storage beyond health check
         // Slots 0-19 are used by BaseStrategy and HealthCheck
         // Slot 20+ should be available for strategy implementations
-        
+
         for (uint256 i = 20; i <= 25; i++) {
             bytes32 slot = readStorageSlot(address(mockStrategy), i);
-            assertEq(slot, bytes32(0), "Hooks should not use additional storage");
+            assertEq(
+                slot,
+                bytes32(0),
+                "Hooks should not use additional storage"
+            );
         }
     }
 }

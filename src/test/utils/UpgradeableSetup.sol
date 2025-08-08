@@ -13,27 +13,31 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 contract UpgradeableSetup is Setup {
     // Proxy admin for managing upgrades
     ProxyAdmin public proxyAdmin;
-    
+
     // Storage slot helpers based on EIP-1967
-    bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-    bytes32 internal constant ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-    
+    bytes32 internal constant IMPLEMENTATION_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    bytes32 internal constant ADMIN_SLOT =
+        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+
     function setUp() public virtual override {
         super.setUp();
-        
+
         // Deploy a proxy admin for managing upgrades
         proxyAdmin = new ProxyAdmin();
     }
-    
+
     /**
      * @notice Deploy a proxy with an implementation
      * @param _implementation Address of the implementation contract
      * @return proxy Address of the deployed proxy
      */
-    function deployProxy(address _implementation) public returns (address proxy) {
+    function deployProxy(
+        address _implementation
+    ) public returns (address proxy) {
         return deployProxy(_implementation, "");
     }
-    
+
     /**
      * @notice Deploy a proxy with an implementation and initialization data
      * @param _implementation Address of the implementation contract
@@ -52,16 +56,19 @@ contract UpgradeableSetup is Setup {
             )
         );
     }
-    
+
     /**
      * @notice Upgrade a proxy to a new implementation
      * @param _proxy Address of the proxy to upgrade
      * @param _newImplementation Address of the new implementation
      */
     function upgradeProxy(address _proxy, address _newImplementation) public {
-        proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(_proxy)), _newImplementation);
+        proxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(_proxy)),
+            _newImplementation
+        );
     }
-    
+
     /**
      * @notice Upgrade a proxy and call a function
      * @param _proxy Address of the proxy to upgrade
@@ -79,28 +86,36 @@ contract UpgradeableSetup is Setup {
             _data
         );
     }
-    
+
     /**
      * @notice Get the current implementation of a proxy
      * @param _proxy Address of the proxy
      * @return implementation Address of the current implementation
      */
-    function getImplementation(address _proxy) public view returns (address implementation) {
+    function getImplementation(
+        address _proxy
+    ) public view returns (address implementation) {
         // Get implementation from the proxy admin
-        return proxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(_proxy)));
+        return
+            proxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(_proxy))
+            );
     }
-    
+
     /**
      * @notice Read a storage slot at a specific address
      * @param _target Address to read from
      * @param _slot Storage slot to read
      * @return value The value at the storage slot
      */
-    function readStorageSlot(address _target, uint256 _slot) public view returns (bytes32 value) {
+    function readStorageSlot(
+        address _target,
+        uint256 _slot
+    ) public view returns (bytes32 value) {
         // Use vm.load to read storage from target address
         value = vm.load(_target, bytes32(_slot));
     }
-    
+
     /**
      * @notice Initialize a strategy with common parameters
      * @param _strategy Address of the strategy proxy
@@ -120,7 +135,7 @@ contract UpgradeableSetup is Setup {
             keeper
         );
     }
-    
+
     /**
      * @notice Deploy and initialize an upgradeable strategy
      * @param _implementation Address of the implementation
@@ -135,11 +150,11 @@ contract UpgradeableSetup is Setup {
     ) public returns (address strategy) {
         // Deploy proxy without initialization
         strategy = deployProxy(_implementation);
-        
+
         // Initialize the strategy
         initializeStrategy(strategy, _asset, _name);
     }
-    
+
     /**
      * @notice Check that storage layout is preserved after upgrade
      * @param _proxy Address of the proxy
@@ -154,7 +169,7 @@ contract UpgradeableSetup is Setup {
         bytes32 actualValue = readStorageSlot(_proxy, _slot);
         assertEq(actualValue, _expectedValue, "Storage slot mismatch");
     }
-    
+
     /**
      * @notice Verify proxy is properly initialized
      * @param _proxy Address of the proxy
@@ -163,9 +178,11 @@ contract UpgradeableSetup is Setup {
     function verifyProxy(address _proxy, address _expectedImpl) public {
         address actualImpl = getImplementation(_proxy);
         assertEq(actualImpl, _expectedImpl, "Implementation mismatch");
-        
+
         // Verify admin is set correctly
-        address admin = proxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(payable(_proxy)));
+        address admin = proxyAdmin.getProxyAdmin(
+            ITransparentUpgradeableProxy(payable(_proxy))
+        );
         assertEq(admin, address(proxyAdmin), "Admin mismatch");
     }
 }
