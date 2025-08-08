@@ -133,13 +133,13 @@ abstract contract BaseStrategyUpgradeable is Initializable {
 
     /**
      * @dev Storage gap for future upgrades.
-     * 
+     *
      * Storage Layout:
      * Slot 0: asset (ERC20, 20 bytes)
      * Slot 1: TokenizedStrategy (ITokenizedStrategy, 20 bytes)
      * Slots 2-9: __gap (reserved for future base contract upgrades)
      * Slots 10+: Available for strategy implementations
-     * 
+     *
      * IMPORTANT: When upgrading the base contract, storage must be
      * appended only. Never remove, reorder, or change existing variables.
      * Decrease the gap size accordingly when adding new state variables.

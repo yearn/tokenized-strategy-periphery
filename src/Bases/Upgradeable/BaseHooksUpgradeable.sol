@@ -59,7 +59,13 @@ abstract contract BaseHooksUpgradeable is BaseHealthCheckUpgradeable, Hooks {
         address _performanceFeeRecipient,
         address _keeper
     ) internal onlyInitializing {
-        __BaseHealthCheck_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
+        __BaseHealthCheck_init(
+            _asset,
+            _name,
+            _management,
+            _performanceFeeRecipient,
+            _keeper
+        );
     }
 
     /*//////////////////////////////////////////////////////////////

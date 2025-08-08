@@ -43,12 +43,12 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
 
     /**
      * @dev Storage gap for future upgrades.
-     * 
+     *
      * Storage Layout (continues from BaseStrategyUpgradeable):
      * Slot 10: doHealthCheck (bool, 1 byte) + _profitLimitRatio (uint16, 2 bytes) + _lossLimitRatio (uint16, 2 bytes)
      * Slots 11-19: __gap (reserved for future health check upgrades)
      * Slots 20+: Available for strategy implementations
-     * 
+     *
      * IMPORTANT: When upgrading, storage must be appended only.
      * Never remove, reorder, or change existing variables.
      */
@@ -99,8 +99,14 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) internal onlyInitializing {
-        __BaseStrategy_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
-        
+        __BaseStrategy_init(
+            _asset,
+            _name,
+            _management,
+            _performanceFeeRecipient,
+            _keeper
+        );
+
         // Initialize health check specific variables
         doHealthCheck = true;
         _profitLimitRatio = uint16(MAX_BPS);
