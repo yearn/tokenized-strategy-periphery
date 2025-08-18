@@ -51,7 +51,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /// @notice Used for the price decay.
     uint256 internal constant MINUTE_HALF_LIFE =
-        0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
+        0.994240423817547329_640450491 * 1e27; // 0.5^(1/120)
 
     address internal constant COW_SETTLEMENT =
         0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -316,7 +316,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
         uint256 minutesComponent = Maths.rpow(
             MINUTE_HALF_LIFE,
-            (secondsElapsed % 3600) / 60
+            (secondsElapsed % 3600) / 30
         );
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
 
