@@ -152,10 +152,9 @@ contract CommonAuctionTrigger is Governance {
         // If a custom trigger contract is set use that one.
         if (_trigger != address(0)) {
             // Use try-catch to handle any reverts in the custom trigger
-            try ICustomAuctionTrigger(_trigger).auctionTrigger(_strategy, _from) returns (
-                bool shouldKick,
-                bytes memory data
-            ) {
+            try
+                ICustomAuctionTrigger(_trigger).auctionTrigger(_strategy, _from)
+            returns (bool shouldKick, bytes memory data) {
                 return (shouldKick, data);
             } catch {
                 return (false, bytes("Custom trigger reverted"));
@@ -209,7 +208,10 @@ contract CommonAuctionTrigger is Governance {
         } catch {
             // If the call fails (strategy doesn't implement it or reverts),
             // return false with a descriptive message
-            return (false, bytes("Strategy trigger not implemented or reverted"));
+            return (
+                false,
+                bytes("Strategy trigger not implemented or reverted")
+            );
         }
     }
 
