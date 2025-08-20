@@ -67,7 +67,9 @@ contract AuctionSwapper {
      */
     function kickable(address _token) public view virtual returns (uint256) {
         if (!useAuction) return 0;
-        return ERC20(_token).balanceOf(address(this)) + ERC20(_token).balanceOf(auction);
+        return
+            ERC20(_token).balanceOf(address(this)) +
+            ERC20(_token).balanceOf(auction);
     }
 
     /**
@@ -91,6 +93,5 @@ contract AuctionSwapper {
         }
 
         return Auction(auction).kick(_from);
-
     }
 }
