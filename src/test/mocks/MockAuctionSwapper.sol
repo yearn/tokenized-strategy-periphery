@@ -7,9 +7,6 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
     using SafeERC20 for ERC20;
 
-    event PreTake(address token, uint256 amountToTake, uint256 amountToPay);
-    event PostTake(address token, uint256 amountTaken, uint256 amountPayed);
-
     bool public useDefault = true;
 
     uint256 public letKick;
@@ -28,12 +25,12 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function enableAuction(address _from, address _to) external {
-        _enableAuction(_from, _to);
+    function setAuction(address _auction) external onlyManagement {
+        _setAuction(_auction);
     }
 
-    function disableAuction(address _from) external {
-        _disableAuction(_from);
+    function setUseAuction(bool _useAuction) external onlyManagement {
+        _setUseAuction(_useAuction);
     }
 
     function kickable(address _token) public view override returns (uint256) {
@@ -61,9 +58,9 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IAuctionSwapper} from "../../swappers/interfaces/IAuctionSwapper.sol";
 
 interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
-    function enableAuction(address _from, address _to) external;
+    function setAuction(address _auction) external;
 
-    function disableAuction(address _from) external;
+    function setUseAuction(bool _useAuction) external;
 
     function useDefault() external view returns (bool);
 
