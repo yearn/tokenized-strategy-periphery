@@ -33,6 +33,10 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _setUseAuction(_useAuction);
     }
 
+    function setMinAmountToSell(uint256 _minAmountToSell) external {
+        _setMinAmountToSell(_minAmountToSell);
+    }
+
     function kickable(address _token) public view override returns (uint256) {
         if (useDefault) return super.kickable(_token);
         return letKick;
@@ -61,6 +65,8 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
     function setAuction(address _auction) external;
 
     function setUseAuction(bool _useAuction) external;
+
+    function setMinAmountToSell(uint256 _minAmountToSell) external;
 
     function useDefault() external view returns (bool);
 

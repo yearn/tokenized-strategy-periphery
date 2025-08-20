@@ -258,7 +258,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(ERC20(from).balanceOf(address(swapper)), 0);
         assertEq(ERC20(from).balanceOf(address(auction)), _amount);
 
-        assertEq(swapper.kickable(from), _amount); // Now includes auction balance
+        assertEq(swapper.kickable(from), 0); // Returns 0 when auction is active with available tokens
         assertEq(auction.kickable(from), 0);
         (_kicked, , _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
@@ -328,7 +328,7 @@ contract AuctionSwapperTest is Setup {
 
         swapper.kickAuction(from);
 
-        assertEq(swapper.kickable(from), _amount); // Now includes auction balance
+        assertEq(swapper.kickable(from), 0); // Returns 0 when auction is active with available tokens
         (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
             .auctions(from);
         assertEq(_kicked, block.timestamp);
@@ -651,24 +651,33 @@ contract AuctionSwapperTest is Setup {
         // Test with no balance
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertFalse(shouldKick);
-        assertEq(data, bytes("No kickable balance"));
+        assertEq(data, bytes("not enough kickable"));
 
-        // Add balance
+        // Add sufficient balance for testing
         airdrop(ERC20(from), address(swapper), 1e8);
 
-        // Should now be ready to kick
+        // Should kick since we have sufficient balance
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertTrue(shouldKick);
         bytes memory expectedData = abi.encodeCall(swapper.kickAuction, (from));
         assertEq(data, expectedData);
 
-        // Kick the auction
-        swapper.kickAuction(from);
+        // Set minAmountToSell to test the threshold
+        swapper.setMinAmountToSell(2e8); // Set higher than our balance
 
-        // Should not kick again while active with available tokens
+        // Should not kick due to insufficient amount
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertFalse(shouldKick);
-        assertEq(data, bytes("Active auction with available tokens"));
+        assertEq(data, bytes("not enough kickable"));
+
+        // Reset minAmountToSell to 0 and kick the auction
+        swapper.setMinAmountToSell(0);
+        swapper.kickAuction(from);
+
+        // Should not kick again while active with available tokens (kickable returns 0)
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("not enough kickable"));
 
         // Take the entire auction to make it settleable
         skip(auction.auctionLength() / 2);
@@ -683,5 +692,59 @@ contract AuctionSwapperTest is Setup {
         assertTrue(shouldKick);
         expectedData = abi.encodeCall(swapper.kickAuction, (from));
         assertEq(data, expectedData);
+    }
+
+    function test_auctionTrigger_minAmountToSell() public {
+        address from = tokenAddrs["WBTC"];
+
+        // Setup auction
+        address newAuction = auctionFactory.createNewAuction(
+            address(asset),
+            address(swapper),
+            address(this),
+            1 days,
+            1e6
+        );
+        swapper.setAuction(newAuction);
+        auction = Auction(newAuction);
+        auction.enable(from);
+
+        // Start with sufficient balance
+        airdrop(ERC20(from), address(swapper), 1e8);
+
+        // Should kick with default minAmountToSell of 0
+        (bool shouldKick, bytes memory data) = swapper.auctionTrigger(from);
+        assertTrue(shouldKick);
+        bytes memory expectedData = abi.encodeCall(swapper.kickAuction, (from));
+        assertEq(data, expectedData);
+
+        // Set minAmountToSell higher than our balance
+        swapper.setMinAmountToSell(2e8);
+
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("not enough kickable"));
+
+        // Add more to exceed the minimum
+        airdrop(ERC20(from), address(swapper), 1e8 + 1); // Now we have 2e8 + 1 (clearly > 2e8)
+
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertTrue(shouldKick); // Should kick when amount > minAmountToSell
+        expectedData = abi.encodeCall(swapper.kickAuction, (from));
+        assertEq(data, expectedData);
+
+        // Kick the auction to test that kickable returns 0 during active auction
+        swapper.kickAuction(from);
+
+        // Add more tokens
+        airdrop(ERC20(from), address(swapper), 1e8);
+
+        // Should not kick because auction is active with available tokens
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("not enough kickable"));
+
+        // Verify kickable is 0 during active auction
+        assertEq(swapper.kickable(from), 0);
     }
 }

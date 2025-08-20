@@ -91,9 +91,20 @@ contract AuctionSwapper is BaseSwapper {
      */
     function kickable(address _token) public view virtual returns (uint256) {
         if (!useAuction) return 0;
+
+        address _auction = auction;
+        if (_auction == address(0)) return 0;
+
+        if (
+            Auction(_auction).isActive(_token) &&
+            Auction(_auction).available(_token) > 0
+        ) {
+            return 0;
+        }
+
         return
             ERC20(_token).balanceOf(address(this)) +
-            ERC20(_token).balanceOf(auction);
+            ERC20(_token).balanceOf(_auction);
     }
 
     /**
@@ -158,18 +169,10 @@ contract AuctionSwapper is BaseSwapper {
 
         uint256 kickableAmount = kickable(_from);
 
-        if (kickableAmount == 0) {
-            return (false, bytes("No kickable balance"));
+        if (kickableAmount != 0 && kickableAmount > minAmountToSell) {
+            return (true, abi.encodeCall(this.kickAuction, (_from)));
         }
 
-        // Check if auction is already active with available tokens
-        if (
-            Auction(_auction).isActive(_from) &&
-            Auction(_auction).available(_from) > 0
-        ) {
-            return (false, bytes("Active auction with available tokens"));
-        }
-
-        return (true, abi.encodeCall(this.kickAuction, (_from)));
+        return (false, bytes("not enough kickable"));
     }
 }
