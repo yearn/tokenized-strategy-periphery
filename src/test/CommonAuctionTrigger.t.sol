@@ -346,12 +346,149 @@ contract CommonAuctionTriggerTest is Setup {
             address(revertingCustomTrigger)
         );
 
+        // When custom trigger reverts, it should fall back to default trigger logic
         (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
             address(mockStrategy),
             fromToken
         );
         assertFalse(shouldKick);
-        assertEq(data, bytes("Custom trigger reverted"));
+        // Should get the message from default trigger since mockStrategy doesn't implement auctionTrigger
+        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
+    }
+
+    function test_auctionTrigger_customRevertsFallbackToStrategy() public {
+        // Setup base fee to be acceptable
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
+        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
+
+        // Set up strategy with auction trigger implementation
+        strategyWithAuctionTrigger.setAuctionTriggerStatus(true);
+        strategyWithAuctionTrigger.setAuctionTriggerData(
+            bytes("Strategy fallback success")
+        );
+
+        // Set reverting custom trigger
+        vm.prank(management);
+        auctionTrigger.setCustomAuctionTrigger(
+            address(strategyWithAuctionTrigger),
+            address(revertingCustomTrigger)
+        );
+
+        // When custom trigger reverts, it should fall back to strategy's auctionTrigger
+        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertTrue(shouldKick);
+        assertEq(data, bytes("Strategy fallback success"));
+    }
+
+    function test_auctionTrigger_customRevertsFallbackToStrategyWithBaseFeeRejection()
+        public
+    {
+        // Setup base fee to be too high
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
+        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(currentBaseFee / 2); // Set lower than current
+
+        // Set up strategy with auction trigger implementation
+        strategyWithAuctionTrigger.setAuctionTriggerStatus(true);
+        strategyWithAuctionTrigger.setAuctionTriggerData(
+            bytes("Should not see this")
+        );
+
+        // Set reverting custom trigger
+        vm.prank(management);
+        auctionTrigger.setCustomAuctionTrigger(
+            address(strategyWithAuctionTrigger),
+            address(revertingCustomTrigger)
+        );
+
+        // When custom trigger reverts, fallback should be rejected due to base fee
+        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Base Fee"));
+    }
+
+    function test_auctionTrigger_customRevertsFallbackToRevertingStrategy()
+        public
+    {
+        // Setup base fee to be acceptable
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
+        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
+
+        // Set up strategy to revert on auction trigger
+        strategyWithAuctionTrigger.setShouldRevertOnAuctionTrigger(true);
+
+        // Set reverting custom trigger
+        vm.prank(management);
+        auctionTrigger.setCustomAuctionTrigger(
+            address(strategyWithAuctionTrigger),
+            address(revertingCustomTrigger)
+        );
+
+        // When both custom trigger and strategy trigger revert, should get default error message
+        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
+    }
+
+    function test_auctionTrigger_configurableCustomTriggerFallback() public {
+        // Setup base fee to be acceptable
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
+        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
+
+        // Set up strategy with successful auction trigger
+        strategyWithAuctionTrigger.setAuctionTriggerStatus(true);
+        strategyWithAuctionTrigger.setAuctionTriggerData(
+            bytes("Strategy success")
+        );
+
+        // Set up configurable custom trigger to work normally first
+        customAuctionTrigger.setTriggerStatus(false);
+        customAuctionTrigger.setTriggerData(bytes("Custom working"));
+        customAuctionTrigger.setShouldRevert(false);
+
+        vm.prank(management);
+        auctionTrigger.setCustomAuctionTrigger(
+            address(strategyWithAuctionTrigger),
+            address(customAuctionTrigger)
+        );
+
+        // First test: Custom trigger working normally
+        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Custom working"));
+
+        // Second test: Make custom trigger revert, should fallback to strategy
+        customAuctionTrigger.setShouldRevert(true);
+
+        (shouldKick, data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertTrue(shouldKick);
+        assertEq(data, bytes("Strategy success"));
     }
 
     function test_defaultAuctionTrigger_withBaseFeeCheck() public {

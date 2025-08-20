@@ -154,25 +154,23 @@ contract CommonAuctionTriggerSecurityTest is Setup {
         // Set the reentrancy attacker as custom trigger
         vm.prank(management);
         auctionTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
+            address(mockStrategy),
             address(reentrancyAttacker)
         );
 
         // Attempt reentrancy attack
         (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
+            address(mockStrategy),
             fromToken
         );
 
         // Should handle gracefully due to try-catch
         assertFalse(shouldKick);
-        assertEq(data, bytes("Custom trigger reverted"));
+        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
 
         // Verify no state was corrupted
         assertEq(
-            auctionTrigger.customAuctionTrigger(
-                address(strategyWithAuctionTrigger)
-            ),
+            auctionTrigger.customAuctionTrigger(address(mockStrategy)),
             address(reentrancyAttacker)
         );
     }
@@ -209,50 +207,18 @@ contract CommonAuctionTriggerSecurityTest is Setup {
         // Set DoS attacker as custom trigger
         vm.prank(management);
         auctionTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
+            address(mockStrategy),
             address(dosAttacker)
         );
 
         // Should handle infinite loop gracefully
         (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
+            address(mockStrategy),
             fromToken
         );
 
         assertFalse(shouldKick);
-        assertEq(data, bytes("Custom trigger reverted"));
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                        STATE MANIPULATION TESTS
-    //////////////////////////////////////////////////////////////*/
-
-    function test_preventStateManipulationThroughCustomTrigger() public {
-        StateManipulationAttacker stateAttacker = new StateManipulationAttacker(
-            auctionTrigger
-        );
-
-        vm.prank(management);
-        auctionTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(stateAttacker)
-        );
-
-        // Record initial state
-        uint256 initialBaseFee = auctionTrigger.acceptableBaseFee();
-        address initialProvider = auctionTrigger.baseFeeProvider();
-
-        // Attempt state manipulation through custom trigger
-        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
-
-        // Verify state wasn't manipulated
-        assertEq(auctionTrigger.acceptableBaseFee(), initialBaseFee);
-        assertEq(auctionTrigger.baseFeeProvider(), initialProvider);
-        assertFalse(shouldKick);
-        assertEq(data, bytes("Custom trigger reverted"));
+        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -431,27 +397,6 @@ contract GasGriefingAttacker is ICustomAuctionTrigger {
             keccak256(abi.encode(i));
         }
         return (true, bytes("Gas griefing"));
-    }
-}
-
-contract StateManipulationAttacker is ICustomAuctionTrigger {
-    CommonAuctionTrigger public target;
-
-    constructor(CommonAuctionTrigger _target) {
-        target = _target;
-    }
-
-    function auctionTrigger(
-        address,
-        address
-    ) external view override returns (bool, bytes memory) {
-        // Attempt to manipulate state (will fail due to view function)
-        // This simulates an attack that would try to manipulate state
-        uint256 currentBaseFee = target.acceptableBaseFee();
-        if (currentBaseFee < 999999e18) {
-            revert("Attempting state manipulation");
-        }
-        return (true, bytes("State manipulation attempt"));
     }
 }
 

@@ -156,9 +156,7 @@ contract CommonAuctionTrigger is Governance {
                 ICustomAuctionTrigger(_trigger).auctionTrigger(_strategy, _from)
             returns (bool shouldKick, bytes memory data) {
                 return (shouldKick, data);
-            } catch {
-                return (false, bytes("Custom trigger reverted"));
-            }
+            } catch {} // If it fails, try the default trigger path
         }
 
         // Return the default trigger logic.
