@@ -38,7 +38,7 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         return letKick;
     }
 
-    function kickAuction(address _token) external returns (uint256) {
+    function kickAuction(address _token) external override returns (uint256) {
         if (useDefault) return _kickAuction(_token);
 
         ERC20(_token).safeTransfer(auction, letKick);

@@ -5,6 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISolidly} from "../interfaces/Solidly/ISolidly.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
 
 /**
  *   @title SolidlySwapper
@@ -20,11 +21,8 @@ import {ISolidly} from "../interfaces/Solidly/ISolidly.sol";
  *   This will default to only use volatile pools and the `_setStable`
  *   will need to be set for any token pairs that should use a stable pool.
  */
-contract SolidlySwapper {
+contract SolidlySwapper is BaseSwapper {
     using SafeERC20 for ERC20;
-
-    // Optional Variable to be set to not sell dust.
-    uint256 public minAmountToSell;
     // Defaults to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 

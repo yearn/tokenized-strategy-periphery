@@ -5,6 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {AuctionFactory, Auction} from "../Auctions/AuctionFactory.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
 
 /**
  *   @title AuctionSwapper
@@ -26,7 +27,7 @@ import {AuctionFactory, Auction} from "../Auctions/AuctionFactory.sol";
  *   implement a way to call the {setHookFlags} on the auction contract
  *   to avoid unnecessary gas for unused functions.
  */
-contract AuctionSwapper {
+contract AuctionSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
     event AuctionSet(address indexed auction);
@@ -72,26 +73,70 @@ contract AuctionSwapper {
             ERC20(_token).balanceOf(auction);
     }
 
+    function kickAuction(address _from) external virtual returns (uint256) {
+        return _kickAuction(_from);
+    }
+
     /**
      * @dev Kick an auction for a given token.
      * @param _from The token that was being sold.
      */
     function _kickAuction(address _from) internal virtual returns (uint256) {
         require(useAuction, "useAuction is false");
+        address _auction = auction;
 
-        if (Auction(auction).isActive(_from)) {
-            if (Auction(auction).available(_from) > 0) {
+        if (Auction(_auction).isActive(_from)) {
+            if (Auction(_auction).available(_from) > 0) {
                 return 0;
             }
 
-            Auction(auction).settle(_from);
+            Auction(_auction).settle(_from);
         }
 
         uint256 _balance = ERC20(_from).balanceOf(address(this));
         if (_balance > 0) {
-            ERC20(_from).safeTransfer(auction, _balance);
+            ERC20(_from).safeTransfer(_auction, _balance);
         }
 
-        return Auction(auction).kick(_from);
+        return Auction(_auction).kick(_from);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        AUCTION TRIGGER INTERFACE
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Default auction trigger implementation for the CommonAuctionTrigger.
+     * @param _from The token that could be sold in an auction.
+     * @return shouldKick True if an auction should be kicked for this token.
+     * @return data Additional data about the trigger decision.
+     */
+    function auctionTrigger(
+        address _from
+    ) external view virtual returns (bool shouldKick, bytes memory data) {
+        address _auction = auction;
+        if (_auction == address(0)) {
+            return (false, bytes("No auction set"));
+        }
+
+        if (!useAuction) {
+            return (false, bytes("Auctions disabled"));
+        }
+
+        uint256 kickableAmount = kickable(_from);
+
+        if (kickableAmount == 0) {
+            return (false, bytes("No kickable balance"));
+        }
+
+        // Check if auction is already active with available tokens
+        if (
+            Auction(_auction).isActive(_from) &&
+            Auction(_auction).available(_from) > 0
+        ) {
+            return (false, bytes("Active auction with available tokens"));
+        }
+
+        return (true, abi.encodeCall(this.kickAuction, (_from)));
     }
 }

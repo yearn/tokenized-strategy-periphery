@@ -5,6 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISwapRouter} from "../interfaces/Uniswap/V3/ISwapRouter.sol";
+import {BaseSwapper} from "./BaseSwapper.sol";
 
 /**
  *   @title UniswapV3Swapper
@@ -21,11 +22,8 @@ import {ISwapRouter} from "../interfaces/Uniswap/V3/ISwapRouter.sol";
  *   for each token pair. The inheriting contract can use the {_setUniFees}
  *   function to easily set this for any token pairs needed.
  */
-contract UniswapV3Swapper {
+contract UniswapV3Swapper is BaseSwapper {
     using SafeERC20 for ERC20;
-
-    // Optional Variable to be set to not sell dust.
-    uint256 public minAmountToSell;
     // Defaults to WETH on mainnet.
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 

@@ -543,4 +543,72 @@ contract AuctionSwapperTest is Setup {
         vm.expectRevert("nothing to kick");
         swapper.kickAuction(from);
     }
+
+    function test_auctionTrigger() public {
+        address from = tokenAddrs["WBTC"];
+
+        // Test with no auction set
+        (bool shouldKick, bytes memory data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("No auction set"));
+
+        // Setup auction
+        address newAuction = auctionFactory.createNewAuction(
+            address(asset),
+            address(swapper),
+            address(this),
+            1 days,
+            1e6
+        );
+        swapper.setAuction(newAuction);
+        auction = Auction(newAuction);
+        auction.enable(from);
+
+        // Test with auctions disabled
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Auctions disabled"));
+
+        // Enable auctions
+        swapper.setUseAuction(true);
+
+        // Test with no balance
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("No kickable balance"));
+
+        // Add balance
+        airdrop(ERC20(from), address(swapper), 1e8);
+
+        // Should now be ready to kick
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertTrue(shouldKick);
+        bytes memory expectedData = abi.encodeCall(
+            swapper.kickAuction,
+            (from)
+        );
+        assertEq(data, expectedData);
+
+        // Kick the auction
+        swapper.kickAuction(from);
+
+        // Should not kick again while active with available tokens
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Active auction with available tokens"));
+
+        // Take the entire auction to make it settleable
+        skip(auction.auctionLength() / 2);
+        uint256 needed = auction.getAmountNeeded(from, 1e8);
+        airdrop(ERC20(address(asset)), address(this), needed);
+        ERC20(address(asset)).forceApprove(address(auction), needed);
+        auction.take(from, 1e8);
+
+        // Add more balance and should be ready to kick again
+        airdrop(ERC20(from), address(swapper), 5e7);
+        (shouldKick, data) = swapper.auctionTrigger(from);
+        assertTrue(shouldKick);
+        expectedData = abi.encodeCall(swapper.kickAuction, (from));
+        assertEq(data, expectedData);
+    }
 }
