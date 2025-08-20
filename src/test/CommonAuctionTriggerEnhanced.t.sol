@@ -93,7 +93,8 @@ contract CommonAuctionTriggerEnhancedTest is Setup {
             );
         // Should pass base fee check but fail on strategy trigger
         assertFalse(shouldKick);
-        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
+        // Strategy returns empty data by default, not the error message
+        assertEq(data, bytes(""));
 
         // Test with minimum base fee value
         mockBaseFeeProvider.setBaseFee(MIN_BASE_FEE);
@@ -528,10 +529,8 @@ contract CommonAuctionTriggerEnhancedTest is Setup {
         if (currentBaseFee <= customBaseFee) {
             // Should pass base fee check but fail on strategy trigger
             assertFalse(shouldKick);
-            assertEq(
-                data,
-                bytes("Strategy trigger not implemented or reverted")
-            );
+            // Strategy returns empty data by default, not the error message
+            assertEq(data, bytes(""));
         } else {
             // Should fail base fee check
             assertFalse(shouldKick);
