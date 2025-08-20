@@ -138,7 +138,7 @@ contract CommonAuctionTriggerSecurityTest is Setup {
             address(fakeStrategy),
             address(0x123)
         );
-        
+
         // Verify it was set
         assertEq(
             auctionTrigger.customAuctionTrigger(address(fakeStrategy)),

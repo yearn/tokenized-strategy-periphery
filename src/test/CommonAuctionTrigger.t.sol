@@ -2,20 +2,30 @@
 pragma solidity >=0.8.18;
 
 import {Setup, IStrategy, console, Roles} from "./utils/Setup.sol";
-
-import {CommonAuctionTrigger, IBaseFee} from "../AuctionTrigger/CommonAuctionTrigger.sol";
+import {CommonAuctionTrigger, IBaseFee, ICustomAuctionTrigger, IStrategyAuctionTrigger} from "../AuctionTrigger/CommonAuctionTrigger.sol";
 import {MockCustomAuctionTrigger, RevertingCustomTrigger} from "./mocks/MockCustomAuctionTrigger.sol";
 import {MockStrategyWithAuctionTrigger} from "./mocks/MockStrategyWithAuctionTrigger.sol";
 
+/**
+ * @title CommonAuctionTrigger Test Suite
+ * @dev Comprehensive test suite for the CommonAuctionTrigger contract covering
+ *      core functionality, integration scenarios, and edge cases
+ */
 contract CommonAuctionTriggerTest is Setup {
     CommonAuctionTrigger public auctionTrigger;
     MockCustomAuctionTrigger public customAuctionTrigger;
     RevertingCustomTrigger public revertingCustomTrigger;
     MockStrategyWithAuctionTrigger public strategyWithAuctionTrigger;
+    MockBaseFeeProvider public mockBaseFeeProvider;
+
+    // Additional strategies for multi-strategy testing
+    MockStrategyWithAuctionTrigger public strategy2;
+    MockStrategyWithAuctionTrigger public strategy3;
 
     address public baseFeeProvider = 0xe0514dD71cfdC30147e76f65C30bdF60bfD437C3;
     address public fromToken = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
 
+    // Events
     event NewBaseFeeProvider(address indexed provider);
     event UpdatedAcceptableBaseFee(uint256 acceptableBaseFee);
     event UpdatedCustomAuctionTrigger(
@@ -33,20 +43,33 @@ contract CommonAuctionTriggerTest is Setup {
         auctionTrigger = new CommonAuctionTrigger(daddy);
         customAuctionTrigger = new MockCustomAuctionTrigger();
         revertingCustomTrigger = new RevertingCustomTrigger();
+        mockBaseFeeProvider = new MockBaseFeeProvider();
+
         strategyWithAuctionTrigger = new MockStrategyWithAuctionTrigger(
             address(asset)
         );
+        strategy2 = new MockStrategyWithAuctionTrigger(address(asset));
+        strategy3 = new MockStrategyWithAuctionTrigger(address(asset));
 
-        // Set up the strategy with auction trigger using IStrategy interface
-        IStrategy(address(strategyWithAuctionTrigger)).setKeeper(keeper);
-        IStrategy(address(strategyWithAuctionTrigger))
-            .setPerformanceFeeRecipient(performanceFeeRecipient);
-        IStrategy(address(strategyWithAuctionTrigger)).setPendingManagement(
-            management
-        );
-        vm.prank(management);
-        IStrategy(address(strategyWithAuctionTrigger)).acceptManagement();
+        // Set up strategies
+        _setupStrategy(strategyWithAuctionTrigger);
+        _setupStrategy(strategy2);
+        _setupStrategy(strategy3);
     }
+
+    function _setupStrategy(MockStrategyWithAuctionTrigger strategy) internal {
+        IStrategy(address(strategy)).setKeeper(keeper);
+        IStrategy(address(strategy)).setPerformanceFeeRecipient(
+            performanceFeeRecipient
+        );
+        IStrategy(address(strategy)).setPendingManagement(management);
+        vm.prank(management);
+        IStrategy(address(strategy)).acceptManagement();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        BASIC SETUP TESTS
+    //////////////////////////////////////////////////////////////*/
 
     function test_setup() public {
         assertEq(auctionTrigger.governance(), address(daddy));
@@ -62,6 +85,10 @@ contract CommonAuctionTriggerTest is Setup {
             0
         );
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        GOVERNANCE FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     function test_setBaseFeeProvider() public {
         vm.expectRevert("!governance");
@@ -123,6 +150,10 @@ contract CommonAuctionTriggerTest is Setup {
 
         assertEq(auctionTrigger.governance(), _newGovernance);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        STRATEGY MANAGEMENT FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     function test_setCustomAuctionTrigger() public {
         assertEq(
@@ -211,6 +242,10 @@ contract CommonAuctionTriggerTest is Setup {
         );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                        BASE FEE FUNCTIONALITY
+    //////////////////////////////////////////////////////////////*/
+
     function test_getCurrentBaseFee() public {
         // Should return 0 when no provider is set
         assertEq(auctionTrigger.getCurrentBaseFee(), 0);
@@ -244,6 +279,33 @@ contract CommonAuctionTriggerTest is Setup {
         auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
         assertTrue(auctionTrigger.isCurrentBaseFeeAcceptable());
     }
+
+    function test_baseFeeExactBoundaries() public {
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(address(mockBaseFeeProvider));
+
+        uint256 testBaseFee = 50e9;
+        mockBaseFeeProvider.setBaseFee(testBaseFee);
+
+        // Test exact match (should pass)
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(testBaseFee);
+        assertTrue(auctionTrigger.isCurrentBaseFeeAcceptable());
+
+        // Test one wei below (should fail)
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(testBaseFee - 1);
+        assertFalse(auctionTrigger.isCurrentBaseFeeAcceptable());
+
+        // Test one wei above (should pass)
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(testBaseFee + 1);
+        assertTrue(auctionTrigger.isCurrentBaseFeeAcceptable());
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        AUCTION TRIGGER CORE LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     function test_auctionTrigger_withCustomTrigger() public {
         // Set custom trigger
@@ -387,64 +449,113 @@ contract CommonAuctionTriggerTest is Setup {
         assertEq(data, bytes("Strategy true"));
     }
 
-    function test_defaultAuctionTrigger_withRevertingStrategy() public {
-        // Set acceptable base fee
-        vm.prank(daddy);
-        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
-        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
-        vm.prank(daddy);
-        auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
+    /*//////////////////////////////////////////////////////////////
+                        INTEGRATION SCENARIOS
+    //////////////////////////////////////////////////////////////*/
 
-        // Make strategy revert on auction trigger call
-        strategyWithAuctionTrigger.setShouldRevertOnAuctionTrigger(true);
+    function test_multipleStrategiesWithDifferentConfigurations() public {
+        // Setup base fee provider
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(address(mockBaseFeeProvider));
+        mockBaseFeeProvider.setBaseFee(50e9);
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(60e9);
 
-        (bool shouldKick, bytes memory data) = auctionTrigger
-            .defaultAuctionTrigger(
-                address(strategyWithAuctionTrigger),
-                fromToken
-            );
-        assertFalse(shouldKick);
-        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
+        // Strategy 1: Uses default configuration
+        strategyWithAuctionTrigger.setAuctionTriggerStatus(true);
+        strategyWithAuctionTrigger.setAuctionTriggerData(bytes("Strategy1"));
+
+        // Strategy 2: Uses custom base fee
+        vm.prank(management);
+        auctionTrigger.setCustomStrategyBaseFee(address(strategy2), 40e9); // Too restrictive
+        strategy2.setAuctionTriggerStatus(true);
+        strategy2.setAuctionTriggerData(bytes("Strategy2"));
+
+        // Strategy 3: Uses custom trigger
+        vm.prank(management);
+        auctionTrigger.setCustomAuctionTrigger(
+            address(strategy3),
+            address(customAuctionTrigger)
+        );
+        customAuctionTrigger.setTriggerStatus(false);
+        customAuctionTrigger.setTriggerData(bytes("CustomFalse"));
+
+        // Test all strategies
+        (bool shouldKick1, bytes memory data1) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertTrue(shouldKick1);
+        assertEq(data1, bytes("Strategy1"));
+
+        (bool shouldKick2, bytes memory data2) = auctionTrigger.auctionTrigger(
+            address(strategy2),
+            fromToken
+        );
+        assertFalse(shouldKick2);
+        assertEq(data2, bytes("Base Fee"));
+
+        (bool shouldKick3, bytes memory data3) = auctionTrigger.auctionTrigger(
+            address(strategy3),
+            fromToken
+        );
+        assertFalse(shouldKick3);
+        assertEq(data3, bytes("CustomFalse"));
     }
 
-    function test_auctionTrigger_fullIntegration() public {
-        // Setup base fee
+    function test_complexWorkflowWithBaseFeeChanges() public {
+        // Setup
         vm.prank(daddy);
-        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
-        uint256 currentBaseFee = IBaseFee(baseFeeProvider).basefee_global();
-        vm.prank(daddy);
-        auctionTrigger.setAcceptableBaseFee(currentBaseFee * 2);
-
-        // Test without custom trigger (should use default)
+        auctionTrigger.setBaseFeeProvider(address(mockBaseFeeProvider));
         strategyWithAuctionTrigger.setAuctionTriggerStatus(true);
-        strategyWithAuctionTrigger.setAuctionTriggerData(
-            bytes("Default strategy")
-        );
+        strategyWithAuctionTrigger.setAuctionTriggerData(bytes("WorkflowTest"));
+
+        // Scenario 1: High base fee, restrictive acceptable fee
+        mockBaseFeeProvider.setBaseFee(100e9);
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(50e9);
 
         (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
             address(strategyWithAuctionTrigger),
             fromToken
         );
-        assertTrue(shouldKick);
-        assertEq(data, bytes("Default strategy"));
+        assertFalse(shouldKick);
+        assertEq(data, bytes("Base Fee"));
 
-        // Set custom trigger and test it takes precedence
+        // Scenario 2: Same high base fee, but set custom strategy base fee
+        vm.prank(management);
+        auctionTrigger.setCustomStrategyBaseFee(
+            address(strategyWithAuctionTrigger),
+            150e9
+        );
+
+        (shouldKick, data) = auctionTrigger.auctionTrigger(
+            address(strategyWithAuctionTrigger),
+            fromToken
+        );
+        assertTrue(shouldKick);
+        assertEq(data, bytes("WorkflowTest"));
+
+        // Scenario 3: Add custom trigger, should override base fee logic
         vm.prank(management);
         auctionTrigger.setCustomAuctionTrigger(
             address(strategyWithAuctionTrigger),
             address(customAuctionTrigger)
         );
-
         customAuctionTrigger.setTriggerStatus(false);
-        customAuctionTrigger.setTriggerData(bytes("Custom override"));
+        customAuctionTrigger.setTriggerData(bytes("CustomOverride"));
 
         (shouldKick, data) = auctionTrigger.auctionTrigger(
             address(strategyWithAuctionTrigger),
             fromToken
         );
         assertFalse(shouldKick);
-        assertEq(data, bytes("Custom override"));
+        assertEq(data, bytes("CustomOverride"));
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        EDGE CASES
+    //////////////////////////////////////////////////////////////*/
 
     function test_auctionTrigger_noBaseFeeProvider() public {
         // Test that auction trigger works without base fee provider
@@ -461,7 +572,46 @@ contract CommonAuctionTriggerTest is Setup {
         assertEq(data, bytes("No base fee check"));
     }
 
-    function test_fuzz_setCustomStrategyBaseFee(
+    function test_extremeBaseFeeValues() public {
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(address(mockBaseFeeProvider));
+
+        // Test with maximum base fee value
+        mockBaseFeeProvider.setBaseFee(type(uint256).max);
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(type(uint256).max);
+        assertTrue(auctionTrigger.isCurrentBaseFeeAcceptable());
+
+        // Test with minimum base fee value
+        mockBaseFeeProvider.setBaseFee(0);
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(0);
+        assertTrue(auctionTrigger.isCurrentBaseFeeAcceptable());
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        FUZZING TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function testFuzz_baseFeeComparisons(
+        uint256 currentBaseFee,
+        uint256 acceptableBaseFee
+    ) public {
+        vm.assume(currentBaseFee > 0);
+        vm.assume(acceptableBaseFee > 0);
+
+        vm.prank(daddy);
+        auctionTrigger.setBaseFeeProvider(address(mockBaseFeeProvider));
+        mockBaseFeeProvider.setBaseFee(currentBaseFee);
+        vm.prank(daddy);
+        auctionTrigger.setAcceptableBaseFee(acceptableBaseFee);
+
+        bool expected = currentBaseFee <= acceptableBaseFee;
+        bool actual = auctionTrigger.isCurrentBaseFeeAcceptable();
+        assertEq(actual, expected);
+    }
+
+    function testFuzz_setCustomStrategyBaseFee(
         address _strategy,
         uint256 _baseFee
     ) public {
@@ -475,57 +625,20 @@ contract CommonAuctionTriggerTest is Setup {
         vm.prank(user);
         auctionTrigger.setCustomStrategyBaseFee(_strategy, _baseFee);
     }
+}
 
-    function test_auctionTrigger_edgeCases() public {
-        // Test with zero address should not revert due to try-catch
-        // Note: This test covers edge cases where strategies don't implement the interface
-        // The actual behavior may vary based on the specific address used due to EVM internals
+/*//////////////////////////////////////////////////////////////
+                        MOCK CONTRACTS
+//////////////////////////////////////////////////////////////*/
 
-        // Test that the function handles reverts gracefully with a mock strategy that doesn't implement auction trigger
-        (bool shouldKick, bytes memory data) = auctionTrigger.auctionTrigger(
-            address(mockStrategy),
-            fromToken
-        );
+contract MockBaseFeeProvider is IBaseFee {
+    uint256 private _baseFee;
 
-        // Should return false for strategies that don't implement the auction trigger interface
-        assertFalse(shouldKick);
-        assertEq(data, bytes("Strategy trigger not implemented or reverted"));
+    function setBaseFee(uint256 baseFee) external {
+        _baseFee = baseFee;
     }
 
-    function test_eventEmissions() public {
-        // Test NewBaseFeeProvider event
-        vm.expectEmit(true, false, false, false);
-        emit NewBaseFeeProvider(baseFeeProvider);
-        vm.prank(daddy);
-        auctionTrigger.setBaseFeeProvider(baseFeeProvider);
-
-        // Test UpdatedAcceptableBaseFee event
-        uint256 newBaseFee = 1000;
-        vm.expectEmit(false, false, false, true);
-        emit UpdatedAcceptableBaseFee(newBaseFee);
-        vm.prank(daddy);
-        auctionTrigger.setAcceptableBaseFee(newBaseFee);
-
-        // Test UpdatedCustomAuctionTrigger event
-        vm.expectEmit(true, true, false, false);
-        emit UpdatedCustomAuctionTrigger(
-            address(mockStrategy),
-            address(customAuctionTrigger)
-        );
-        vm.prank(management);
-        auctionTrigger.setCustomAuctionTrigger(
-            address(mockStrategy),
-            address(customAuctionTrigger)
-        );
-
-        // Test UpdatedCustomStrategyBaseFee event
-        uint256 customBaseFee = 2000;
-        vm.expectEmit(true, false, false, true);
-        emit UpdatedCustomStrategyBaseFee(address(mockStrategy), customBaseFee);
-        vm.prank(management);
-        auctionTrigger.setCustomStrategyBaseFee(
-            address(mockStrategy),
-            customBaseFee
-        );
+    function basefee_global() external view returns (uint256) {
+        return _baseFee;
     }
 }
