@@ -10,12 +10,4 @@ pragma solidity >=0.8.18;
 contract BaseSwapper {
     /// @notice Minimum amount of tokens to sell in a swap.
     uint256 public minAmountToSell;
-
-    /**
-     * @dev Set the minimum amount to sell in a swap.
-     * @param _minAmountToSell Minimum amount of tokens needed to execute a swap.
-     */
-    function _setMinAmountToSell(uint256 _minAmountToSell) internal virtual {
-        minAmountToSell = _minAmountToSell;
-    }
 }

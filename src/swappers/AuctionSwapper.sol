@@ -15,17 +15,28 @@ import {BaseSwapper} from "./BaseSwapper.sol";
  *   This contract is meant to be inherited by a V3 strategy in order
  *   to easily integrate dutch auctions into a contract for token swaps.
  *
- *   The strategist will need to implement a way to call `_enableAuction`
- *   for an token pair they want to use, or a setter to manually set the
- *   `auction` contract.
+ *   AUCTION SETUP:
+ *   - The strategist needs to implement a way to call `_setAuction()`
+ *     to set the auction contract address for token sales
+ *   - `useAuction` defaults to false but is automatically set to true
+ *     when a non-zero auction address is set via `_setAuction()`
+ *   - Auctions can be manually enabled/disabled using `_setUseAuction()`
  *
- *   The contract comes with all of the needed function to act as a `hook`
- *   contract for the specific auction contract with the ability to override
- *   any of the functions to implement custom hooks.
+ *   PERMISSIONLESS OPERATIONS:
+ *   - `kickAuction()` is public and permissionless - anyone can trigger
+ *     auctions when conditions are met (sufficient balance, auctions enabled)
+ *   - This allows for automated auction triggering by bots or external systems
  *
- *   NOTE: If any hooks are not desired, the strategist should also
- *   implement a way to call the {setHookFlags} on the auction contract
- *   to avoid unnecessary gas for unused functions.
+ *   AUCTION TRIGGER INTEGRATION:
+ *   - Implements `auctionTrigger()` for integration with CommonAuctionTrigger
+ *   - Returns encoded calldata for `kickAuction()` when conditions are met
+ *   - Provides smart logic to prevent duplicate auctions and handle edge cases
+ *
+ *   HOOKS:
+ *   - The contract can act as a `hook` contract for the auction with the
+ *     ability to override functions to implement custom hooks
+ *   - If hooks are not desired, call `setHookFlags()` on the auction contract
+ *     to avoid unnecessary gas for unused functions
  */
 contract AuctionSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
@@ -33,10 +44,12 @@ contract AuctionSwapper is BaseSwapper {
     event AuctionSet(address indexed auction);
     event UseAuctionSet(bool indexed useAuction);
 
-    /// @notice Address of the specific Auction this strategy uses.
+    /// @notice Address of the specific Auction contract this strategy uses for token sales.
     address public auction;
 
-    /// @notice Whether to use the auction. Default is false.
+    /// @notice Whether to use auctions for token swaps.
+    /// @dev Defaults to false but automatically set to true when setting a non-zero auction address.
+    ///      Can be manually controlled via _setUseAuction() for fine-grained control.
     bool public useAuction;
 
     /*//////////////////////////////////////////////////////////////
@@ -44,27 +57,37 @@ contract AuctionSwapper is BaseSwapper {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Set the auction contract to use.
+    /// @dev Automatically enables auctions (useAuction = true) when setting a non-zero address.
+    /// @param _auction The auction contract address. Must have this contract as receiver.
     function _setAuction(address _auction) internal virtual {
         if (_auction != address(0)) {
             require(
                 Auction(_auction).receiver() == address(this),
                 "wrong receiver"
             );
+            // Automatically enable auctions when setting a non-zero auction address
+            if (!useAuction) {
+                useAuction = true;
+                emit UseAuctionSet(true);
+            }
         }
         auction = _auction;
         emit AuctionSet(_auction);
     }
 
-    /// @notice Set whether to use the auction.
+    /// @notice Manually enable or disable auction usage.
+    /// @dev Can be used to override the auto-enable behavior or temporarily disable auctions.
+    /// @param _useAuction Whether to use auctions for token swaps.
     function _setUseAuction(bool _useAuction) internal virtual {
         useAuction = _useAuction;
         emit UseAuctionSet(_useAuction);
     }
 
     /**
-     * @dev Return how much `_token` could currently be kicked into auction.
-     * @param _token The token that was being sold.
-     * @return The amount of `_token` ready to be auctioned off.
+     * @notice Return how much of a token could currently be kicked into auction.
+     * @dev Includes both contract balance and tokens already in the auction contract.
+     * @param _token The token that could be sold in auction.
+     * @return The total amount of `_token` available for auction (0 if auctions disabled).
      */
     function kickable(address _token) public view virtual returns (uint256) {
         if (!useAuction) return 0;
@@ -73,12 +96,19 @@ contract AuctionSwapper is BaseSwapper {
             ERC20(_token).balanceOf(auction);
     }
 
+    /**
+     * @notice Kick an auction for a given token (PERMISSIONLESS).
+     * @dev Anyone can call this function to trigger auctions when conditions are met.
+     *      Useful for automated systems, bots, or manual triggering.
+     * @param _from The token to be sold in the auction.
+     * @return The amount of tokens that were kicked into the auction.
+     */
     function kickAuction(address _from) external virtual returns (uint256) {
         return _kickAuction(_from);
     }
 
     /**
-     * @dev Kick an auction for a given token.
+     * @dev Internal function to kick an auction for a given token.
      * @param _from The token that was being sold.
      */
     function _kickAuction(address _from) internal virtual returns (uint256) {
@@ -106,10 +136,13 @@ contract AuctionSwapper is BaseSwapper {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @dev Default auction trigger implementation for the CommonAuctionTrigger.
+     * @notice Default auction trigger implementation for CommonAuctionTrigger integration.
+     * @dev Returns whether an auction should be kicked and the encoded calldata to do so.
+     *      This enables automated auction triggering through external trigger systems.
      * @param _from The token that could be sold in an auction.
      * @return shouldKick True if an auction should be kicked for this token.
-     * @return data Additional data about the trigger decision.
+     * @return data Encoded calldata for `kickAuction(_from)` if shouldKick is true,
+     *              otherwise a descriptive error message explaining why not.
      */
     function auctionTrigger(
         address _from

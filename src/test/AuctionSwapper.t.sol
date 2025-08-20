@@ -46,15 +46,17 @@ contract AuctionSwapperTest is Setup {
             1e6
         );
 
-        // Setting auction should emit event
+        // Setting auction should emit both events (AuctionSet and UseAuctionSet)
+        vm.expectEmit(true, false, false, false);
+        emit UseAuctionSet(true);
         vm.expectEmit(true, false, false, false);
         emit AuctionSet(newAuction);
         swapper.setAuction(newAuction);
 
         assertEq(swapper.auction(), newAuction);
-        assertFalse(swapper.useAuction());
+        assertTrue(swapper.useAuction()); // Now should be true
 
-        // Auction is set but useAuction is false, so kickable should be 0
+        // Should be 0 because no balance yet
         address from = tokenAddrs["USDC"];
         assertEq(swapper.kickable(from), 0);
 
@@ -62,8 +64,9 @@ contract AuctionSwapperTest is Setup {
         auction = Auction(newAuction);
         auction.enable(from);
 
-        // Still 0 because useAuction is false
-        assertEq(swapper.kickable(from), 0);
+        // Add some balance
+        airdrop(ERC20(from), address(swapper), 1000e6);
+        assertEq(swapper.kickable(from), 1000e6);
     }
 
     function test_setUseAuction() public {
@@ -82,14 +85,7 @@ contract AuctionSwapperTest is Setup {
         auction = Auction(newAuction);
         auction.enable(from);
 
-        assertFalse(swapper.useAuction());
-        assertEq(swapper.kickable(from), 0);
-
-        // Set useAuction to true should emit event
-        vm.expectEmit(true, false, false, false);
-        emit UseAuctionSet(true);
-        swapper.setUseAuction(true);
-
+        // Setting auction should now automatically enable useAuction
         assertTrue(swapper.useAuction());
         assertEq(swapper.kickable(from), 0); // Still 0 because no balance
 
@@ -104,6 +100,80 @@ contract AuctionSwapperTest is Setup {
 
         assertFalse(swapper.useAuction());
         assertEq(swapper.kickable(from), 0); // Back to 0
+
+        // Set useAuction back to true
+        vm.expectEmit(true, false, false, false);
+        emit UseAuctionSet(true);
+        swapper.setUseAuction(true);
+
+        assertTrue(swapper.useAuction());
+        assertEq(swapper.kickable(from), 1000e6); // Should work again
+    }
+
+    function test_setAuction_autoEnablesBehavior() public {
+        // Initially should have no auction and useAuction false
+        assertEq(swapper.auction(), address(0));
+        assertFalse(swapper.useAuction());
+
+        // Create first auction
+        address auction1 = auctionFactory.createNewAuction(
+            address(asset),
+            address(swapper),
+            address(this),
+            1 days,
+            1e6
+        );
+
+        // Setting first auction should auto-enable useAuction
+        vm.expectEmit(true, false, false, false);
+        emit UseAuctionSet(true);
+        vm.expectEmit(true, false, false, false);
+        emit AuctionSet(auction1);
+        swapper.setAuction(auction1);
+
+        assertTrue(swapper.useAuction());
+        assertEq(swapper.auction(), auction1);
+
+        // Create second auction
+        address auction2 = auctionFactory.createNewAuction(
+            address(asset),
+            address(swapper),
+            address(this),
+            2 days,
+            2e6
+        );
+
+        // Setting second auction when useAuction is already true should NOT emit UseAuctionSet
+        vm.expectEmit(true, false, false, false);
+        emit AuctionSet(auction2);
+        // Should NOT emit UseAuctionSet since it's already true
+        swapper.setAuction(auction2);
+
+        assertTrue(swapper.useAuction()); // Still true
+        assertEq(swapper.auction(), auction2);
+
+        // Disable auctions
+        swapper.setUseAuction(false);
+        assertFalse(swapper.useAuction());
+
+        // Setting the same auction again should re-enable useAuction
+        vm.expectEmit(true, false, false, false);
+        emit UseAuctionSet(true);
+        vm.expectEmit(true, false, false, false);
+        emit AuctionSet(auction2);
+        swapper.setAuction(auction2);
+
+        assertTrue(swapper.useAuction());
+
+        // Setting to zero address should not auto-enable
+        swapper.setUseAuction(false);
+        vm.expectEmit(true, false, false, false);
+        emit AuctionSet(address(0));
+        // Should NOT emit UseAuctionSet
+        swapper.setAuction(address(0));
+
+        assertFalse(swapper.useAuction()); // Should remain false
+        assertEq(swapper.auction(), address(0));
     }
 
     function test_setAuction_wrongReceiver() public {
@@ -134,6 +204,9 @@ contract AuctionSwapperTest is Setup {
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
         auction.enable(from);
+
+        // Explicitly disable useAuction after setting auction
+        swapper.setUseAuction(false);
 
         // Add funds but don't enable useAuction
         airdrop(ERC20(from), address(swapper), 1e8);
@@ -564,6 +637,9 @@ contract AuctionSwapperTest is Setup {
         auction = Auction(newAuction);
         auction.enable(from);
 
+        // Setting auction automatically enables auctions, so disable them for this test
+        swapper.setUseAuction(false);
+
         // Test with auctions disabled
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertFalse(shouldKick);
@@ -583,10 +659,7 @@ contract AuctionSwapperTest is Setup {
         // Should now be ready to kick
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertTrue(shouldKick);
-        bytes memory expectedData = abi.encodeCall(
-            swapper.kickAuction,
-            (from)
-        );
+        bytes memory expectedData = abi.encodeCall(swapper.kickAuction, (from));
         assertEq(data, expectedData);
 
         // Kick the auction
