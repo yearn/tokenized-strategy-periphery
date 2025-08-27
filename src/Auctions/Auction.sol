@@ -59,8 +59,6 @@ contract Auction is Governance2Step, ReentrancyGuard {
     address internal constant VAULT_RELAYER =
         0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
 
-    bytes32 internal immutable COW_DOMAIN_SEPARATOR;
-
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
 
@@ -79,16 +77,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Array of all the enabled auction for this contract.
     address[] public enabledAuctions;
 
-    constructor() Governance2Step(msg.sender) {
-        bytes32 domainSeparator;
-        if (COW_SETTLEMENT.code.length > 0) {
-            domainSeparator = ICowSettlement(COW_SETTLEMENT).domainSeparator();
-        } else {
-            domainSeparator = bytes32(0);
-        }
-
-        COW_DOMAIN_SEPARATOR = domainSeparator;
-    }
+    constructor() Governance2Step(msg.sender) {}
 
     /**
      * @notice Initializes the Auction contract with initial parameters.
@@ -583,7 +572,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
         );
 
         // Verify the order details.
-        require(_hash == order.hash(COW_DOMAIN_SEPARATOR), "bad order");
+        // Retreive domain seperator each time for chains it is not deployed on yet
+        require(_hash == order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()), "bad order");
         require(paymentAmount != 0, "zero amount");
         require(available(address(order.sellToken)) != 0, "zero available");
         require(order.feeAmount == 0, "fee");
