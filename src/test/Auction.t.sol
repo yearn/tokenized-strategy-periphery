@@ -39,7 +39,6 @@ contract AuctionTest is Setup, ITaker {
     }
 
     function test_setup() public {
-        assertEq(auctionFactory.DEFAULT_AUCTION_LENGTH(), 1 days);
         assertEq(auctionFactory.DEFAULT_STARTING_PRICE(), 1e6);
     }
 
@@ -47,15 +46,12 @@ contract AuctionTest is Setup, ITaker {
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
         vm.expectRevert("initialized");
-        auction.initialize(address(asset), address(this), management, 1, 10);
+        auction.initialize(address(asset), address(this), management, 1);
 
         assertEq(auction.want(), address(asset));
         assertEq(auction.receiver(), address(this));
         assertEq(auction.governance(), address(this));
-        assertEq(
-            auction.auctionLength(),
-            auctionFactory.DEFAULT_AUCTION_LENGTH()
-        );
+        assertEq(auction.auctionLength(), 1 days);
         assertEq(
             auction.startingPrice(),
             auctionFactory.DEFAULT_STARTING_PRICE()

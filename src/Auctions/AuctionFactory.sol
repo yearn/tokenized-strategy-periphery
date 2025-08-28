@@ -9,9 +9,6 @@ import {Clonable} from "../utils/Clonable.sol";
 contract AuctionFactory is Clonable {
     event DeployedNewAuction(address indexed auction, address indexed want);
 
-    /// @notice The time that each auction lasts.
-    uint256 public constant DEFAULT_AUCTION_LENGTH = 1 days;
-
     /// @notice The amount to start the auction with.
     uint256 public constant DEFAULT_STARTING_PRICE = 1_000_000;
 
@@ -34,7 +31,6 @@ contract AuctionFactory is Clonable {
                 _want,
                 msg.sender,
                 msg.sender,
-                DEFAULT_AUCTION_LENGTH,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -54,7 +50,6 @@ contract AuctionFactory is Clonable {
                 _want,
                 _receiver,
                 msg.sender,
-                DEFAULT_AUCTION_LENGTH,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -76,7 +71,6 @@ contract AuctionFactory is Clonable {
                 _want,
                 _receiver,
                 _governance,
-                DEFAULT_AUCTION_LENGTH,
                 DEFAULT_STARTING_PRICE
             );
     }
@@ -86,31 +80,6 @@ contract AuctionFactory is Clonable {
      * @param _want Address of the token users will bid with.
      * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
-     * @param _auctionLength Length of the auction in seconds.
-     * @return _newAuction Address of the newly created auction contract.
-     */
-    function createNewAuction(
-        address _want,
-        address _receiver,
-        address _governance,
-        uint256 _auctionLength
-    ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                _governance,
-                _auctionLength,
-                DEFAULT_STARTING_PRICE
-            );
-    }
-
-    /**
-     * @notice Creates a new auction contract.
-     * @param _want Address of the token users will bid with.
-     * @param _receiver Address that will receive the funds in the auction.
-     * @param _governance Address allowed to enable and disable auctions.
-     * @param _auctionLength Length of the auction in seconds.
      * @param _startingPrice Starting price for the auction (no decimals).
      *  NOTE: The starting price should be without decimals (1k == 1_000).
      * @return _newAuction Address of the newly created auction contract.
@@ -119,17 +88,9 @@ contract AuctionFactory is Clonable {
         address _want,
         address _receiver,
         address _governance,
-        uint256 _auctionLength,
         uint256 _startingPrice
     ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                _governance,
-                _auctionLength,
-                _startingPrice
-            );
+        return _createNewAuction(_want, _receiver, _governance, _startingPrice);
     }
 
     /**
@@ -139,7 +100,6 @@ contract AuctionFactory is Clonable {
         address _want,
         address _receiver,
         address _governance,
-        uint256 _auctionLength,
         uint256 _startingPrice
     ) internal returns (address _newAuction) {
         _newAuction = _clone();
@@ -148,7 +108,6 @@ contract AuctionFactory is Clonable {
             _want,
             _receiver,
             _governance,
-            _auctionLength,
             _startingPrice
         );
 

@@ -16,14 +16,15 @@ contract AuctionSwapperTest is Setup {
     IMockAuctionSwapper public swapper;
 
     Auction public auction;
-    AuctionFactory public auctionFactory =
-        AuctionFactory(0xCfA510188884F199fcC6e750764FAAbE6e56ec40);
+    AuctionFactory public auctionFactory;
 
     uint256 public wantScaler;
     uint256 public fromScaler;
 
     function setUp() public override {
         super.setUp();
+
+        auctionFactory = new AuctionFactory();
 
         swapper = IMockAuctionSwapper(
             address(new MockAuctionSwapper(address(asset)))
@@ -42,7 +43,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
 
@@ -77,7 +77,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
 
@@ -120,7 +119,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
 
@@ -139,7 +137,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            2 days,
             2e6
         );
 
@@ -182,7 +179,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(this), // Wrong receiver (should be swapper)
             address(this),
-            1 days,
             1e6
         );
 
@@ -198,7 +194,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -228,7 +223,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -316,7 +310,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -378,7 +371,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -469,7 +461,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -532,7 +523,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -564,11 +554,9 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
-        swapper.setUseAuction(true);
         auction = Auction(newAuction);
         auction.enable(from);
 
@@ -580,6 +568,7 @@ contract AuctionSwapperTest is Setup {
         assertTrue(Auction(auction).isActive(from));
 
         // Take the entire auction
+        console.log("auctionLength", auction.auctionLength());
         skip(auction.auctionLength() / 2);
         uint256 needed = auction.getAmountNeeded(from, amount);
         airdrop(ERC20(asset), address(this), needed);
@@ -604,7 +593,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -630,7 +618,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);
@@ -702,7 +689,6 @@ contract AuctionSwapperTest is Setup {
             address(asset),
             address(swapper),
             address(this),
-            1 days,
             1e6
         );
         swapper.setAuction(newAuction);

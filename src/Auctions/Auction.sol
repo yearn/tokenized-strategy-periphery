@@ -13,6 +13,8 @@ interface ICowSettlement {
     function domainSeparator() external view returns (bytes32);
 }
 
+import "forge-std/console.sol";
+
 /**
  *   @title Auction
  *   @author yearn.fi
@@ -35,7 +37,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     event UpdatedStartingPrice(uint256 startingPrice);
 
     /// @notice Emitted when the step decay rate is updated.
-    event UpdatedStepDecayRate(uint256 stepDecayRate);
+    event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
 
     /// @dev Store address and scaler in one slot.
     struct TokenInfo {
@@ -52,14 +54,17 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     uint256 internal constant WAD = 1e18;
 
-    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
-    uint256 public stepDecayRate;
-
     address internal constant COW_SETTLEMENT =
         0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     address internal constant VAULT_RELAYER =
         0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
+
+    /// @notice The time period for each price step in seconds.
+    uint256 public constant STEP_DURATION = 36;
+
+    /// @notice The time that each auction lasts.
+    uint256 internal constant AUCTION_LENGTH = 1 days;
 
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
@@ -70,11 +75,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice The amount to start the auction at.
     uint256 public startingPrice;
 
-    /// @notice The time that each auction lasts.
-    uint256 public auctionLength;
-
-    /// @notice The time period for each price step in seconds.
-    uint256 public constant STEP_DURATION = 36;
+    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
+    uint256 public stepDecayRate;
 
     /// @notice Mapping from `from` token to its struct.
     mapping(address => AuctionInfo) public auctions;
@@ -89,19 +91,16 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _want Address this auction is selling to.
      * @param _receiver Address that will receive the funds from the auction.
      * @param _governance Address of the contract governance.
-     * @param _auctionLength Duration of each auction in seconds.
      * @param _startingPrice Starting price for each auction.
      */
     function initialize(
         address _want,
         address _receiver,
         address _governance,
-        uint256 _auctionLength,
         uint256 _startingPrice
     ) public virtual {
-        require(auctionLength == 0, "initialized");
+        require(stepDecayRate == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
-        require(_auctionLength != 0, "length");
         require(_startingPrice != 0, "starting price");
         require(_receiver != address(0), "receiver");
         // Cannot have more than 18 decimals.
@@ -116,7 +115,6 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         receiver = _receiver;
         governance = _governance;
-        auctionLength = _auctionLength;
         startingPrice = _startingPrice;
         stepDecayRate = 0.995 * 1e27; // Default to 0.5% decay per step
         emit UpdatedStartingPrice(_startingPrice);
@@ -133,6 +131,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
      */
     function want() public view virtual returns (address) {
         return wantInfo.tokenAddress;
+    }
+
+    function auctionLength() public view virtual returns (uint256) {
+        return AUCTION_LENGTH;
     }
 
     /**
@@ -165,7 +167,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @return . Whether the auction is active.
      */
     function isActive(address _from) public view virtual returns (bool) {
-        return auctions[_from].kicked + auctionLength >= block.timestamp;
+        return auctions[_from].kicked + AUCTION_LENGTH >= block.timestamp;
     }
 
     /**
@@ -306,20 +308,22 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         uint256 secondsElapsed = _timestamp - _kicked;
 
-        if (secondsElapsed > auctionLength) return 0;
+        if (secondsElapsed > AUCTION_LENGTH) return 0;
 
-        // Calculate the number of 36-second steps that have passed
+        // Calculate the number of price steps that have passed
         uint256 steps = secondsElapsed / STEP_DURATION;
-        
-        // Calculate the decay multiplier using the configurable decay rate
-        // Each step reduces price by (1 - stepDecayRate/1e27) percent
+        console.log("steps", steps);
+
+        // Calculate the decay multiplier using the configurable decay rate per step
         uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
-        
+        console.log("decayMultiplier", decayMultiplier);
         // Calculate initial price per token
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
-
+        console.log("initialPrice", initialPrice);
         // Apply the decay to get the current price
-        return Maths.rmul(initialPrice, decayMultiplier);
+        uint256 price_ = Maths.rmul(initialPrice, decayMultiplier);
+        console.log("price_", price_);
+        return price_;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -432,7 +436,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function setStepDecayRate(
         uint256 _stepDecayRate
     ) external virtual onlyGovernance {
-        require(_stepDecayRate > 0 && _stepDecayRate <= 1e27, "invalid decay rate");
+        require(
+            _stepDecayRate > 0 && _stepDecayRate <= 1e27,
+            "invalid decay rate"
+        );
 
         // Don't change the decay rate when an auction is active.
         address[] memory _enabledAuctions = enabledAuctions;
@@ -459,7 +466,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     ) external virtual nonReentrant returns (uint256 _available) {
         require(auctions[_from].scaler != 0, "not enabled");
         require(
-            block.timestamp > auctions[_from].kicked + auctionLength,
+            block.timestamp > auctions[_from].kicked + AUCTION_LENGTH,
             "too soon"
         );
 
@@ -541,7 +548,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         AuctionInfo memory auction = auctions[_from];
         // Make sure the auction is active.
         require(
-            auction.kicked + auctionLength >= block.timestamp,
+            auction.kicked + AUCTION_LENGTH >= block.timestamp,
             "not kicked"
         );
 
@@ -602,12 +609,16 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         // Verify the order details.
         // Retreive domain seperator each time for chains it is not deployed on yet
-        require(_hash == order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()), "bad order");
+        require(
+            _hash ==
+                order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()),
+            "bad order"
+        );
         require(paymentAmount != 0, "zero amount");
         require(available(address(order.sellToken)) != 0, "zero available");
         require(order.feeAmount == 0, "fee");
         require(order.partiallyFillable, "partial fill");
-        require(order.validTo < auction.kicked + auctionLength, "expired");
+        require(order.validTo < auction.kicked + AUCTION_LENGTH, "expired");
         require(order.appData == bytes32(0), "app data");
         require(order.buyAmount >= paymentAmount, "bad price");
         require(address(order.buyToken) == want(), "bad token");
