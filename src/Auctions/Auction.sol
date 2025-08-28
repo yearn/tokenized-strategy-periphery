@@ -13,8 +13,6 @@ interface ICowSettlement {
     function domainSeparator() external view returns (bytes32);
 }
 
-import "forge-std/console.sol";
-
 /**
  *   @title Auction
  *   @author yearn.fi
@@ -312,18 +310,15 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         // Calculate the number of price steps that have passed
         uint256 steps = secondsElapsed / STEP_DURATION;
-        console.log("steps", steps);
 
         // Calculate the decay multiplier using the configurable decay rate per step
         uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
-        console.log("decayMultiplier", decayMultiplier);
+
         // Calculate initial price per token
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
-        console.log("initialPrice", initialPrice);
+
         // Apply the decay to get the current price
-        uint256 price_ = Maths.rmul(initialPrice, decayMultiplier);
-        console.log("price_", price_);
-        return price_;
+        return Maths.rmul(initialPrice, decayMultiplier);
     }
 
     /*//////////////////////////////////////////////////////////////
