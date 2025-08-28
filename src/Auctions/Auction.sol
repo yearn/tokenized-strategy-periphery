@@ -34,6 +34,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when the starting price is updated.
     event UpdatedStartingPrice(uint256 startingPrice);
 
+    /// @notice Emitted when the step decay rate is updated.
+    event UpdatedStepDecayRate(uint256 stepDecayRate);
+
     /// @dev Store address and scaler in one slot.
     struct TokenInfo {
         address tokenAddress;
@@ -49,9 +52,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     uint256 internal constant WAD = 1e18;
 
-    /// @notice Used for the price decay.
-    uint256 internal constant MINUTE_HALF_LIFE =
-        0.988514020352896135_356867505 * 1e27; // 0.5^(1/60)
+    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
+    uint256 public stepDecayRate;
 
     address internal constant COW_SETTLEMENT =
         0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -70,6 +72,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /// @notice The time that each auction lasts.
     uint256 public auctionLength;
+
+    /// @notice The time period for each price step in seconds.
+    uint256 public constant STEP_DURATION = 36;
 
     /// @notice Mapping from `from` token to its struct.
     mapping(address => AuctionInfo) public auctions;
@@ -113,7 +118,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
         governance = _governance;
         auctionLength = _auctionLength;
         startingPrice = _startingPrice;
+        stepDecayRate = 0.995 * 1e27; // Default to 0.5% decay per step
         emit UpdatedStartingPrice(_startingPrice);
+        emit UpdatedStepDecayRate(stepDecayRate);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -301,17 +308,18 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         if (secondsElapsed > auctionLength) return 0;
 
-        // Exponential step decay from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/helpers/PoolHelper.sol
-        uint256 hoursComponent = 1e27 >> (secondsElapsed / 3600);
-        uint256 minutesComponent = Maths.rpow(
-            MINUTE_HALF_LIFE,
-            (secondsElapsed % 3600) / 60
-        );
+        // Calculate the number of 36-second steps that have passed
+        uint256 steps = secondsElapsed / STEP_DURATION;
+        
+        // Calculate the decay multiplier using the configurable decay rate
+        // Each step reduces price by (1 - stepDecayRate/1e27) percent
+        uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
+        
+        // Calculate initial price per token
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
 
-        return
-            (initialPrice * Maths.rmul(hoursComponent, minutesComponent)) /
-            1e27;
+        // Apply the decay to get the current price
+        return Maths.rmul(initialPrice, decayMultiplier);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -414,6 +422,27 @@ contract Auction is Governance2Step, ReentrancyGuard {
         startingPrice = _startingPrice;
 
         emit UpdatedStartingPrice(_startingPrice);
+    }
+
+    /**
+     * @notice Sets the step decay rate for the auction.
+     * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
+     * @param _stepDecayRate The new decay rate per 36-second step.
+     */
+    function setStepDecayRate(
+        uint256 _stepDecayRate
+    ) external virtual onlyGovernance {
+        require(_stepDecayRate > 0 && _stepDecayRate <= 1e27, "invalid decay rate");
+
+        // Don't change the decay rate when an auction is active.
+        address[] memory _enabledAuctions = enabledAuctions;
+        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+            require(!isActive(_enabledAuctions[i]), "active auction");
+        }
+
+        stepDecayRate = _stepDecayRate;
+
+        emit UpdatedStepDecayRate(_stepDecayRate);
     }
 
     /*//////////////////////////////////////////////////////////////
