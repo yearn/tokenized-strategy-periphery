@@ -37,6 +37,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
 
+    /// @notice Emitted when the step duration is updated.
+    event UpdatedStepDuration(uint256 indexed stepDuration);
+
+    /// @notice Emitted when we update whether COW can use the next price or not.
+    event UpdatedLetCowPeek(bool letCowPeek);
+
     /// @dev Store address and scaler in one slot.
     struct TokenInfo {
         address tokenAddress;
@@ -58,9 +64,6 @@ contract Auction is Governance2Step, ReentrancyGuard {
     address internal constant VAULT_RELAYER =
         0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
 
-    /// @notice The time period for each price step in seconds.
-    uint256 public constant STEP_DURATION = 36;
-
     /// @notice The time that each auction lasts.
     uint256 internal constant AUCTION_LENGTH = 1 days;
 
@@ -73,7 +76,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice The amount to start the auction at.
     uint256 public startingPrice;
 
-    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
+    /// @notice The time period for each price step in seconds.
+    uint256 public stepDuration;
+
+    /// @notice The decay rate per step (e.g., 0.995 * 1e27 for 0.5% decrease).
     uint256 public stepDecayRate;
 
     /// @notice Mapping from `from` token to its struct.
@@ -81,6 +87,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /// @notice Array of all the enabled auction for this contract.
     address[] public enabledAuctions;
+
+    /// @notice Whether we allow cow solvers to submit solutions based on the next price.
+    bool public letCowPeek;
 
     constructor() Governance2Step(msg.sender) {}
 
@@ -115,8 +124,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
         governance = _governance;
         startingPrice = _startingPrice;
         stepDecayRate = 0.995 * 1e27; // Default to 0.5% decay per step
+        stepDuration = 36; // default to 36 seconds
         emit UpdatedStartingPrice(_startingPrice);
         emit UpdatedStepDecayRate(stepDecayRate);
+        emit UpdatedStepDuration(stepDuration);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -309,7 +320,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         if (secondsElapsed > AUCTION_LENGTH) return 0;
 
         // Calculate the number of price steps that have passed
-        uint256 steps = secondsElapsed / STEP_DURATION;
+        uint256 steps = secondsElapsed / stepDuration;
 
         // Calculate the decay multiplier using the configurable decay rate per step
         uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
@@ -426,7 +437,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /**
      * @notice Sets the step decay rate for the auction.
      * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
-     * @param _stepDecayRate The new decay rate per 36-second step.
+     * @param _stepDecayRate The new decay rate per step.
      */
     function setStepDecayRate(
         uint256 _stepDecayRate
@@ -445,6 +456,40 @@ contract Auction is Governance2Step, ReentrancyGuard {
         stepDecayRate = _stepDecayRate;
 
         emit UpdatedStepDecayRate(_stepDecayRate);
+    }
+
+    /**
+     * @notice Sets whether we let cow solvers use the next price.
+     * @dev Because COW takes several blocks to solve, we know that other takers will beat them to the current price.
+     * @param _letCowPeek Whether we let cow solvers peek at the next price.
+     */
+    function setLetCowPeek(
+        uint256 _letCowPeek
+    ) external virtual onlyGovernance {
+        letCowPeek = _letCowPeek;
+
+        emit UpdatedLetCowPeek(_letCowPeek);
+    }
+
+    /**
+     * @notice Sets the step duration length in seconds, aka how frequently price updates.
+     * @dev Realistically, this should be somewhere between the length of 1 block and 1 minute.
+     * @param _stepDuration The new step duration in seconds.
+     */
+    function setStepDuration(
+        uint256 _stepDuration
+    ) external virtual onlyGovernance {
+        require(_stepDuration > 0, "invalid duration");
+
+        // Don't change the duration when an auction is active.
+        address[] memory _enabledAuctions = enabledAuctions;
+        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+            require(!isActive(_enabledAuctions[i]), "active auction");
+        }
+
+        stepDuration = _stepDuration;
+
+        emit UpdatedStepDuration(_stepDuration);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -596,14 +641,25 @@ contract Auction is Governance2Step, ReentrancyGuard {
         AuctionInfo memory auction = auctions[address(order.sellToken)];
 
         // Get the current amount needed for the auction.
-        uint256 paymentAmount = _getAmountNeeded(
-            auction,
-            order.sellAmount,
-            block.timestamp
-        );
+        uint256 paymentAmount;
+
+        // if enabled, get the next payment amount to let cow peek
+        if (letCowPeek) {
+            paymentAmount = _getAmountNeeded(
+                auction,
+                order.sellAmount,
+                block.timestamp + stepDuration
+            );
+        } else {
+            paymentAmount = _getAmountNeeded(
+                auction,
+                order.sellAmount,
+                block.timestamp
+            );
+        }
 
         // Verify the order details.
-        // Retreive domain seperator each time for chains it is not deployed on yet
+        // Retreive domain separator each time for chains it is not deployed on yet
         require(
             _hash ==
                 order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()),
