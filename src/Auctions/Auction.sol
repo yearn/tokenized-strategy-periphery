@@ -37,6 +37,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
 
+    /// @notice Emitted when the auction is settled.
+    event AuctionSettled(address indexed from);
+
+    /// @notice Emitted when the auction is swept.
+    event AuctionSwept(address indexed token, address indexed to);
+
     /// @dev Store address and scaler in one slot.
     struct TokenInfo {
         address tokenAddress;
@@ -122,6 +128,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                          VIEW METHODS
     //////////////////////////////////////////////////////////////*/
+
+    function version() external pure returns (string memory) {
+        return "1.0.3";
+    }
 
     /**
      * @notice Get the address of this auctions want token.
@@ -633,6 +643,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
 
         auctions[_from].kicked = uint64(0);
+
+        emit AuctionSettled(_from);
     }
 
     function sweep(address _token) external virtual onlyGovernance {
@@ -640,5 +652,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
             msg.sender,
             ERC20(_token).balanceOf(address(this))
         );
+
+        emit AuctionSwept(_token, msg.sender);
     }
 }

@@ -20,6 +20,10 @@ contract AuctionFactory is Clonable {
         original = address(new Auction());
     }
 
+    function version() external pure returns (string memory) {
+        return "1.0.3";
+    }
+
     /**
      * @notice Creates a new auction contract.
      * @param _want Address of the token users will bid with.
