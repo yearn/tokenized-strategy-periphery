@@ -386,41 +386,41 @@ contract AuctionTest is Setup, ITaker {
     function test_setStepDuration() public {
         address from = tokenAddrs["WBTC"];
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
-        
+
         // Check initial step duration is 60 seconds
         assertEq(auction.stepDuration(), 60);
-        
+
         // Test setting valid step duration
         auction.setStepDuration(120);
         assertEq(auction.stepDuration(), 120);
-        
+
         // Test setting another valid step duration
         auction.setStepDuration(30);
         assertEq(auction.stepDuration(), 30);
-        
+
         // Test that non-governance cannot set
         vm.prank(management);
         vm.expectRevert("!governance");
         auction.setStepDuration(90);
-        
+
         // Test invalid step durations
         vm.expectRevert("invalid step duration");
         auction.setStepDuration(0);
-        
+
         vm.expectRevert("invalid step duration");
         auction.setStepDuration(1 days);
-        
+
         vm.expectRevert("invalid step duration");
         auction.setStepDuration(1 days + 1);
-        
+
         // Test cannot change during active auction
         auction.enable(from);
         airdrop(ERC20(from), address(auction), 1e8);
         auction.kick(from);
-        
+
         vm.expectRevert("active auction");
         auction.setStepDuration(45);
-        
+
         // After auction ends, can change again
         skip(auction.auctionLength() + 1);
         auction.setStepDuration(45);
@@ -429,59 +429,63 @@ contract AuctionTest is Setup, ITaker {
 
     function test_stepDurationAffectsPrice(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
-        
+
         address from = tokenAddrs["WBTC"];
-        
+
         // Create two auctions with different step durations
-        Auction auction1 = Auction(auctionFactory.createNewAuction(address(asset)));
-        Auction auction2 = Auction(auctionFactory.createNewAuction(address(asset)));
-        
+        Auction auction1 = Auction(
+            auctionFactory.createNewAuction(address(asset))
+        );
+        Auction auction2 = Auction(
+            auctionFactory.createNewAuction(address(asset))
+        );
+
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
-        
+
         // Set different step durations
         auction1.setStepDuration(30); // Faster decay
         auction2.setStepDuration(120); // Slower decay
-        
+
         // Enable and kick both auctions with same amount
         auction1.enable(from);
         auction2.enable(from);
-        
+
         airdrop(ERC20(from), address(auction1), _amount);
         airdrop(ERC20(from), address(auction2), _amount);
-        
+
         auction1.kick(from);
         auction2.kick(from);
-        
+
         // Initial prices should be the same
         uint256 initialPrice1 = auction1.price(from);
         uint256 initialPrice2 = auction2.price(from);
         assertEq(initialPrice1, initialPrice2);
-        
+
         // After 60 seconds, auction1 (30s steps) should have gone through 2 steps
         // while auction2 (120s steps) should have gone through 0 steps
         skip(60);
-        
+
         uint256 price1After60 = auction1.price(from);
         uint256 price2After60 = auction2.price(from);
-        
+
         // Auction1 should have lower price (more steps = more decay)
         assertLt(price1After60, price2After60);
         // Auction2 should still be at initial price (no complete steps yet)
         assertEq(price2After60, initialPrice2);
-        
+
         // After 120 seconds total, auction1 has 4 steps, auction2 has 1 step
         skip(60);
-        
+
         uint256 price1After120 = auction1.price(from);
         uint256 price2After120 = auction2.price(from);
-        
+
         // Both should have decayed from initial
         assertLt(price1After120, initialPrice1);
         assertLt(price2After120, initialPrice2);
         // Auction1 should still be lower (more steps)
         assertLt(price1After120, price2After120);
-        
+
         // Verify amount needed follows the same pattern
         uint256 needed1 = auction1.getAmountNeeded(from, _amount);
         uint256 needed2 = auction2.getAmountNeeded(from, _amount);

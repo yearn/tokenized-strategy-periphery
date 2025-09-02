@@ -473,9 +473,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @notice Sets the step duration for the auction.
      * @param _stepDuration The new step duration in seconds.
      */
-    function setStepDuration(uint256 _stepDuration) external virtual onlyGovernance {
-        require(_stepDuration != 0 && _stepDuration < AUCTION_LENGTH, "invalid step duration");
-        
+    function setStepDuration(
+        uint256 _stepDuration
+    ) external virtual onlyGovernance {
+        require(
+            _stepDuration != 0 && _stepDuration < AUCTION_LENGTH,
+            "invalid step duration"
+        );
+
         require(!isAnActiveAuction(), "active auction");
 
         stepDuration = _stepDuration;
