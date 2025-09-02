@@ -64,7 +64,7 @@ interface IAuction {
     /// @notice The time period for each price step in seconds.
     function stepDuration() external view returns (uint256);
 
-    /// @notice The decay rate per step in ray (e.g., 0.995 * 1e27 for 0.5% decrease).
+    /// @notice The decay rate per step in basis points (e.g., 50 for 0.5% decrease per step).
     function stepDecayRate() external view returns (uint256);
 
     /// @notice Mapping from `from` token to its struct.
@@ -227,8 +227,8 @@ interface IAuction {
 
     /**
      * @notice Sets the step decay rate for the auction.
-     * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
-     * @param _stepDecayRate The new decay rate per step in basis points.
+     * @dev The decay rate is in basis points (e.g., 50 for 0.5% decay per step).
+     * @param _stepDecayRate The new decay rate per step in basis points (max 10000 = 100%).
      */
     function setStepDecayRate(uint256 _stepDecayRate) external;
 

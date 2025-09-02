@@ -82,7 +82,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice The time period for each price step in seconds.
     uint256 public stepDuration;
 
-    /// @notice The decay rate per step in ray (e.g., 0.995 * 1e27 for 0.5% decrease).
+    /// @notice The decay rate per step in basis points (e.g., 50 for 0.5% decrease per step).
     uint256 public stepDecayRate;
 
     /// @notice Mapping from `from` token to its struct.
@@ -129,7 +129,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // Default to 50bps every 60 seconds
         stepDuration = 60;
         emit UpdatedStepDuration(stepDuration);
-        stepDecayRate = 0.995 * 1e27;
+        stepDecayRate = 50; // 50 basis points = 0.5% decay per step
         emit UpdatedStepDecayRate(stepDecayRate);
     }
 
@@ -329,8 +329,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // Calculate the number of price steps that have passed
         uint256 steps = secondsElapsed / stepDuration;
 
+        // Convert basis points to ray multiplier (e.g., 50 bps = 0.995 * 1e27)
+        // rayMultiplier = 1e27 - (basisPoints * 1e23)
+        uint256 rayMultiplier = 1e27 - (stepDecayRate * 1e23);
+
         // Calculate the decay multiplier using the configurable decay rate per step
-        uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
+        uint256 decayMultiplier = Maths.rpow(rayMultiplier, steps);
 
         // Calculate initial price per token
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
@@ -450,14 +454,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Sets the step decay rate for the auction.
-     * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
-     * @param _stepDecayRate The new decay rate per step in basis points.
+     * @dev The decay rate is in basis points (e.g., 50 for 0.5% decay per step).
+     * @param _stepDecayRate The new decay rate per step in basis points (max 10000 = 100%).
      */
     function setStepDecayRate(
         uint256 _stepDecayRate
     ) external virtual onlyGovernance {
         require(
-            _stepDecayRate > 0 && _stepDecayRate < 1e27,
+            _stepDecayRate > 0 && _stepDecayRate < 10_000,
             "invalid decay rate"
         );
 

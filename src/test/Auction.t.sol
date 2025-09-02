@@ -427,6 +427,130 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.stepDuration(), 45);
     }
 
+    function test_setStepDecayRate() public {
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial step decay rate is 50 basis points
+        assertEq(auction.stepDecayRate(), 50);
+
+        // Test setting valid decay rates
+        auction.setStepDecayRate(100); // 1% decay per step
+        assertEq(auction.stepDecayRate(), 100);
+
+        auction.setStepDecayRate(25); // 0.25% decay per step
+        assertEq(auction.stepDecayRate(), 25);
+
+        auction.setStepDecayRate(500); // 5% decay per step
+        assertEq(auction.stepDecayRate(), 500);
+
+        auction.setStepDecayRate(10000); // 100% decay per step (max)
+        assertEq(auction.stepDecayRate(), 10000);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setStepDecayRate(75);
+
+        // Test invalid decay rates
+        vm.expectRevert("invalid decay rate");
+        auction.setStepDecayRate(0);
+
+        vm.expectRevert("invalid decay rate");
+        auction.setStepDecayRate(10001); // Over 100%
+
+        // Test cannot change during active auction
+        auction.setStepDecayRate(50); // Reset to default
+        auction.enable(from);
+        airdrop(ERC20(from), address(auction), 1e8);
+        auction.kick(from);
+
+        vm.expectRevert("active auction");
+        auction.setStepDecayRate(75);
+
+        // After auction ends, can change again
+        skip(auction.auctionLength() + 1);
+        auction.setStepDecayRate(75);
+        assertEq(auction.stepDecayRate(), 75);
+    }
+
+    function test_stepDecayRateAffectsPrice(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        address from = tokenAddrs["WBTC"];
+
+        // Create two auctions with different decay rates
+        Auction auction1 = Auction(
+            auctionFactory.createNewAuction(address(asset))
+        );
+        Auction auction2 = Auction(
+            auctionFactory.createNewAuction(address(asset))
+        );
+
+        // Set different decay rates (in basis points)
+        auction1.setStepDecayRate(100); // 1% decay per step
+        auction2.setStepDecayRate(25); // 0.25% decay per step
+
+        // Both auctions have same step duration for fair comparison
+        auction1.setStepDuration(60);
+        auction2.setStepDuration(60);
+
+        // Enable and kick both auctions with same amount
+        auction1.enable(from);
+        auction2.enable(from);
+
+        airdrop(ERC20(from), address(auction1), _amount);
+        airdrop(ERC20(from), address(auction2), _amount);
+
+        auction1.kick(from);
+        auction2.kick(from);
+
+        // Initial prices should be the same
+        uint256 initialPrice1 = auction1.price(from);
+        uint256 initialPrice2 = auction2.price(from);
+        assertEq(initialPrice1, initialPrice2);
+
+        // After 60 seconds (1 step), prices should differ
+        skip(60);
+
+        uint256 price1After1Step = auction1.price(from);
+        uint256 price2After1Step = auction2.price(from);
+
+        // Auction1 (1% decay) should have lower price than auction2 (0.25% decay)
+        assertLt(price1After1Step, price2After1Step);
+
+        // Verify the decay amounts are approximately correct
+        // Auction1: price should be ~99% of initial (1% decay)
+        assertApproxEqRel(
+            price1After1Step,
+            (initialPrice1 * 9900) / 10000,
+            0.01e18
+        );
+
+        // Auction2: price should be ~99.75% of initial (0.25% decay)
+        assertApproxEqRel(
+            price2After1Step,
+            (initialPrice2 * 9975) / 10000,
+            0.01e18
+        );
+
+        // After multiple steps, the difference should be more pronounced
+        skip(240); // 4 more steps (5 total)
+
+        // Both should have decayed significantly
+        assertLt(auction1.price(from), initialPrice1);
+        assertLt(auction2.price(from), initialPrice2);
+
+        // Auction1 should still be much lower due to higher decay rate
+        assertLt(auction1.price(from), auction2.price(from));
+
+        // Verify amount needed follows the same pattern
+        assertLt(
+            auction1.getAmountNeeded(from, _amount),
+            auction2.getAmountNeeded(from, _amount)
+        );
+    }
+
     function test_stepDurationAffectsPrice(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
