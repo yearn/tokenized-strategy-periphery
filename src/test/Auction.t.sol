@@ -444,8 +444,8 @@ contract AuctionTest is Setup, ITaker {
         auction.setStepDecayRate(500); // 5% decay per step
         assertEq(auction.stepDecayRate(), 500);
 
-        auction.setStepDecayRate(10000); // 100% decay per step (max)
-        assertEq(auction.stepDecayRate(), 10000);
+        auction.setStepDecayRate(9999); // 99.99% decay per step (max)
+        assertEq(auction.stepDecayRate(), 9999);
 
         // Test that non-governance cannot set
         vm.prank(management);
@@ -457,7 +457,7 @@ contract AuctionTest is Setup, ITaker {
         auction.setStepDecayRate(0);
 
         vm.expectRevert("invalid decay rate");
-        auction.setStepDecayRate(10001); // Over 100%
+        auction.setStepDecayRate(10000); // Over 100%
 
         // Test cannot change during active auction
         auction.setStepDecayRate(50); // Reset to default
