@@ -620,11 +620,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
             );
         }
 
-        // Cache the want address.
-        address _want = want();
-
         // Pull `want`.
-        ERC20(_want).safeTransferFrom(msg.sender, receiver, needed);
+        ERC20(wantInfo.tokenAddress).safeTransferFrom(
+            _receiver,
+            receiver,
+            needed
+        );
     }
 
     /// @dev Validates a COW order signature.
@@ -657,7 +658,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(paymentAmount != 0, "zero amount");
         require(available(address(order.sellToken)) != 0, "zero available");
         require(order.feeAmount == 0, "fee");
-        require(order.partiallyFillable, "partial fill");
+        require(!order.partiallyFillable, "partial fill");
         require(order.validTo < auction.kicked + AUCTION_LENGTH, "expired");
         require(order.appData == bytes32(0), "app data");
         require(order.buyAmount >= paymentAmount, "bad price");
@@ -673,6 +674,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @notice Allows the auction to be stopped if the full amount is taken.
      * @param _from The address of the token to be auctioned.
      */
+
     function settle(address _from) external virtual {
         require(isActive(_from), "!active");
         require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
