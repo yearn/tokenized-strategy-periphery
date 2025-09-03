@@ -480,11 +480,12 @@ contract AuctionTest is Setup, ITaker {
         address from = tokenAddrs["WBTC"];
 
         // Create two auctions with different decay rates
+        // Use different receiver to get different salts
         Auction auction1 = Auction(
-            auctionFactory.createNewAuction(address(asset))
+            auctionFactory.createNewAuction(address(asset), address(this))
         );
         Auction auction2 = Auction(
-            auctionFactory.createNewAuction(address(asset))
+            auctionFactory.createNewAuction(address(asset), address(management))
         );
 
         // Set different decay rates (in basis points)
@@ -557,11 +558,12 @@ contract AuctionTest is Setup, ITaker {
         address from = tokenAddrs["WBTC"];
 
         // Create two auctions with different step durations
+        // Use different receiver to get different salts
         Auction auction1 = Auction(
-            auctionFactory.createNewAuction(address(asset))
+            auctionFactory.createNewAuction(address(asset), address(this))
         );
         Auction auction2 = Auction(
-            auctionFactory.createNewAuction(address(asset))
+            auctionFactory.createNewAuction(address(asset), address(management))
         );
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
