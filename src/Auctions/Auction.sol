@@ -550,39 +550,39 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @notice Take the token being sold in a live auction.
      * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
-     * @param _receiver The address that will receive the fromToken.
+     * @param _takerReceiver The address that will receive the fromToken.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
     function take(
         address _from,
         uint256 _maxAmount,
-        address _receiver
+        address _takerReceiver
     ) external virtual returns (uint256) {
-        return _take(_from, _maxAmount, _receiver, new bytes(0));
+        return _take(_from, _maxAmount, _takerReceiver, new bytes(0));
     }
 
     /**
      * @notice Take the token being sold in a live auction.
      * @param _from The address of the token to be auctioned.
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
-     * @param _receiver The address that will receive the fromToken.
+     * @param _takerReceiver The address that will receive the fromToken.
      * @param _data The data signify the callback should be used and sent with it.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
     function take(
         address _from,
         uint256 _maxAmount,
-        address _receiver,
+        address _takerReceiver,
         bytes calldata _data
     ) external virtual returns (uint256) {
-        return _take(_from, _maxAmount, _receiver, _data);
+        return _take(_from, _maxAmount, _takerReceiver, _data);
     }
 
     /// @dev Implements the take of the auction.
     function _take(
         address _from,
         uint256 _maxAmount,
-        address _receiver,
+        address _takerReceiver,
         bytes memory _data
     ) internal virtual nonReentrant returns (uint256 _amountTaken) {
         AuctionInfo memory auction = auctions[_from];
@@ -606,12 +606,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(needed != 0, "zero needed");
 
         // Send `from`.
-        ERC20(_from).safeTransfer(_receiver, _amountTaken);
+        ERC20(_from).safeTransfer(_takerReceiver, _amountTaken);
 
         // If the caller has specified data.
         if (_data.length != 0) {
             // Do the callback.
-            ITaker(_receiver).auctionTakeCallback(
+            ITaker(_takerReceiver).auctionTakeCallback(
                 _from,
                 msg.sender,
                 _amountTaken,
@@ -625,6 +625,11 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         // Pull `want`.
         ERC20(_want).safeTransferFrom(msg.sender, receiver, needed);
+
+        // If the full amount is taken, end the auction.
+        if (_amountTaken == _available) {
+            auctions[_from].kicked = uint64(0);
+        }
     }
 
     /// @dev Validates a COW order signature.
