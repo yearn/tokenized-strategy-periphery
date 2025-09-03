@@ -25,6 +25,9 @@ interface IAuction {
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
 
+    /// @notice Emitted when the step duration is updated.
+    event UpdatedStepDuration(uint256 indexed stepDuration);
+
     /// @notice Emitted when the auction is settled.
     event AuctionSettled(address indexed from);
 
@@ -49,13 +52,6 @@ interface IAuction {
     }
 
     /*//////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The time period for each price step in seconds.
-    function STEP_DURATION() external pure returns (uint256);
-
-    /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -65,7 +61,10 @@ interface IAuction {
     /// @notice The amount to start the auction at.
     function startingPrice() external view returns (uint256);
 
-    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
+    /// @notice The time period for each price step in seconds.
+    function stepDuration() external view returns (uint256);
+
+    /// @notice The decay rate per step in basis points (e.g., 50 for 0.5% decrease per step).
     function stepDecayRate() external view returns (uint256);
 
     /// @notice Mapping from `from` token to its struct.
@@ -215,6 +214,12 @@ interface IAuction {
     function disable(address _from, uint256 _index) external;
 
     /**
+     * @notice Check if there is any active auction.
+     * @return bool Whether there is an active auction.
+     */
+    function isAnActiveAuction() external view returns (bool);
+
+    /**
      * @notice Sets the starting price for the auction.
      * @param _startingPrice The new starting price for the auction.
      */
@@ -222,10 +227,16 @@ interface IAuction {
 
     /**
      * @notice Sets the step decay rate for the auction.
-     * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
-     * @param _stepDecayRate The new decay rate per 36-second step.
+     * @dev The decay rate is in basis points (e.g., 50 for 0.5% decay per step).
+     * @param _stepDecayRate The new decay rate per step in basis points (max 10000 = 100%).
      */
     function setStepDecayRate(uint256 _stepDecayRate) external;
+
+    /**
+     * @notice Sets the step duration for the auction.
+     * @param _stepDuration The new step duration in seconds.
+     */
+    function setStepDuration(uint256 _stepDuration) external;
 
     /*//////////////////////////////////////////////////////////////
                       PARTICIPATE IN AUCTION

@@ -132,6 +132,8 @@ contract AuctionSwapperTest is Setup {
         assertTrue(swapper.useAuction());
         assertEq(swapper.auction(), auction1);
 
+        skip(1); // Get different salt
+
         // Create second auction
         address auction2 = auctionFactory.createNewAuction(
             address(asset),

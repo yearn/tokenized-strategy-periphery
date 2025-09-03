@@ -37,6 +37,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
 
+    /// @notice Emitted when the step duration is updated.
+    event UpdatedStepDuration(uint256 indexed stepDuration);
+
     /// @notice Emitted when the auction is settled.
     event AuctionSettled(address indexed from);
 
@@ -64,10 +67,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     address internal constant VAULT_RELAYER =
         0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
 
-    /// @notice The time period for each price step in seconds.
-    uint256 public constant STEP_DURATION = 36;
-
-    /// @notice The time that each auction lasts. 
+    /// @notice The time that each auction lasts.
     uint256 internal constant AUCTION_LENGTH = 1 days;
 
     /// @notice Struct to hold the info for `want`.
@@ -79,7 +79,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice The amount to start the auction at.
     uint256 public startingPrice;
 
-    /// @notice The decay rate per 36-second step (e.g., 0.995 * 1e27 for 0.5% decrease).
+    /// @notice The time period for each price step in seconds.
+    uint256 public stepDuration;
+
+    /// @notice The decay rate per step in basis points (e.g., 50 for 0.5% decrease per step).
     uint256 public stepDecayRate;
 
     /// @notice Mapping from `from` token to its struct.
@@ -119,9 +122,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         receiver = _receiver;
         governance = _governance;
+        emit GovernanceTransferred(address(0), _governance);
         startingPrice = _startingPrice;
-        stepDecayRate = 0.995 * 1e27; // Default to 0.5% decay per step
         emit UpdatedStartingPrice(_startingPrice);
+
+        // Default to 50bps every 60 seconds
+        stepDuration = 60;
+        emit UpdatedStepDuration(stepDuration);
+        stepDecayRate = 50; // 50 basis points = 0.5% decay per step
         emit UpdatedStepDecayRate(stepDecayRate);
     }
 
@@ -319,10 +327,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
         if (secondsElapsed > AUCTION_LENGTH) return 0;
 
         // Calculate the number of price steps that have passed
-        uint256 steps = secondsElapsed / STEP_DURATION;
+        uint256 steps = secondsElapsed / stepDuration;
+
+        // Convert basis points to ray multiplier (e.g., 50 bps = 0.995 * 1e27)
+        // rayMultiplier = 1e27 - (basisPoints * 1e23)
+        uint256 rayMultiplier = 1e27 - (stepDecayRate * 1e23);
 
         // Calculate the decay multiplier using the configurable decay rate per step
-        uint256 decayMultiplier = Maths.rpow(stepDecayRate, steps);
+        uint256 decayMultiplier = Maths.rpow(rayMultiplier, steps);
 
         // Calculate initial price per token
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
@@ -413,6 +425,16 @@ contract Auction is Governance2Step, ReentrancyGuard {
         emit AuctionDisabled(_from, want());
     }
 
+    function isAnActiveAuction() public view returns (bool) {
+        address[] memory _enabledAuctions = enabledAuctions;
+        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
+            if (isActive(_enabledAuctions[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * @notice Sets the starting price for the auction.
      * @param _startingPrice The new starting price for the auction.
@@ -423,10 +445,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(_startingPrice != 0, "starting price");
 
         // Don't change the price when an auction is active.
-        address[] memory _enabledAuctions = enabledAuctions;
-        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
-            require(!isActive(_enabledAuctions[i]), "active auction");
-        }
+        require(!isAnActiveAuction(), "active auction");
 
         startingPrice = _startingPrice;
 
@@ -435,26 +454,42 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Sets the step decay rate for the auction.
-     * @dev The decay rate should be less than 1e27 (e.g., 0.995 * 1e27 for 0.5% decay).
-     * @param _stepDecayRate The new decay rate per 36-second step.
+     * @dev The decay rate is in basis points (e.g., 50 for 0.5% decay per step).
+     * @param _stepDecayRate The new decay rate per step in basis points (max 10000 = 100%).
      */
     function setStepDecayRate(
         uint256 _stepDecayRate
     ) external virtual onlyGovernance {
         require(
-            _stepDecayRate > 0 && _stepDecayRate <= 1e27,
+            _stepDecayRate > 0 && _stepDecayRate < 10_000,
             "invalid decay rate"
         );
 
         // Don't change the decay rate when an auction is active.
-        address[] memory _enabledAuctions = enabledAuctions;
-        for (uint256 i = 0; i < _enabledAuctions.length; ++i) {
-            require(!isActive(_enabledAuctions[i]), "active auction");
-        }
+        require(!isAnActiveAuction(), "active auction");
 
         stepDecayRate = _stepDecayRate;
 
         emit UpdatedStepDecayRate(_stepDecayRate);
+    }
+
+    /**
+     * @notice Sets the step duration for the auction.
+     * @param _stepDuration The new step duration in seconds.
+     */
+    function setStepDuration(
+        uint256 _stepDuration
+    ) external virtual onlyGovernance {
+        require(
+            _stepDuration != 0 && _stepDuration < AUCTION_LENGTH,
+            "invalid step duration"
+        );
+
+        require(!isAnActiveAuction(), "active auction");
+
+        stepDuration = _stepDuration;
+
+        emit UpdatedStepDuration(_stepDuration);
     }
 
     /*//////////////////////////////////////////////////////////////
