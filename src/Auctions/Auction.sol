@@ -504,6 +504,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function kick(
         address _from
     ) external virtual nonReentrant returns (uint256 _available) {
+        return _kick(_from);
+    }
+
+    function _kick(
+        address _from
+    ) internal virtual returns (uint256 _available) {
         require(auctions[_from].scaler != 0, "not enabled");
         require(
             block.timestamp > auctions[_from].kicked + AUCTION_LENGTH,
@@ -672,6 +678,16 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         // If all checks pass, return the magic value
         return this.isValidSignature.selector;
+    }
+
+    /**
+     * @notice Forces the auction to be kicked.
+     * @dev Only callable by governance in replace of sweep settle and kick.
+     * @param _from The address of the token to be auctioned.
+     */
+    function forceKick(address _from) external onlyGovernance {
+        auctions[_from].kicked = uint64(0);
+        _kick(_from);
     }
 
     /**

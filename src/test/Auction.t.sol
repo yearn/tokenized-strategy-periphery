@@ -213,6 +213,82 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.kickable(from), _amount);
     }
 
+    function test_forceKick(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(
+            auctionFactory.createNewAuction(
+                address(asset),
+                address(this),
+                daddy
+            )
+        );
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        vm.prank(daddy);
+        auction.enable(from);
+
+        // Test 1: Only governance can call forceKick
+        vm.expectRevert("!governance");
+        vm.prank(user);
+        auction.forceKick(from);
+
+        // Test 2: ForceKick when no auction is active should start a new auction
+        airdrop(ERC20(from), address(auction), _amount);
+
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        assertTrue(auction.isActive(from));
+        (uint128 _kicked, , uint128 _initialAvailable) = auction.auctions(from);
+        assertEq(_kicked, block.timestamp);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), _amount);
+
+        // Test 3: ForceKick when auction is active should restart with full balance
+        // Add more tokens while auction is active
+        uint256 additionalAmount = _amount + _amount / 2; // 1.5x the original
+        airdrop(ERC20(from), address(auction), additionalAmount);
+
+        // The auction contract now has original _amount (in auction) + additionalAmount
+        uint256 totalBalance = ERC20(from).balanceOf(address(auction));
+        assertEq(totalBalance, _amount + additionalAmount);
+
+        // Force kick to restart auction with total balance
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        // Verify new auction was started with total balance
+        assertTrue(auction.isActive(from));
+        (uint128 newKicked, , uint128 newInitialAvailable) = auction.auctions(
+            from
+        );
+        assertEq(newKicked, block.timestamp);
+        assertEq(newInitialAvailable, totalBalance);
+        assertEq(auction.available(from), totalBalance);
+
+        // Test forceKick when no auction is active
+        skip(auction.auctionLength() + 1);
+        assertFalse(auction.isActive(from));
+
+        // Add tokens again
+        airdrop(ERC20(from), address(auction), _amount);
+
+        // ForceKick should start a new auction
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        assertTrue(auction.isActive(from));
+        (uint128 finalKicked, , uint128 finalAvailable) = auction.auctions(
+            from
+        );
+        assertEq(finalKicked, block.timestamp);
+        assertEq(finalAvailable, _amount + additionalAmount + _amount);
+    }
+
     function test_takeAuction_all(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
