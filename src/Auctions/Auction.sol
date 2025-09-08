@@ -77,6 +77,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
     address public receiver;
 
     /// @notice The amount to start the auction at.
+    /// @dev This is an unscaled "lot size" essentially to start the pricing in "want".
+    ///   The kicked amount of _from is divided by this to get the per auction initial price.
     uint256 public startingPrice;
 
     /// @notice The time period for each price step in seconds.
@@ -437,6 +439,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Sets the starting price for the auction.
+     * @dev This is an unscaled "lot size" essentially to start the pricing in "want".
+     *   The kicked amount of _from is divided by this to get the per auction initial price.
      * @param _startingPrice The new starting price for the auction.
      */
     function setStartingPrice(
@@ -635,6 +639,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // If the full amount is taken, end the auction.
         if (_amountTaken == _available) {
             auctions[_from].kicked = uint64(0);
+
+            emit AuctionSettled(_from);
         }
     }
 
