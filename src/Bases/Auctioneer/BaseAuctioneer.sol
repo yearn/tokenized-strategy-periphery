@@ -15,22 +15,14 @@ abstract contract BaseAuctioneer is BaseHealthCheck, Auction {
      * @param _asset Address of the asset this auction is selling.
      * @param _name Name of the auction.
      * @param _governance Address of the contract governance.
-     * @param _auctionLength Duration of each auction in seconds.
      * @param _auctionStartingPrice Starting price for each auction.
      */
     constructor(
         address _asset,
         string memory _name,
         address _governance,
-        uint256 _auctionLength,
         uint256 _auctionStartingPrice
     ) BaseHealthCheck(_asset, _name) {
-        initialize(
-            _asset,
-            address(this),
-            _governance,
-            _auctionLength,
-            _auctionStartingPrice
-        );
+        initialize(_asset, address(this), _governance, _auctionStartingPrice);
     }
 }

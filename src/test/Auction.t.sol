@@ -39,7 +39,6 @@ contract AuctionTest is Setup, ITaker {
     }
 
     function test_setup() public {
-        assertEq(auctionFactory.DEFAULT_AUCTION_LENGTH(), 1 days);
         assertEq(auctionFactory.DEFAULT_STARTING_PRICE(), 1e6);
     }
 
@@ -47,15 +46,12 @@ contract AuctionTest is Setup, ITaker {
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
         vm.expectRevert("initialized");
-        auction.initialize(address(asset), address(this), management, 1, 10);
+        auction.initialize(address(asset), address(this), management, 1);
 
         assertEq(auction.want(), address(asset));
         assertEq(auction.receiver(), address(this));
         assertEq(auction.governance(), address(this));
-        assertEq(
-            auction.auctionLength(),
-            auctionFactory.DEFAULT_AUCTION_LENGTH()
-        );
+        assertEq(auction.auctionLength(), 1 days);
         assertEq(
             auction.startingPrice(),
             auctionFactory.DEFAULT_STARTING_PRICE()
@@ -215,6 +211,82 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.available(from), 0);
 
         assertEq(auction.kickable(from), _amount);
+    }
+
+    function test_forceKick(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(
+            auctionFactory.createNewAuction(
+                address(asset),
+                address(this),
+                daddy
+            )
+        );
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        vm.prank(daddy);
+        auction.enable(from);
+
+        // Test 1: Only governance can call forceKick
+        vm.expectRevert("!governance");
+        vm.prank(user);
+        auction.forceKick(from);
+
+        // Test 2: ForceKick when no auction is active should start a new auction
+        airdrop(ERC20(from), address(auction), _amount);
+
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        assertTrue(auction.isActive(from));
+        (uint128 _kicked, , uint128 _initialAvailable) = auction.auctions(from);
+        assertEq(_kicked, block.timestamp);
+        assertEq(_initialAvailable, _amount);
+        assertEq(auction.available(from), _amount);
+
+        // Test 3: ForceKick when auction is active should restart with full balance
+        // Add more tokens while auction is active
+        uint256 additionalAmount = _amount + _amount / 2; // 1.5x the original
+        airdrop(ERC20(from), address(auction), additionalAmount);
+
+        // The auction contract now has original _amount (in auction) + additionalAmount
+        uint256 totalBalance = ERC20(from).balanceOf(address(auction));
+        assertEq(totalBalance, _amount + additionalAmount);
+
+        // Force kick to restart auction with total balance
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        // Verify new auction was started with total balance
+        assertTrue(auction.isActive(from));
+        (uint128 newKicked, , uint128 newInitialAvailable) = auction.auctions(
+            from
+        );
+        assertEq(newKicked, block.timestamp);
+        assertEq(newInitialAvailable, totalBalance);
+        assertEq(auction.available(from), totalBalance);
+
+        // Test forceKick when no auction is active
+        skip(auction.auctionLength() + 1);
+        assertFalse(auction.isActive(from));
+
+        // Add tokens again
+        airdrop(ERC20(from), address(auction), _amount);
+
+        // ForceKick should start a new auction
+        vm.prank(daddy);
+        auction.forceKick(from);
+
+        assertTrue(auction.isActive(from));
+        (uint128 finalKicked, , uint128 finalAvailable) = auction.auctions(
+            from
+        );
+        assertEq(finalKicked, block.timestamp);
+        assertEq(finalAvailable, _amount + additionalAmount + _amount);
     }
 
     function test_takeAuction_all(uint256 _amount) public {
@@ -385,6 +457,241 @@ contract AuctionTest is Setup, ITaker {
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
+    }
+
+    function test_setStepDuration() public {
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial step duration is 60 seconds
+        assertEq(auction.stepDuration(), 60);
+
+        // Test setting valid step duration
+        auction.setStepDuration(120);
+        assertEq(auction.stepDuration(), 120);
+
+        // Test setting another valid step duration
+        auction.setStepDuration(30);
+        assertEq(auction.stepDuration(), 30);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setStepDuration(90);
+
+        // Test invalid step durations
+        vm.expectRevert("invalid step duration");
+        auction.setStepDuration(0);
+
+        vm.expectRevert("invalid step duration");
+        auction.setStepDuration(1 days);
+
+        vm.expectRevert("invalid step duration");
+        auction.setStepDuration(1 days + 1);
+
+        // Test cannot change during active auction
+        auction.enable(from);
+        airdrop(ERC20(from), address(auction), 1e8);
+        auction.kick(from);
+
+        vm.expectRevert("active auction");
+        auction.setStepDuration(45);
+
+        // After auction ends, can change again
+        skip(auction.auctionLength() + 1);
+        auction.setStepDuration(45);
+        assertEq(auction.stepDuration(), 45);
+    }
+
+    function test_setStepDecayRate() public {
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial step decay rate is 50 basis points
+        assertEq(auction.stepDecayRate(), 50);
+
+        // Test setting valid decay rates
+        auction.setStepDecayRate(100); // 1% decay per step
+        assertEq(auction.stepDecayRate(), 100);
+
+        auction.setStepDecayRate(25); // 0.25% decay per step
+        assertEq(auction.stepDecayRate(), 25);
+
+        auction.setStepDecayRate(500); // 5% decay per step
+        assertEq(auction.stepDecayRate(), 500);
+
+        auction.setStepDecayRate(9999); // 99.99% decay per step (max)
+        assertEq(auction.stepDecayRate(), 9999);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setStepDecayRate(75);
+
+        // Test invalid decay rates
+        vm.expectRevert("invalid decay rate");
+        auction.setStepDecayRate(0);
+
+        vm.expectRevert("invalid decay rate");
+        auction.setStepDecayRate(10000); // Over 100%
+
+        // Test cannot change during active auction
+        auction.setStepDecayRate(50); // Reset to default
+        auction.enable(from);
+        airdrop(ERC20(from), address(auction), 1e8);
+        auction.kick(from);
+
+        vm.expectRevert("active auction");
+        auction.setStepDecayRate(75);
+
+        // After auction ends, can change again
+        skip(auction.auctionLength() + 1);
+        auction.setStepDecayRate(75);
+        assertEq(auction.stepDecayRate(), 75);
+    }
+
+    function test_stepDecayRateAffectsPrice(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        address from = tokenAddrs["WBTC"];
+
+        // Create two auctions with different decay rates
+        // Use different receiver to get different salts
+        Auction auction1 = Auction(
+            auctionFactory.createNewAuction(address(asset), address(this))
+        );
+        Auction auction2 = Auction(
+            auctionFactory.createNewAuction(address(asset), address(management))
+        );
+
+        // Set different decay rates (in basis points)
+        auction1.setStepDecayRate(100); // 1% decay per step
+        auction2.setStepDecayRate(25); // 0.25% decay per step
+
+        // Both auctions have same step duration for fair comparison
+        auction1.setStepDuration(60);
+        auction2.setStepDuration(60);
+
+        // Enable and kick both auctions with same amount
+        auction1.enable(from);
+        auction2.enable(from);
+
+        airdrop(ERC20(from), address(auction1), _amount);
+        airdrop(ERC20(from), address(auction2), _amount);
+
+        auction1.kick(from);
+        auction2.kick(from);
+
+        // Initial prices should be the same
+        uint256 initialPrice1 = auction1.price(from);
+        uint256 initialPrice2 = auction2.price(from);
+        assertEq(initialPrice1, initialPrice2);
+
+        // After 60 seconds (1 step), prices should differ
+        skip(60);
+
+        uint256 price1After1Step = auction1.price(from);
+        uint256 price2After1Step = auction2.price(from);
+
+        // Auction1 (1% decay) should have lower price than auction2 (0.25% decay)
+        assertLt(price1After1Step, price2After1Step);
+
+        // Verify the decay amounts are approximately correct
+        // Auction1: price should be ~99% of initial (1% decay)
+        assertApproxEqRel(
+            price1After1Step,
+            (initialPrice1 * 9900) / 10000,
+            0.01e18
+        );
+
+        // Auction2: price should be ~99.75% of initial (0.25% decay)
+        assertApproxEqRel(
+            price2After1Step,
+            (initialPrice2 * 9975) / 10000,
+            0.01e18
+        );
+
+        // After multiple steps, the difference should be more pronounced
+        skip(240); // 4 more steps (5 total)
+
+        // Both should have decayed significantly
+        assertLt(auction1.price(from), initialPrice1);
+        assertLt(auction2.price(from), initialPrice2);
+
+        // Auction1 should still be much lower due to higher decay rate
+        assertLt(auction1.price(from), auction2.price(from));
+
+        // Verify amount needed follows the same pattern
+        assertLt(
+            auction1.getAmountNeeded(from, _amount),
+            auction2.getAmountNeeded(from, _amount)
+        );
+    }
+
+    function test_stepDurationAffectsPrice(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        address from = tokenAddrs["WBTC"];
+
+        // Create two auctions with different step durations
+        // Use different receiver to get different salts
+        Auction auction1 = Auction(
+            auctionFactory.createNewAuction(address(asset), address(this))
+        );
+        Auction auction2 = Auction(
+            auctionFactory.createNewAuction(address(asset), address(management))
+        );
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        // Set different step durations
+        auction1.setStepDuration(30); // Faster decay
+        auction2.setStepDuration(120); // Slower decay
+
+        // Enable and kick both auctions with same amount
+        auction1.enable(from);
+        auction2.enable(from);
+
+        airdrop(ERC20(from), address(auction1), _amount);
+        airdrop(ERC20(from), address(auction2), _amount);
+
+        auction1.kick(from);
+        auction2.kick(from);
+
+        // Initial prices should be the same
+        uint256 initialPrice1 = auction1.price(from);
+        uint256 initialPrice2 = auction2.price(from);
+        assertEq(initialPrice1, initialPrice2);
+
+        // After 60 seconds, auction1 (30s steps) should have gone through 2 steps
+        // while auction2 (120s steps) should have gone through 0 steps
+        skip(60);
+
+        uint256 price1After60 = auction1.price(from);
+        uint256 price2After60 = auction2.price(from);
+
+        // Auction1 should have lower price (more steps = more decay)
+        assertLt(price1After60, price2After60);
+        // Auction2 should still be at initial price (no complete steps yet)
+        assertEq(price2After60, initialPrice2);
+
+        // After 120 seconds total, auction1 has 4 steps, auction2 has 1 step
+        skip(60);
+
+        uint256 price1After120 = auction1.price(from);
+        uint256 price2After120 = auction2.price(from);
+
+        // Both should have decayed from initial
+        assertLt(price1After120, initialPrice1);
+        assertLt(price2After120, initialPrice2);
+        // Auction1 should still be lower (more steps)
+        assertLt(price1After120, price2After120);
+
+        // Verify amount needed follows the same pattern
+        uint256 needed1 = auction1.getAmountNeeded(from, _amount);
+        uint256 needed2 = auction2.getAmountNeeded(from, _amount);
+        assertLt(needed1, needed2);
     }
 
     // Taker call back function

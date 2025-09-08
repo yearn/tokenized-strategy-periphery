@@ -10,7 +10,7 @@ contract MockAuctioneer is BaseAuctioneer {
 
     constructor(
         address _asset
-    ) BaseAuctioneer(_asset, "Mock Auctioneer", msg.sender, 1 days, 1e7) {}
+    ) BaseAuctioneer(_asset, "Mock Auctioneer", msg.sender, 1e7) {}
 
     function _deployFunds(uint256) internal override {}
 
