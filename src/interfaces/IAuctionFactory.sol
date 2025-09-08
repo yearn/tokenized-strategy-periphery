@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
+import {IClonableCreate2} from "./utils/IClonableCreate2.sol";
+
 /**
  * @title IAuctionFactory
  * @notice Interface for the AuctionFactory contract
  */
-interface IAuctionFactory {
+interface IAuctionFactory is IClonableCreate2 {
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -91,5 +93,22 @@ interface IAuctionFactory {
         address _receiver,
         address _governance,
         uint256 _startingPrice
+    ) external returns (address);
+
+    /**
+     * @notice Creates a new auction contract.
+     * @param _want Address of the token users will bid with.
+     * @param _receiver Address that will receive the funds in the auction.
+     * @param _governance Address allowed to enable and disable auctions.
+     * @param _startingPrice Starting price for the auction (no decimals).
+     * @param _salt The salt to use for deterministic deployment.
+     * @return _newAuction Address of the newly created auction contract.
+     */
+    function createNewAuction(
+        address _want,
+        address _receiver,
+        address _governance,
+        uint256 _startingPrice,
+        bytes32 _salt
     ) external returns (address);
 }
