@@ -15,7 +15,7 @@ contract DeployCommonTrigger is Script {
         bytes memory construct = abi.encode(0x6f3cBE2ab3483EC4BA7B672fbdCa0E9B33F88db8);
         
         // Append constructor args to the bytecode
-        bytes memory bytecode = abi.encodePacked(vm.getCode("CommonReportTrigger.sol:CommonReportTrigger"), construct);
+        bytes memory bytecode = abi.encodePacked(vm.getCode("CommonTrigger.sol:CommonTrigger"), construct);
 
         // Use 0 as salt.
         bytes32 salt;
