@@ -301,6 +301,13 @@ interface IAuction {
     ) external view returns (bytes4);
 
     /**
+     * @notice Forces a kick for the auction.
+     * @dev Only callable by governance.
+     * @param _from The address of the token to be auctioned.
+     */
+    function forceKick(address _from) external;
+
+    /**
      * @notice Allows the auction to be stopped if the full amount is taken.
      * @param _from The address of the token to be auctioned.
      */
