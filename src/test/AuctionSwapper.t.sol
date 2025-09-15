@@ -138,7 +138,7 @@ contract AuctionSwapperTest is Setup {
         address auction2 = auctionFactory.createNewAuction(
             address(asset),
             address(swapper),
-            address(this),
+            address(management),
             2e6
         );
 
