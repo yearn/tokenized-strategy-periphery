@@ -145,9 +145,7 @@ contract AuctionFactory is ClonableCreate2 {
     ) internal returns (address _newAuction) {
         if (_salt == bytes32(0)) {
             // If none set, generate unique salt. msg.sender gets encoded in getSalt()
-            _salt = keccak256(
-                abi.encodePacked(block.timestamp, _want, _receiver, _governance)
-            );
+            _salt = keccak256(abi.encodePacked(_want, _receiver, _governance));
         }
 
         _newAuction = _cloneCreate2(_salt);
