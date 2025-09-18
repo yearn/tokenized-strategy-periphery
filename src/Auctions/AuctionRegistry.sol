@@ -182,6 +182,7 @@ contract AuctionRegistry is Governance2Step {
             versionToFactory[_version] == address(0),
             "Version already registered"
         );
+        require(bytes(_version).length > 0, "Invalid version");
 
         // Verify it's a valid auction factory by checking it has the expected interface
         try IAuctionFactory(_factory).version() returns (

@@ -20,10 +20,17 @@ interface IAuctionRegistry {
     function factories(uint256 index) external view returns (address);
 
     /// @notice Mapping from factory address to its info
-    function factoryInfo(address factory) external view returns (string memory version, uint256 index, bool isRetired);
+    function factoryInfo(
+        address factory
+    )
+        external
+        view
+        returns (string memory version, uint256 index, bool isRetired);
 
     /// @notice Mapping from version string to factory address
-    function versionToFactory(string memory version) external view returns (address);
+    function versionToFactory(
+        string memory version
+    ) external view returns (address);
 
     /*//////////////////////////////////////////////////////////////
                             VIEW METHODS
