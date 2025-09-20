@@ -508,9 +508,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @dev Because COW takes several blocks to solve, we know that other takers will beat them to the current price.
      * @param _letCowPeek Whether we let cow solvers peek at the next price.
      */
-    function setLetCowPeek(
-        uint256 _letCowPeek
-    ) external virtual onlyGovernance {
+    function setLetCowPeek(bool _letCowPeek) external virtual onlyGovernance {
         letCowPeek = _letCowPeek;
 
         emit UpdatedLetCowPeek(_letCowPeek);
