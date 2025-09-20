@@ -4,8 +4,8 @@ pragma solidity >=0.8.18;
 import {Auction} from "./Auction.sol";
 import {ClonableCreate2} from "../utils/ClonableCreate2.sol";
 
-/// @title AuctionFactory
-/// @notice Deploy a new Auction.
+/// @title AuctionFactory (Curious Cow Edition)
+/// @notice Deploy a new Auction with the ability to let Cowswap settle at the next price.
 contract AuctionFactory is ClonableCreate2 {
     event DeployedNewAuction(address indexed auction, address indexed want);
 
