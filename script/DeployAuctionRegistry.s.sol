@@ -43,7 +43,7 @@ contract DeployAuctionRegistry is BaseScript {
 
         console.log("AuctionRegistry deployed at:", registryAddress);
         console.log("Latest factory is ", registry.getLatestFactory());
-        console.log("Number of factories registered:", registry.numberOfFactories());
+        console.log("Number of factories registered:", uint256(registry.numberOfFactories()));
 
         vm.stopBroadcast();
     }
