@@ -430,7 +430,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     }
 
     /// @notice Unstake all of the sender's tokens and claim any outstanding rewards.
-    function exit() external virtual {
+    function exit() external virtual nonReentrant {
         redeem(
             TokenizedStrategy.balanceOf(msg.sender),
             msg.sender,
