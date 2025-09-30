@@ -10,9 +10,6 @@ inspect :; forge inspect ${contract} storage-layout --pretty
 
 FORK_URL := ${ETH_RPC_URL} 
 
-# if we want to run only matching tests, set that here
-test := test_crvusd_vault
-
 # local tests without fork
 test  :; forge test -vv --fork-url ${FORK_URL} --ffi
 trace  :; forge test -vvv --fork-url ${FORK_URL} --ffi

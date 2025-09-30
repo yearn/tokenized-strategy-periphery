@@ -49,19 +49,17 @@ contract ShadowQueueAprOracle is Governance {
         address[] memory strategiesOutsideQueue = extraStrategies[_vault];
         address[] memory strategies = IVault(_vault).get_default_queue();
 
-        // make sure we're not double-counting, compare our two arrays for duplicates
-        for (uint256 i; i < strategies.length; ++i) {
+        uint256 totalAssets = IVault(_vault).totalAssets();
+        uint256 totalApr = 0;
+        for (uint256 i = 0; i < strategies.length; i++) {
+            // make sure we're not double-counting, compare our two arrays for duplicates
             for (uint256 j; j < strategiesOutsideQueue.length; ++j) {
                 require(
                     strategies[i] != strategiesOutsideQueue[j],
                     "Duplicate strategy"
                 );
             }
-        }
 
-        uint256 totalAssets = IVault(_vault).totalAssets();
-        uint256 totalApr = 0;
-        for (uint256 i = 0; i < strategies.length; i++) {
             uint256 debt = IVault(_vault)
                 .strategies(strategies[i])
                 .current_debt;
@@ -143,11 +141,15 @@ contract ShadowQueueAprOracle is Governance {
     function setExtraStrategies(
         address _vault,
         address[] memory _shadowQueue
-    ) external virtual {
-        require(governance == msg.sender, "!governance");
-
-        // probably check here that each strategy is actually attached to the vault?
-
+    ) external virtual onlyGovernance {
+        // make sure each strategy is attached to the vault
+        IVault vault = IVault(_vault);
+        for (uint256 i = 0; i < _shadowQueue.length; i++) {
+            require(
+                vault.strategies(_shadowQueue[i]).activation > 0,
+                "!activated"
+            );
+        }
         extraStrategies[_vault] = _shadowQueue;
     }
 }
