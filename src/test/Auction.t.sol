@@ -6,6 +6,7 @@ import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
 
 import {ITaker} from "../interfaces/ITaker.sol";
 import {Auction, AuctionFactory} from "../Auctions/AuctionFactory.sol";
+import {GPv2Order} from "../libraries/GPv2Order.sol";
 
 contract AuctionTest is Setup, ITaker {
     using SafeERC20 for ERC20;
