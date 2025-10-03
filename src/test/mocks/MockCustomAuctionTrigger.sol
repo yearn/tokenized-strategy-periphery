@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.18;
 
-import {ICustomAuctionTrigger} from "../../AuctionTrigger/CommonAuctionTrigger.sol";
+import {ICustomAuctionTrigger} from "../../ReportTrigger/CommonTrigger.sol";
 
 contract MockCustomAuctionTrigger is ICustomAuctionTrigger {
-    bool public triggerStatus;
-    bytes public triggerData;
+    bool public shouldKick;
     bool public shouldRevert;
 
     function auctionTrigger(
@@ -16,15 +15,15 @@ contract MockCustomAuctionTrigger is ICustomAuctionTrigger {
             revert("Custom trigger reverted");
         }
 
-        return (triggerStatus, triggerData);
+        if (!shouldKick) {
+            return (false, bytes("Custom Not Ready"));
+        }
+
+        return (true, bytes("Custom Kick"));
     }
 
-    function setTriggerStatus(bool _status) external {
-        triggerStatus = _status;
-    }
-
-    function setTriggerData(bytes calldata _data) external {
-        triggerData = _data;
+    function setShouldKick(bool _kick) external {
+        shouldKick = _kick;
     }
 
     function setShouldRevert(bool _shouldRevert) external {
