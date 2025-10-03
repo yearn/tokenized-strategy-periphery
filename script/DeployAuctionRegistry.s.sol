@@ -35,7 +35,7 @@ contract DeployAuctionRegistry is BaseScript {
         );
 
         // Use a consistent salt for deterministic deployment
-        bytes32 salt = keccak256("AuctionRegistry.v1");
+        bytes32 salt;
 
         address registryAddress = deployer.deployCreate2(salt, bytecode);
 
