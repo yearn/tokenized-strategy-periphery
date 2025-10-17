@@ -10,7 +10,7 @@ contract TokenizedStakerTest is Setup {
 
     ERC20 public rewardToken;
     ERC20 public rewardToken2;
-    uint256 public duration = 10_000;
+    uint256 public duration = 7 days;
 
     function setUp() public virtual override {
         super.setUp();
@@ -83,7 +83,7 @@ contract TokenizedStakerTest is Setup {
     }
 
     function test_TokenizedStaker_notifyRewardAmount() public {
-        uint256 amount = 1_000e18;
+        uint256 amount = 1_000 * (10 ** asset.decimals());
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
         assertEq(staker.rewardPerToken(address(rewardToken)), 0);
@@ -97,7 +97,7 @@ contract TokenizedStakerTest is Setup {
         assertEq(rewardData.rewardsDuration, duration);
 
         // test out notifying; user should fail
-        uint256 rewardAmount = 100e18;
+        uint256 rewardAmount = 100 * (10 ** rewardToken.decimals());
         airdrop(rewardToken, user, rewardAmount);
         vm.startPrank(user);
         rewardToken.approve(address(staker), rewardAmount);
@@ -119,7 +119,11 @@ contract TokenizedStakerTest is Setup {
 
         skip(duration / 2);
 
-        assertEq(staker.earned(user, address(rewardToken)), rewardAmount / 2);
+        assertApproxEqRel(
+            staker.earned(user, address(rewardToken)),
+            rewardAmount / 2,
+            0.0001e18
+        );
 
         // Add more rewards mid-period
         airdrop(rewardToken, management, rewardAmount);
@@ -131,21 +135,22 @@ contract TokenizedStakerTest is Setup {
         rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.lastUpdateTime, block.timestamp);
         assertEq(rewardData.periodFinish, block.timestamp + duration);
-        assertEq(
+        assertApproxEqRel(
             rewardData.rewardRate,
-            ((rewardAmount + (rewardAmount / 2)) * WAD) / duration
+            ((rewardAmount + (rewardAmount / 2)) * WAD) / duration,
+            0.0001e18
         );
     }
 
     function test_TokenizedStaker_getReward() public {
-        uint256 amount = 1_000e18;
+        uint256 amount = 1_000 * (10 ** asset.decimals());
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
         // Add multiple reward tokens
         vm.prank(management);
         staker.addReward(address(rewardToken2), management, duration);
 
-        uint256 rewardAmount = 100e18;
+        uint256 rewardAmount = 100 * (10 ** rewardToken.decimals());
         // Add rewards for both tokens
         airdrop(rewardToken, management, rewardAmount);
         airdrop(rewardToken2, management, rewardAmount);
@@ -159,8 +164,16 @@ contract TokenizedStakerTest is Setup {
 
         skip(duration / 2);
 
-        assertEq(staker.earned(user, address(rewardToken)), rewardAmount / 2);
-        assertEq(staker.earned(user, address(rewardToken2)), rewardAmount / 2);
+        assertApproxEqRel(
+            staker.earned(user, address(rewardToken)),
+            rewardAmount / 2,
+            0.0001e18
+        );
+        assertApproxEqRel(
+            staker.earned(user, address(rewardToken2)),
+            rewardAmount / 2,
+            0.0001e18
+        );
 
         uint256 preBalance = rewardToken.balanceOf(user);
         uint256 preBalance2 = rewardToken2.balanceOf(user);
@@ -168,54 +181,72 @@ contract TokenizedStakerTest is Setup {
         vm.prank(user);
         staker.getReward();
 
-        assertEq(rewardToken.balanceOf(user), preBalance + rewardAmount / 2);
-        assertEq(rewardToken2.balanceOf(user), preBalance2 + rewardAmount / 2);
+        assertApproxEqRel(
+            rewardToken.balanceOf(user),
+            preBalance + rewardAmount / 2,
+            0.0001e18
+        );
+        assertApproxEqRel(
+            rewardToken2.balanceOf(user),
+            preBalance2 + rewardAmount / 2,
+            0.0001e18
+        );
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken2)), 0);
     }
 
     function test_TokenizedStaker_getOneReward() public {
-        uint256 amount = 1_000e18;
+        uint256 amount = 1_000 * (10 ** asset.decimals());
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
         // Add multiple reward tokens
         vm.prank(management);
         staker.addReward(address(rewardToken2), management, duration);
 
-        uint256 rewardAmount = 100e18;
+        uint256 rewardAmount = 100 * (10 ** rewardToken.decimals());
+        uint256 rewardAmount2 = 100 * (10 ** rewardToken2.decimals());
         // Add rewards for both tokens
         airdrop(rewardToken, management, rewardAmount);
-        airdrop(rewardToken2, management, rewardAmount);
+        airdrop(rewardToken2, management, rewardAmount2);
 
         vm.startPrank(management);
         rewardToken.approve(address(staker), rewardAmount);
         staker.notifyRewardAmount(address(rewardToken), rewardAmount);
-        rewardToken2.approve(address(staker), rewardAmount);
-        staker.notifyRewardAmount(address(rewardToken2), rewardAmount);
+        rewardToken2.approve(address(staker), rewardAmount2);
+        staker.notifyRewardAmount(address(rewardToken2), rewardAmount2);
         vm.stopPrank();
 
         skip(duration / 2);
 
         uint256 preBalance = rewardToken.balanceOf(user);
+        uint256 preBalance2 = rewardToken2.balanceOf(user);
 
         vm.prank(user);
         staker.getOneReward(address(rewardToken));
 
-        assertEq(rewardToken.balanceOf(user), preBalance + rewardAmount / 2);
-        assertEq(rewardToken2.balanceOf(user), 0);
+        assertApproxEqRel(
+            rewardToken.balanceOf(user),
+            preBalance + rewardAmount / 2,
+            0.0001e18
+        );
+        assertEq(rewardToken2.balanceOf(user), preBalance2);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
-        assertEq(staker.rewards(user, address(rewardToken2)), rewardAmount / 2);
+        assertApproxEqRel(
+            staker.rewards(user, address(rewardToken2)),
+            rewardAmount2 / 2,
+            0.0001e18
+        );
     }
 
     function test_feesAndRewards() public {
-        uint256 amount = 1_000e6;
+        uint256 amount = 1_000 * (10 ** asset.decimals());
         uint16 performanceFee = 1_000;
         uint16 protocolFee = 1_000;
         setFees(protocolFee, performanceFee);
 
         mintAndDepositIntoStrategy(IStrategy(address(staker)), user, amount);
 
-        uint256 rewardAmount = 100e18;
+        uint256 rewardAmount = 100 * (10 ** rewardToken.decimals());
         airdrop(rewardToken, management, rewardAmount);
         vm.startPrank(management);
         rewardToken.approve(address(staker), rewardAmount);
@@ -223,7 +254,7 @@ contract TokenizedStakerTest is Setup {
         vm.stopPrank();
 
         // Simulate yield on underlying asset
-        uint256 profit = 100e6;
+        uint256 profit = 100 * (10 ** asset.decimals());
         airdrop(asset, address(staker), profit);
 
         // Skip half the reward duration
@@ -257,41 +288,48 @@ contract TokenizedStakerTest is Setup {
         );
 
         // Should have no rewards yet
-        assertApproxEqRel(
+        assertEq(
             staker.earned(performanceFeeRecipient, address(rewardToken)),
-            0,
-            0.001e18 // 0.1% tolerance
+            0
         );
-        assertApproxEqRel(
-            staker.earned(protocolFeeRecipient, address(rewardToken)),
-            0,
-            0.001e18 // 0.1% tolerance
-        );
+        assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
         assertApproxEqRel(
             staker.earned(user, address(rewardToken)),
             rewardAmount / 2,
-            0.001e18 // 0.1% tolerance
+            0.0001e18 // 0.01% tolerance
         );
 
         // Skip the rest of the reward period
         skip(duration / 2);
 
-        uint256 expectedPerformanceFeeReward = ((rewardAmount / 2) *
-            expectedPerformanceFeeShares) / realShares;
-        uint256 expectedProtocolFeeReward = ((rewardAmount / 2) *
-            expectedProtocolFeeShares) / realShares;
+        uint256 expectedPerformanceFeeReward = (((rewardAmount * WAD) / 2) *
+            expectedPerformanceFeeShares) /
+            realShares /
+            WAD;
+        uint256 expectedProtocolFeeReward = (((rewardAmount * WAD) / 2) *
+            expectedProtocolFeeShares) /
+            realShares /
+            WAD;
 
         assertApproxEqRel(
             staker.earned(performanceFeeRecipient, address(rewardToken)),
             expectedPerformanceFeeReward,
-            0.001e18 // 0.1% tolerance
+            0.0001e18 // 0.01% tolerance
         );
 
         assertApproxEqRel(
             staker.earned(protocolFeeRecipient, address(rewardToken)),
             expectedProtocolFeeReward,
-            0.001e18 // 0.1% tolerance
+            0.0001e18 // 0.01% tolerance
         );
+
+        uint256 prePerformanceFeeBalance = rewardToken.balanceOf(
+            performanceFeeRecipient
+        );
+        uint256 preProtocolFeeBalance = rewardToken.balanceOf(
+            protocolFeeRecipient
+        );
+        uint256 preUserBalance = rewardToken.balanceOf(user);
 
         // Claim rewards for fee recipients
         vm.prank(performanceFeeRecipient);
@@ -306,22 +344,23 @@ contract TokenizedStakerTest is Setup {
         // Verify reward token balances
         assertApproxEqRel(
             rewardToken.balanceOf(performanceFeeRecipient),
-            expectedPerformanceFeeReward,
-            0.001e18
+            prePerformanceFeeBalance + expectedPerformanceFeeReward,
+            0.0001e18
         );
 
         assertApproxEqRel(
             rewardToken.balanceOf(protocolFeeRecipient),
-            expectedProtocolFeeReward,
-            0.001e18
+            preProtocolFeeBalance + expectedProtocolFeeReward,
+            0.0001e18
         );
 
         assertApproxEqRel(
             rewardToken.balanceOf(user),
-            rewardAmount -
+            preUserBalance +
+                rewardAmount -
                 expectedPerformanceFeeReward -
                 expectedProtocolFeeReward,
-            0.001e18
+            0.0001e18
         );
 
         // Verify rewards were properly distributed

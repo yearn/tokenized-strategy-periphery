@@ -164,12 +164,12 @@ contract BaseAuctioneerTest is Setup {
             _amount /
             fromScaler;
         assertEq(auctioneer.price(from), startingPrice);
-        assertRelApproxEq(
+        assertApproxEqRel(
             auctioneer.getAmountNeeded(from, _amount),
             (startingPrice * fromScaler * _amount) /
                 (WAD / wantScaler) /
                 wantScaler,
-            MAX_BPS
+            0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auctioneer.price(from, block.timestamp + 100);
