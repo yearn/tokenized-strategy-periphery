@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
+import {Setup, IStrategy, SafeERC20, ERC20, IVaultFactory} from "./utils/Setup.sol";
 
 import {MockTokenizedStaker, IMockTokenizedStaker} from "./mocks/MockTokenizedStaker.sol";
 
@@ -12,7 +12,7 @@ contract TokenizedStakerTest is Setup {
     ERC20 public rewardToken2;
     uint256 public duration = 10_000;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         rewardToken = ERC20(tokenAddrs["YFI"]);
@@ -115,7 +115,7 @@ contract TokenizedStakerTest is Setup {
         rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.lastUpdateTime, block.timestamp);
         assertEq(rewardData.periodFinish, block.timestamp + duration);
-        assertEq(rewardData.rewardRate, rewardAmount / duration);
+        assertEq(rewardData.rewardRate, (rewardAmount * WAD) / duration);
 
         skip(duration / 2);
 
@@ -133,7 +133,7 @@ contract TokenizedStakerTest is Setup {
         assertEq(rewardData.periodFinish, block.timestamp + duration);
         assertEq(
             rewardData.rewardRate,
-            (rewardAmount + (rewardAmount / 2)) / duration
+            ((rewardAmount + (rewardAmount / 2)) * WAD) / duration
         );
     }
 
@@ -162,11 +162,14 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.earned(user, address(rewardToken)), rewardAmount / 2);
         assertEq(staker.earned(user, address(rewardToken2)), rewardAmount / 2);
 
+        uint256 preBalance = rewardToken.balanceOf(user);
+        uint256 preBalance2 = rewardToken2.balanceOf(user);
+
         vm.prank(user);
         staker.getReward();
 
-        assertEq(rewardToken.balanceOf(user), rewardAmount / 2);
-        assertEq(rewardToken2.balanceOf(user), rewardAmount / 2);
+        assertEq(rewardToken.balanceOf(user), preBalance + rewardAmount / 2);
+        assertEq(rewardToken2.balanceOf(user), preBalance2 + rewardAmount / 2);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken2)), 0);
     }
@@ -193,10 +196,12 @@ contract TokenizedStakerTest is Setup {
 
         skip(duration / 2);
 
+        uint256 preBalance = rewardToken.balanceOf(user);
+
         vm.prank(user);
         staker.getOneReward(address(rewardToken));
 
-        assertEq(rewardToken.balanceOf(user), rewardAmount / 2);
+        assertEq(rewardToken.balanceOf(user), preBalance + rewardAmount / 2);
         assertEq(rewardToken2.balanceOf(user), 0);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken2)), rewardAmount / 2);
@@ -333,5 +338,55 @@ contract TokenizedStakerTest is Setup {
 
         // All rewards should be gone minus precision loss
         assertLt(rewardToken.balanceOf(address(staker)), 10);
+    }
+}
+
+contract TokenizedStakerTestLowerDecimals is TokenizedStakerTest {
+    function setUp() public override {
+        _setTokenAddrs();
+
+        // Make sure everything works with USDT
+        asset = ERC20(tokenAddrs["YFI"]);
+
+        minFuzzAmount = 1e12;
+        maxFuzzAmount = 1e24;
+
+        // Set decimals
+        decimals = asset.decimals();
+
+        mockStrategy = setUpStrategy();
+
+        vaultFactory = IVaultFactory(mockStrategy.FACTORY());
+
+        rewardToken = ERC20(tokenAddrs["USDC"]);
+        rewardToken2 = ERC20(tokenAddrs["WBTC"]);
+
+        staker = IMockTokenizedStaker(
+            address(
+                new MockTokenizedStaker(address(asset), "MockTokenizedStaker")
+            )
+        );
+
+        staker.setKeeper(keeper);
+        staker.setPerformanceFeeRecipient(performanceFeeRecipient);
+        staker.setPendingManagement(management);
+        // Accept management.
+        vm.prank(management);
+        staker.acceptManagement();
+
+        // Add initial reward token
+        vm.prank(management);
+        staker.addReward(address(rewardToken), management, duration);
+
+        // label all the used addresses for traces
+        vm.label(user, "user");
+        vm.label(daddy, "daddy");
+        vm.label(keeper, "keeper");
+        vm.label(address(asset), "asset");
+        vm.label(management, "management");
+        vm.label(address(mockStrategy), "strategy");
+        vm.label(vaultManagement, "vault management");
+        vm.label(address(vaultFactory), " vault factory");
+        vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 }

@@ -196,9 +196,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         return
             _rewardData.rewardPerTokenStored +
             (((lastTimeRewardApplicable(_rewardToken) -
-                _rewardData.lastUpdateTime) *
-                _rewardData.rewardRate *
-                PRECISION) / totalSupply);
+                _rewardData.lastUpdateTime) * _rewardData.rewardRate) /
+                totalSupply);
     }
 
     /// @notice Amount of reward token pending claim by an account.
@@ -238,8 +237,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     ) external view virtual returns (uint256) {
         // note that if rewards are instant released, this will always return zero
         return
-            rewardData[_rewardToken].rewardRate *
-            rewardData[_rewardToken].rewardsDuration;
+            (rewardData[_rewardToken].rewardRate *
+                rewardData[_rewardToken].rewardsDuration) / PRECISION;
     }
 
     /// @notice Correct Total supply for the locked shares from profits
@@ -302,7 +301,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             // Update lastNotifyTime and lastRewardRate if needed (would revert if in the same block otherwise)
             if (uint96(block.timestamp) != _rewardData.lastNotifyTime) {
                 _rewardData.lastRewardRate = uint128(
-                    _rewardAmount /
+                    (_rewardAmount * PRECISION) /
                         (block.timestamp - _rewardData.lastNotifyTime)
                 );
                 _rewardData.lastNotifyTime = uint96(block.timestamp);
@@ -326,11 +325,12 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             // update our rewardData with our new rewardRate
             if (block.timestamp >= _rewardData.periodFinish) {
                 _rewardData.rewardRate = uint128(
-                    _rewardAmount / _rewardData.rewardsDuration
+                    (_rewardAmount * PRECISION) / _rewardData.rewardsDuration
                 );
             } else {
                 _rewardData.rewardRate = uint128(
-                    (_rewardAmount +
+                    (_rewardAmount *
+                        PRECISION +
                         (_rewardData.periodFinish - block.timestamp) *
                         _rewardData.rewardRate) / _rewardData.rewardsDuration
                 );
@@ -345,7 +345,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         // make sure we have enough reward token for our new rewardRate
         require(
             _rewardData.rewardRate <=
-                (ERC20(_rewardToken).balanceOf(address(this)) /
+                ((ERC20(_rewardToken).balanceOf(address(this)) * PRECISION) /
                     _rewardData.rewardsDuration),
             "Not enough balance"
         );
