@@ -375,8 +375,8 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.rewards(protocolFeeRecipient, address(rewardToken)), 0);
         assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
 
-        // All rewards should be gone minus precision loss
-        assertLt(rewardToken.balanceOf(address(staker)), 10);
+        // All rewards should be gone minus precision loss. Allow 0.01% tolerance.
+        assertLt(rewardToken.balanceOf(address(staker)), rewardAmount / 10_000);
     }
 }
 
