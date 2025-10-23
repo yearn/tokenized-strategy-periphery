@@ -33,7 +33,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
          */
         uint96 lastNotifyTime;
-        /// @notice The last rewardRate before a notifyRewardAmount was called scaled by PRECISION
+        /// @notice The last rewardRate before a notifyRewardAmount was called.
         uint128 lastRewardRate;
     }
 
