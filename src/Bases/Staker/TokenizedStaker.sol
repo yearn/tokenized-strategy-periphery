@@ -300,7 +300,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         if (_rewardData.rewardsDuration == 1) {
             // Update lastNotifyTime and lastRewardRate if needed (would revert if in the same block otherwise)
             if (uint96(block.timestamp) != _rewardData.lastNotifyTime) {
-                _rewardData.lastRewardRate = uint128(
+                _rewardData.lastRewardRate = _safeUint128(
                     (_rewardAmount * PRECISION) /
                         (block.timestamp - _rewardData.lastNotifyTime)
                 );
@@ -312,36 +312,29 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             _rewardData.periodFinish = uint96(block.timestamp);
 
             // Instantly release rewards by modifying rewardPerTokenStored
-            uint256 rewardPerTokenStored = _rewardData.rewardPerTokenStored +
-                (_rewardAmount * PRECISION) /
-                totalSupply;
-            require(
-                rewardPerTokenStored <= type(uint128).max,
-                "rewardRate too high"
+            _rewardData.rewardPerTokenStored = _safeUint128(
+                _rewardData.rewardPerTokenStored +
+                    (_rewardAmount * PRECISION) /
+                    totalSupply
             );
-            _rewardData.rewardPerTokenStored = uint128(rewardPerTokenStored);
         } else {
             // store current rewardRate
             _rewardData.lastRewardRate = _rewardData.rewardRate;
             _rewardData.lastNotifyTime = uint96(block.timestamp);
 
             // update our rewardData with our new rewardRate
-            uint256 rewardRate;
             if (block.timestamp >= _rewardData.periodFinish) {
-                rewardRate =
-                    (_rewardAmount * PRECISION) /
-                    _rewardData.rewardsDuration;
+                _rewardData.rewardRate = _safeUint128(
+                    (_rewardAmount * PRECISION) / _rewardData.rewardsDuration
+                );
             } else {
-                rewardRate =
+                _rewardData.rewardRate = _safeUint128(
                     (_rewardAmount *
                         PRECISION +
                         (_rewardData.periodFinish - block.timestamp) *
-                        _rewardData.rewardRate) /
-                    _rewardData.rewardsDuration;
+                        _rewardData.rewardRate) / _rewardData.rewardsDuration
+                );
             }
-
-            require(rewardRate <= type(uint128).max, "rewardRate too high");
-            _rewardData.rewardRate = uint128(rewardRate);
 
             // update time-based struct fields
             _rewardData.periodFinish = uint96(
@@ -360,6 +353,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         // write to storage
         rewardData[_rewardToken] = _rewardData;
         emit RewardAdded(_rewardToken, _rewardAmount);
+    }
+
+    function _safeUint128(uint256 value) internal pure returns (uint128) {
+        require(value <= type(uint128).max, "value doesn't fit in 128 bits");
+        return uint128(value);
     }
 
     /**
