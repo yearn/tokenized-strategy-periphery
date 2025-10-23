@@ -21,7 +21,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev  Will be the timestamp of the update or the end of the period, whichever is earlier.
          */
         uint96 lastUpdateTime;
-        /// @notice The distribution rate of reward token per second.
+        /// @notice The distribution rate of reward token per second scaled by PRECISION
         uint128 rewardRate;
         /**
          * @notice The most recent stored amount for rewardPerToken().
@@ -33,7 +33,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
          */
         uint96 lastNotifyTime;
-        /// @notice The last rewardRate before a notifyRewardAmount was called
+        /// @notice The last rewardRate before a notifyRewardAmount was called scaled by PRECISION
         uint128 lastRewardRate;
     }
 
@@ -280,7 +280,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         uint256 _rewardAmount
     ) internal virtual updateReward(address(0)) {
         Reward memory _rewardData = rewardData[_rewardToken];
-        require(_rewardAmount > 0 && _rewardAmount < 1e30, "bad reward value");
+        require(_rewardAmount > 0, "bad reward value");
 
         // If total supply is 0, send tokens to management instead of reverting.
         // Prevent footguns if _notifyRewardInstant() is part of predeposit hooks.
@@ -312,29 +312,36 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             _rewardData.periodFinish = uint96(block.timestamp);
 
             // Instantly release rewards by modifying rewardPerTokenStored
-            _rewardData.rewardPerTokenStored = uint128(
-                _rewardData.rewardPerTokenStored +
-                    (_rewardAmount * PRECISION) /
-                    totalSupply
+            uint256 rewardPerTokenStored = _rewardData.rewardPerTokenStored +
+                (_rewardAmount * PRECISION) /
+                totalSupply;
+            require(
+                rewardPerTokenStored <= type(uint128).max,
+                "rewardRate too high"
             );
+            _rewardData.rewardPerTokenStored = uint128(rewardPerTokenStored);
         } else {
             // store current rewardRate
             _rewardData.lastRewardRate = _rewardData.rewardRate;
             _rewardData.lastNotifyTime = uint96(block.timestamp);
 
             // update our rewardData with our new rewardRate
+            uint256 rewardRate;
             if (block.timestamp >= _rewardData.periodFinish) {
-                _rewardData.rewardRate = uint128(
-                    (_rewardAmount * PRECISION) / _rewardData.rewardsDuration
-                );
+                rewardRate =
+                    (_rewardAmount * PRECISION) /
+                    _rewardData.rewardsDuration;
             } else {
-                _rewardData.rewardRate = uint128(
+                rewardRate =
                     (_rewardAmount *
                         PRECISION +
                         (_rewardData.periodFinish - block.timestamp) *
-                        _rewardData.rewardRate) / _rewardData.rewardsDuration
-                );
+                        _rewardData.rewardRate) /
+                    _rewardData.rewardsDuration;
             }
+
+            require(rewardRate <= type(uint128).max, "rewardRate too high");
+            _rewardData.rewardRate = uint128(rewardRate);
 
             // update time-based struct fields
             _rewardData.periodFinish = uint96(
