@@ -21,7 +21,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev  Will be the timestamp of the update or the end of the period, whichever is earlier.
          */
         uint96 lastUpdateTime;
-        /// @notice The distribution rate of reward token per second.
+        /// @notice The distribution rate of reward token per second scaled by PRECISION
         uint128 rewardRate;
         /**
          * @notice The most recent stored amount for rewardPerToken().
@@ -33,7 +33,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
          * @dev Used for lastRewardRate, a rewardRate equivalent for instant reward releases.
          */
         uint96 lastNotifyTime;
-        /// @notice The last rewardRate before a notifyRewardAmount was called
+        /// @notice The last rewardRate before a notifyRewardAmount was called.
         uint128 lastRewardRate;
     }
 
@@ -196,9 +196,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         return
             _rewardData.rewardPerTokenStored +
             (((lastTimeRewardApplicable(_rewardToken) -
-                _rewardData.lastUpdateTime) *
-                _rewardData.rewardRate *
-                PRECISION) / totalSupply);
+                _rewardData.lastUpdateTime) * _rewardData.rewardRate) /
+                totalSupply);
     }
 
     /// @notice Amount of reward token pending claim by an account.
@@ -238,8 +237,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     ) external view virtual returns (uint256) {
         // note that if rewards are instant released, this will always return zero
         return
-            rewardData[_rewardToken].rewardRate *
-            rewardData[_rewardToken].rewardsDuration;
+            (rewardData[_rewardToken].rewardRate *
+                rewardData[_rewardToken].rewardsDuration) / PRECISION;
     }
 
     /// @notice Correct Total supply for the locked shares from profits
@@ -281,7 +280,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         uint256 _rewardAmount
     ) internal virtual updateReward(address(0)) {
         Reward memory _rewardData = rewardData[_rewardToken];
-        require(_rewardAmount > 0 && _rewardAmount < 1e30, "bad reward value");
+        require(_rewardAmount > 0, "bad reward value");
 
         // If total supply is 0, send tokens to management instead of reverting.
         // Prevent footguns if _notifyRewardInstant() is part of predeposit hooks.
@@ -301,8 +300,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         if (_rewardData.rewardsDuration == 1) {
             // Update lastNotifyTime and lastRewardRate if needed (would revert if in the same block otherwise)
             if (uint96(block.timestamp) != _rewardData.lastNotifyTime) {
-                _rewardData.lastRewardRate = uint128(
-                    _rewardAmount /
+                _rewardData.lastRewardRate = _safeUint128(
+                    (_rewardAmount * PRECISION) /
                         (block.timestamp - _rewardData.lastNotifyTime)
                 );
                 _rewardData.lastNotifyTime = uint96(block.timestamp);
@@ -313,7 +312,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             _rewardData.periodFinish = uint96(block.timestamp);
 
             // Instantly release rewards by modifying rewardPerTokenStored
-            _rewardData.rewardPerTokenStored = uint128(
+            _rewardData.rewardPerTokenStored = _safeUint128(
                 _rewardData.rewardPerTokenStored +
                     (_rewardAmount * PRECISION) /
                     totalSupply
@@ -325,12 +324,13 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
             // update our rewardData with our new rewardRate
             if (block.timestamp >= _rewardData.periodFinish) {
-                _rewardData.rewardRate = uint128(
-                    _rewardAmount / _rewardData.rewardsDuration
+                _rewardData.rewardRate = _safeUint128(
+                    (_rewardAmount * PRECISION) / _rewardData.rewardsDuration
                 );
             } else {
-                _rewardData.rewardRate = uint128(
-                    (_rewardAmount +
+                _rewardData.rewardRate = _safeUint128(
+                    (_rewardAmount *
+                        PRECISION +
                         (_rewardData.periodFinish - block.timestamp) *
                         _rewardData.rewardRate) / _rewardData.rewardsDuration
                 );
@@ -345,7 +345,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         // make sure we have enough reward token for our new rewardRate
         require(
             _rewardData.rewardRate <=
-                (ERC20(_rewardToken).balanceOf(address(this)) /
+                ((ERC20(_rewardToken).balanceOf(address(this)) * PRECISION) /
                     _rewardData.rewardsDuration),
             "Not enough balance"
         );
@@ -353,6 +353,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         // write to storage
         rewardData[_rewardToken] = _rewardData;
         emit RewardAdded(_rewardToken, _rewardAmount);
+    }
+
+    function _safeUint128(uint256 value) internal pure returns (uint128) {
+        require(value <= type(uint128).max, "value doesn't fit in 128 bits");
+        return uint128(value);
     }
 
     /**

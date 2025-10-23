@@ -264,12 +264,12 @@ contract AuctionSwapperTest is Setup {
             _amount /
             fromScaler;
         assertEq(auction.price(from), startingPrice);
-        assertRelApproxEq(
+        assertApproxEqRel(
             auction.getAmountNeeded(from, _amount),
             (startingPrice * fromScaler * _amount) /
                 (WAD / wantScaler) /
                 wantScaler,
-            MAX_BPS
+            0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auction.price(from, block.timestamp + 100);
@@ -415,12 +415,12 @@ contract AuctionSwapperTest is Setup {
             kickable /
             fromScaler;
         assertEq(auction.price(from), startingPrice);
-        assertRelApproxEq(
+        assertApproxEqRel(
             auction.getAmountNeeded(from, kickable),
             (startingPrice * fromScaler * kickable) /
                 (WAD / wantScaler) /
                 wantScaler,
-            MAX_BPS
+            0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auction.price(from, block.timestamp + 100);

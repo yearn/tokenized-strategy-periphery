@@ -2,7 +2,7 @@
 pragma solidity >=0.8.18;
 
 import "forge-std/console.sol";
-import {ExtendedTest} from "./ExtendedTest.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -17,7 +17,7 @@ import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 import {MockStrategy} from "../mocks/MockStrategy.sol";
 import {Clonable} from "../../utils/Clonable.sol";
 
-contract Setup is ExtendedTest, Clonable {
+contract Setup is Test, Clonable {
     using SafeERC20 for ERC20;
 
     VyperDeployer public vyperDeployer = new VyperDeployer();
