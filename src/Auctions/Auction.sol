@@ -704,6 +704,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(address(order.buyToken) == want(), "bad token");
         require(order.receiver == receiver, "bad receiver");
         require(order.sellAmount <= auction.initialAvailable, "bad amount");
+        require(order.sellTokenBalance == keccak256("erc20"), "bad sell token balance");
+        require(order.buyTokenBalance == keccak256("erc20"), "bad buy token balance");
 
         // If all checks pass, return the magic value
         return this.isValidSignature.selector;
