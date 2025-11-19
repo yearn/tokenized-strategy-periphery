@@ -19,6 +19,9 @@ interface IAuction {
     /// @notice Emitted when auction has been kicked.
     event AuctionKicked(address indexed from, uint256 available);
 
+    /// @notice Emitted when the minimum price is updated.
+    event UpdatedMinimumPrice(uint256 minimumPrice);
+
     /// @notice Emitted when the starting price is updated.
     event UpdatedStartingPrice(uint256 startingPrice);
 
@@ -218,6 +221,13 @@ interface IAuction {
      * @return bool Whether there is an active auction.
      */
     function isAnActiveAuction() external view returns (bool);
+
+    /**
+     * @notice Sets the minimum price for the auction.
+     * @dev If the price per auction goes below this, the auction is considered inactive.
+     * @param _minimumPrice The new minimum price for the auction.
+     */
+    function setMinimumPrice(uint256 _minimumPrice) external;
 
     /**
      * @notice Sets the starting price for the auction.

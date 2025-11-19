@@ -214,6 +214,55 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.kickable(from), _amount);
     }
 
+    function test_kickAuction_belowMinimumPrice(uint256 _amount) public {
+        vm.assume(_amount >= 1e6 && _amount <= maxFuzzAmount); // Minimum 0.01 WBTC
+
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        auction.setStartingPrice(_amount * 200_000 / (10 ** ERC20(from).decimals()));
+        auction.setMinimumPrice(100_000 * 1e18);
+
+        fromScaler = WAD / 10 ** ERC20(from).decimals();
+        wantScaler = WAD / 10 ** ERC20(asset).decimals();
+
+        auction.enable(from);
+
+        airdrop(ERC20(from), address(auction), _amount);
+
+        auction.kick(from);
+
+        // We need to halve the price, which with 0.5% decay per step takes ~138.6 steps
+        uint256 approximateSteps = 138;
+        uint256 timeToSkip = approximateSteps * auction.stepDuration();
+
+        // Make sure the total time we skip is less than the auction length
+        // so that the re-kick check at the end is valid at all times
+        assertGt(auction.auctionLength(), timeToSkip + 1 minutes);
+
+        skip(timeToSkip);
+
+        // Price should be at or just above minimum price
+        uint256 currentPrice = auction.price(from) * wantScaler;
+        assertApproxEqRel(currentPrice, auction.minimumPrice(), 1e16); // 1% tolerance
+        assertGt(currentPrice, auction.minimumPrice());
+        assertTrue(auction.isActive(from));
+
+        // Can't kick a new one yet
+        vm.expectRevert("too soon");
+        auction.kick(from);
+
+        // Skip just a touch more to go below minimum price
+        skip(1 minutes);
+
+        currentPrice = auction.price(from) * wantScaler;
+        assertLt(currentPrice, auction.minimumPrice());
+        assertFalse(auction.isActive(from));
+
+        // Now we can kick, even though auction length hasn't fully passed
+        auction.kick(from);
+    }
+
     function test_forceKick(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
@@ -458,6 +507,39 @@ contract AuctionTest is Setup, ITaker {
         assertEq(ERC20(from).balanceOf(address(auction)), left);
         assertEq(ERC20(asset).balanceOf(address(mockStrategy)), needed);
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
+    }
+
+    function test_setMinimumPrice() public {
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial minimum price is 0
+        assertEq(auction.minimumPrice(), 0);
+
+        // Test setting valid minimum prices
+        auction.setMinimumPrice(1e5);
+        assertEq(auction.minimumPrice(), 1e5);
+
+        auction.setMinimumPrice(5e18);
+        assertEq(auction.minimumPrice(), 5e18);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setMinimumPrice(1e6);
+
+        // Test cannot change during active auction
+        auction.enable(from);
+        airdrop(ERC20(from), address(auction), 1e8);
+        auction.kick(from);
+
+        vm.expectRevert("active auction");
+        auction.setMinimumPrice(1e7);
+
+        // After auction ends, can change again
+        skip(auction.auctionLength() + 1);
+        auction.setMinimumPrice(1e7);
+        assertEq(auction.minimumPrice(), 1e7);
     }
 
     function test_setStepDuration() public {
