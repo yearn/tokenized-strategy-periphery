@@ -61,6 +61,9 @@ interface IAuction {
     /// @notice The address that will receive the funds in the auction.
     function receiver() external view returns (address);
 
+    /// @notice The minimum price for the auction, scaled to 1e18.
+    function minimumPrice() external view returns (uint256);
+
     /// @notice The amount to start the auction at.
     function startingPrice() external view returns (uint256);
 
