@@ -220,7 +220,9 @@ contract AuctionTest is Setup, ITaker {
         address from = tokenAddrs["WBTC"];
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
-        auction.setStartingPrice(_amount * 200_000 / (10 ** ERC20(from).decimals()));
+        auction.setStartingPrice(
+            (_amount * 200_000) / (10 ** ERC20(from).decimals())
+        );
         auction.setMinimumPrice(100_000 * 1e18);
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();

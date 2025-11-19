@@ -623,7 +623,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
         AuctionInfo memory auction = auctions[_from];
 
         // Max amount that can be taken.
-        uint256 _available = Maths.min(auction.initialAvailable, ERC20(_from).balanceOf(address(this)));
+        uint256 _available = Maths.min(
+            auction.initialAvailable,
+            ERC20(_from).balanceOf(address(this))
+        );
         _amountTaken = _available > _maxAmount ? _maxAmount : _available;
 
         // Get the amount needed. Returns 0 if auction not active.
