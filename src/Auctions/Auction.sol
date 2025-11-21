@@ -193,7 +193,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @return . Whether the auction is active.
      */
     function isActive(address _from) public view virtual returns (bool) {
-        return price(_from) > 0;
+        return
+            _price(
+                auctions[_from].kicked,
+                auctions[_from].initialAvailable * auctions[_from].scaler,
+                block.timestamp
+            ) > 0;
     }
 
     /**
@@ -295,7 +300,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      * @return . The price of the auction.
      */
-    function price(address _from) public view virtual returns (uint256) {
+    function price(address _from) external view virtual returns (uint256) {
         return price(_from, block.timestamp);
     }
 
