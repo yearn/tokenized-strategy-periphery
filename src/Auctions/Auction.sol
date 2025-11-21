@@ -193,12 +193,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @return . Whether the auction is active.
      */
     function isActive(address _from) public view virtual returns (bool) {
-        return
-            _price(
-                auctions[_from].kicked,
-                auctions[_from].initialAvailable * auctions[_from].scaler,
-                block.timestamp
-            ) > 0;
+        return price(_from, block.timestamp) > 0;
     }
 
     /**
