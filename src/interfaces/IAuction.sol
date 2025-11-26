@@ -19,6 +19,9 @@ interface IAuction {
     /// @notice Emitted when auction has been kicked.
     event AuctionKicked(address indexed from, uint256 available);
 
+    /// @notice Emitted when the receiver is updated.
+    event UpdatedReceiver(address receiver);
+
     /// @notice Emitted when the minimum price is updated.
     event UpdatedMinimumPrice(uint256 minimumPrice);
 
@@ -224,6 +227,12 @@ interface IAuction {
      * @return bool Whether there is an active auction.
      */
     function isAnActiveAuction() external view returns (bool);
+
+    /**
+     * @notice Sets the receiver address for the auction funds.
+     * @param _receiver The new receiver address.
+     */
+    function setReceiver(address _receiver) external;
 
     /**
      * @notice Sets the minimum price for the auction.

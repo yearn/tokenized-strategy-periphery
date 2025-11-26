@@ -511,6 +511,27 @@ contract AuctionTest is Setup, ITaker {
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
     }
 
+    function test_setReceiver() public {
+        address from = tokenAddrs["WBTC"];
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial receiver is this contract
+        assertEq(auction.receiver(), address(this));
+
+        // Test setting valid receiver
+        auction.setReceiver(management);
+        assertEq(auction.receiver(), management);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setReceiver(user);
+
+        // Test invalid receiver (zero address)
+        vm.expectRevert("ZERO ADDRESS");
+        auction.setReceiver(address(0));
+    }
+
     function test_setMinimumPrice() public {
         address from = tokenAddrs["WBTC"];
         auction = Auction(auctionFactory.createNewAuction(address(asset)));

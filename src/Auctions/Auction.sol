@@ -31,6 +31,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when auction has been kicked.
     event AuctionKicked(address indexed from, uint256 available);
 
+    /// @notice Emitted when the receiver is updated.
+    event UpdatedReceiver(address receiver);
+
     /// @notice Emitted when the minimum price is updated.
     event UpdatedMinimumPrice(uint256 minimumPrice);
 
@@ -446,6 +449,18 @@ contract Auction is Governance2Step, ReentrancyGuard {
             }
         }
         return false;
+    }
+
+    /**
+     * @notice Sets the receiver address for the auction funds.
+     * @param _receiver The new receiver address.
+     */
+    function setReceiver(address _receiver) external virtual onlyGovernance {
+        require(_receiver != address(0), "ZERO ADDRESS");
+
+        receiver = _receiver;
+
+        emit UpdatedReceiver(_receiver);
     }
 
     /**
