@@ -32,7 +32,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     event AuctionKicked(address indexed from, uint256 available);
 
     /// @notice Emitted when the receiver is updated.
-    event UpdatedReceiver(address receiver);
+    event UpdatedReceiver(address indexed receiver);
 
     /// @notice Emitted when the minimum price is updated.
     event UpdatedMinimumPrice(uint256 minimumPrice);
