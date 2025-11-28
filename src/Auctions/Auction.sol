@@ -458,6 +458,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function setReceiver(address _receiver) external virtual onlyGovernance {
         require(_receiver != address(0), "ZERO ADDRESS");
 
+        // Don't change the receiver when an auction is active.
+        require(!isAnActiveAuction(), "active auction");
+
         receiver = _receiver;
 
         emit UpdatedReceiver(_receiver);
