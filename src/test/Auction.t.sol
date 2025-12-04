@@ -257,8 +257,7 @@ contract AuctionTest is Setup, ITaker {
         // Skip just a touch more to go below minimum price
         skip(1 minutes);
 
-        currentPrice = auction.price(from) * wantScaler;
-        assertLt(currentPrice, auction.minimumPrice());
+        assertEq(auction.price(from), 0);
         assertFalse(auction.isActive(from));
 
         // Now we can kick, even though auction length hasn't fully passed
