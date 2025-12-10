@@ -5,18 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {
-    IPendleRouter,
-    IPMarket,
-    IPYieldToken,
-    ApproxParams,
-    TokenInput,
-    TokenOutput,
-    SwapData,
-    SwapType,
-    LimitOrderData,
-    FillOrderParams
-} from "../interfaces/Pendle/IPendle.sol";
+import {IPendleRouter, IPMarket, IPYieldToken, ApproxParams, TokenInput, TokenOutput, SwapData, SwapType, LimitOrderData, FillOrderParams} from "../interfaces/Pendle/IPendle.sol";
 
 /**
  * @title PendleSwapper
@@ -113,14 +102,15 @@ contract PendleSwapper is BaseSwapper {
     ) internal virtual returns (uint256 _amountOut) {
         _checkAllowance(pendleRouter, _tokenIn, _amountIn);
 
-        (uint256 netPtOut, , ) = IPendleRouter(pendleRouter).swapExactTokenForPt(
-            address(this),
-            _market,
-            _minPtOut,
-            _getDefaultApproxParams(),
-            _getSimpleTokenInput(_tokenIn, _amountIn),
-            _getEmptyLimitOrderData()
-        );
+        (uint256 netPtOut, , ) = IPendleRouter(pendleRouter)
+            .swapExactTokenForPt(
+                address(this),
+                _market,
+                _minPtOut,
+                _getDefaultApproxParams(),
+                _getSimpleTokenInput(_tokenIn, _amountIn),
+                _getEmptyLimitOrderData()
+            );
 
         _amountOut = netPtOut;
     }
@@ -143,13 +133,14 @@ contract PendleSwapper is BaseSwapper {
     ) internal virtual returns (uint256 _amountOut) {
         _checkAllowance(pendleRouter, _pt, _amountIn);
 
-        (uint256 netTokenOut, , ) = IPendleRouter(pendleRouter).swapExactPtForToken(
-            address(this),
-            _market,
-            _amountIn,
-            _getSimpleTokenOutput(_tokenOut, _minTokenOut),
-            _getEmptyLimitOrderData()
-        );
+        (uint256 netTokenOut, , ) = IPendleRouter(pendleRouter)
+            .swapExactPtForToken(
+                address(this),
+                _market,
+                _amountIn,
+                _getSimpleTokenOutput(_tokenOut, _minTokenOut),
+                _getEmptyLimitOrderData()
+            );
 
         _amountOut = netTokenOut;
     }

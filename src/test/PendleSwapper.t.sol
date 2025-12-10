@@ -110,7 +110,12 @@ contract PendleSwapperTest is Setup {
 
         // Try to swap to an unknown token (no market registered)
         vm.expectRevert("PendleSwapper: unknown market");
-        pendleSwapper.pendleSwapFrom(address(mockAsset), unknownToken, amount, 0);
+        pendleSwapper.pendleSwapFrom(
+            address(mockAsset),
+            unknownToken,
+            amount,
+            0
+        );
     }
 
     function test_zeroAmount_returns_zero() public {

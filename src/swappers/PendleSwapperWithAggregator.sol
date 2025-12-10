@@ -5,14 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {PendleSwapper} from "./PendleSwapper.sol";
-import {
-    IPendleRouter,
-    IPMarket,
-    IPYieldToken,
-    TokenInput,
-    TokenOutput,
-    SwapData
-} from "../interfaces/Pendle/IPendle.sol";
+import {IPendleRouter, IPMarket, IPYieldToken, TokenInput, TokenOutput, SwapData} from "../interfaces/Pendle/IPendle.sol";
 
 /**
  * @title PendleSwapperWithAggregator
@@ -67,14 +60,15 @@ contract PendleSwapperWithAggregator is PendleSwapper {
             swapData: _swapData
         });
 
-        (uint256 netPtOut, , ) = IPendleRouter(pendleRouter).swapExactTokenForPt(
-            address(this),
-            market,
-            _minPtOut,
-            _getDefaultApproxParams(),
-            input,
-            _getEmptyLimitOrderData()
-        );
+        (uint256 netPtOut, , ) = IPendleRouter(pendleRouter)
+            .swapExactTokenForPt(
+                address(this),
+                market,
+                _minPtOut,
+                _getDefaultApproxParams(),
+                input,
+                _getEmptyLimitOrderData()
+            );
 
         _amountOut = netPtOut;
     }
@@ -118,12 +112,8 @@ contract PendleSwapperWithAggregator is PendleSwapper {
         if (IPMarket(market).isExpired()) {
             (, , IPYieldToken YT) = IPMarket(market).readTokens();
 
-            (uint256 netTokenOut, ) = IPendleRouter(pendleRouter).redeemPyToToken(
-                address(this),
-                address(YT),
-                _amountIn,
-                output
-            );
+            (uint256 netTokenOut, ) = IPendleRouter(pendleRouter)
+                .redeemPyToToken(address(this), address(YT), _amountIn, output);
             _amountOut = netTokenOut;
         } else {
             (uint256 netTokenOut, , ) = IPendleRouter(pendleRouter)
