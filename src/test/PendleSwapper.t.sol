@@ -90,7 +90,7 @@ contract PendleSwapperTest is Setup {
         mockAsset.mint(address(pendleSwapper), amount);
 
         // Swap should return 0 when amount is below minAmountToSell
-        uint256 amountOut = pendleSwapper.swapFrom(
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(
             address(mockAsset),
             address(0x9999),
             amount,
@@ -110,7 +110,7 @@ contract PendleSwapperTest is Setup {
 
         // Try to swap to an unknown token (no market registered)
         vm.expectRevert("PendleSwapper: unknown market");
-        pendleSwapper.swapFrom(address(mockAsset), unknownToken, amount, 0);
+        pendleSwapper.pendleSwapFrom(address(mockAsset), unknownToken, amount, 0);
     }
 
     function test_zeroAmount_returns_zero() public {
@@ -119,7 +119,7 @@ contract PendleSwapperTest is Setup {
         pendleSwapper.setMarket(MOCK_PT, MOCK_MARKET);
 
         // Swap with 0 amount should return 0
-        uint256 amountOut = pendleSwapper.swapFrom(
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(
             address(mockAsset),
             MOCK_PT,
             0,

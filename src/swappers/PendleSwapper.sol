@@ -67,7 +67,7 @@ contract PendleSwapper is BaseSwapper {
      * @param _minAmountOut The minimum amount of `_to` to receive.
      * @return _amountOut The actual amount of `_to` received.
      */
-    function _swapFrom(
+    function _pendleSwapFrom(
         address _from,
         address _to,
         uint256 _amountIn,
