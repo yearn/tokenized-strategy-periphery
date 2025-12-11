@@ -193,12 +193,9 @@ contract PendleSwapper is BaseSwapper {
      *   Uses ~180k gas for the approximation.
      * @param _amountIn The input amount used to calculate guessMax.
      */
-    function _getDefaultApproxParams(uint256 _amountIn)
-        internal
-        view
-        virtual
-        returns (ApproxParams memory)
-    {
+    function _getDefaultApproxParams(
+        uint256 _amountIn
+    ) internal view virtual returns (ApproxParams memory) {
         uint256 _guessMax = guessMaxMultiplier == 0
             ? type(uint256).max
             : _amountIn * guessMaxMultiplier;
