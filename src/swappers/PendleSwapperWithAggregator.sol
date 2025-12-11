@@ -65,7 +65,7 @@ contract PendleSwapperWithAggregator is PendleSwapper {
                 address(this),
                 market,
                 _minPtOut,
-                _getDefaultApproxParams(),
+                _getDefaultApproxParams(_amountIn),
                 input,
                 _getEmptyLimitOrderData()
             );

@@ -29,6 +29,10 @@ contract MockPendleSwapper is BaseStrategy, PendleSwapper {
         _setMarket(_pt, _market);
     }
 
+    function setGuessMaxMultiplier(uint256 _multiplier) external {
+        _setGuessMaxMultiplier(_multiplier);
+    }
+
     function pendleSwapFrom(
         address _from,
         address _to,
@@ -65,6 +69,10 @@ contract MockPendleSwapperWithAggregator is
 
     function setMarket(address _pt, address _market) external {
         _setMarket(_pt, _market);
+    }
+
+    function setGuessMaxMultiplier(uint256 _multiplier) external {
+        _setGuessMaxMultiplier(_multiplier);
     }
 
     function pendleSwapFrom(
@@ -122,6 +130,8 @@ interface IMockPendleSwapper is IStrategy, IPendleSwapper {
     function setMinAmountToSell(uint256 _minAmountToSell) external;
 
     function setMarket(address _pt, address _market) external;
+
+    function setGuessMaxMultiplier(uint256 _multiplier) external;
 
     function pendleSwapFrom(
         address _from,

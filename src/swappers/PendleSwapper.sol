@@ -34,6 +34,9 @@ contract PendleSwapper is BaseSwapper {
     // Market registry: PT address => market address
     mapping(address => address) public markets;
 
+    // Multiplier for calculating guessMax in ApproxParams (0 = use type(uint256).max)
+    uint256 public guessMaxMultiplier;
+
     /**
      * @dev Register a PT token with its corresponding market.
      * @param _pt The address of the Principal Token.
@@ -41,6 +44,15 @@ contract PendleSwapper is BaseSwapper {
      */
     function _setMarket(address _pt, address _market) internal virtual {
         markets[_pt] = _market;
+    }
+
+    /**
+     * @dev Set the multiplier for calculating guessMax in ApproxParams.
+     *   If set to 0, uses type(uint256).max (Pendle's default behavior).
+     * @param _multiplier The multiplier to apply to input amount.
+     */
+    function _setGuessMaxMultiplier(uint256 _multiplier) internal virtual {
+        guessMaxMultiplier = _multiplier;
     }
 
     /**
@@ -107,7 +119,7 @@ contract PendleSwapper is BaseSwapper {
                 address(this),
                 _market,
                 _minPtOut,
-                _getDefaultApproxParams(),
+                _getDefaultApproxParams(_amountIn),
                 _getSimpleTokenInput(_tokenIn, _amountIn),
                 _getEmptyLimitOrderData()
             );
@@ -179,17 +191,22 @@ contract PendleSwapper is BaseSwapper {
      * @dev Returns the default ApproxParams for PT swaps.
      *   These are Pendle's recommended defaults that work without offchain hints.
      *   Uses ~180k gas for the approximation.
+     * @param _amountIn The input amount used to calculate guessMax.
      */
-    function _getDefaultApproxParams()
+    function _getDefaultApproxParams(uint256 _amountIn)
         internal
-        pure
+        view
         virtual
         returns (ApproxParams memory)
     {
+        uint256 _guessMax = guessMaxMultiplier == 0
+            ? type(uint256).max
+            : _amountIn * guessMaxMultiplier;
+
         return
             ApproxParams({
                 guessMin: 0,
-                guessMax: type(uint256).max,
+                guessMax: _guessMax,
                 guessOffchain: 0,
                 maxIteration: 256,
                 eps: 1e14 // 0.01%

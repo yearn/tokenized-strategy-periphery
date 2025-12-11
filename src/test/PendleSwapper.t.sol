@@ -143,6 +143,19 @@ contract PendleSwapperTest is Setup {
         // Verify default minAmountToSell is 0
         assertEq(pendleSwapper.minAmountToSell(), 0);
     }
+
+    function test_defaultGuessMaxMultiplier() public {
+        // Verify default guessMaxMultiplier is 0 (uses type(uint256).max)
+        assertEq(pendleSwapper.guessMaxMultiplier(), 0);
+    }
+
+    function test_setGuessMaxMultiplier() public {
+        // Set multiplier
+        vm.prank(management);
+        pendleSwapper.setGuessMaxMultiplier(1e14);
+
+        assertEq(pendleSwapper.guessMaxMultiplier(), 1e14);
+    }
 }
 
 /**
