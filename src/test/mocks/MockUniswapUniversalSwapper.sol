@@ -6,7 +6,8 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
 contract MockUniswapUniversalSwapper is BaseStrategy, UniswapUniversalSwapper {
     // Mainnet WETH address
-    address public constant WETH_ADDR = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant WETH_ADDR =
+        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     constructor(
         address _asset
@@ -85,7 +86,11 @@ interface IMockUniswapUniversalSwapper is IStrategy, IUniswapUniversalSwapper {
 
     function setUniFees(address _token0, address _token1, uint24 _fee) external;
 
-    function setV4Pool(address _token0, address _token1, bytes32 _poolId) external;
+    function setV4Pool(
+        address _token0,
+        address _token1,
+        bytes32 _poolId
+    ) external;
 
     function setV4Pool(
         address _token0,

@@ -135,14 +135,17 @@ contract UniswapUniversalSwapperForkTest is Setup {
     ERC20 public morpho;
 
     // Mainnet token addresses
-    address public constant WETH_ADDR = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant USDC_ADDR = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant MORPHO_ADDR = 0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
+    address public constant WETH_ADDR =
+        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant USDC_ADDR =
+        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant MORPHO_ADDR =
+        0x58D97B57BB95320F9a05dC918Aef65434969c2B2;
     // USDT is the asset from Setup: 0xdAC17F958D2ee523a2206206994597C13D831ec7
 
     // V3 pool fees
-    uint24 public constant V3_FEE_LOW = 500;    // 0.05% - USDT/WETH
-    uint24 public constant V3_FEE_MID = 3000;   // 0.3% - USDC/WETH
+    uint24 public constant V3_FEE_LOW = 500; // 0.05% - USDT/WETH
+    uint24 public constant V3_FEE_MID = 3000; // 0.3% - USDC/WETH
 
     // V4 pool IDs
     bytes32 public constant MORPHO_WETH_POOL_ID =
@@ -276,12 +279,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(weth.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            USDC_ADDR,
-            WETH_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(USDC_ADDR, WETH_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(usdc.balanceOf(address(swapper)), 0);
@@ -307,12 +305,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(usdc.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            WETH_ADDR,
-            USDC_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(WETH_ADDR, USDC_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(weth.balanceOf(address(swapper)), 0);
@@ -377,12 +370,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(weth.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            MORPHO_ADDR,
-            WETH_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(MORPHO_ADDR, WETH_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(morpho.balanceOf(address(swapper)), 0);
@@ -408,12 +396,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(morpho.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            WETH_ADDR,
-            MORPHO_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(WETH_ADDR, MORPHO_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(weth.balanceOf(address(swapper)), 0);
@@ -439,12 +422,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(weth.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            USDC_ADDR,
-            WETH_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(USDC_ADDR, WETH_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(usdc.balanceOf(address(swapper)), 0);
@@ -470,12 +448,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(usdc.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            WETH_ADDR,
-            USDC_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(WETH_ADDR, USDC_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(weth.balanceOf(address(swapper)), 0);
@@ -578,12 +551,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(usdc.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            MORPHO_ADDR,
-            USDC_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(MORPHO_ADDR, USDC_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(morpho.balanceOf(address(swapper)), 0);
@@ -613,12 +581,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(morpho.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            USDC_ADDR,
-            MORPHO_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(USDC_ADDR, MORPHO_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(usdc.balanceOf(address(swapper)), 0);
@@ -689,12 +652,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(morpho.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            USDC_ADDR,
-            MORPHO_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(USDC_ADDR, MORPHO_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(usdc.balanceOf(address(swapper)), 0);
@@ -765,12 +723,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(usdc.balanceOf(address(swapper)), 0);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            MORPHO_ADDR,
-            USDC_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(MORPHO_ADDR, USDC_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(morpho.balanceOf(address(swapper)), 0);
@@ -880,7 +833,12 @@ contract UniswapUniversalSwapperForkTest is Setup {
 
         // Should revert due to slippage
         vm.expectRevert();
-        swapper.swapFrom(address(asset), MORPHO_ADDR, amount, unrealisticMinOut);
+        swapper.swapFrom(
+            address(asset),
+            MORPHO_ADDR,
+            amount,
+            unrealisticMinOut
+        );
 
         // Verify input funds are still in swapper
         assertEq(asset.balanceOf(address(swapper)), amount);
@@ -915,12 +873,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         airdrop(morpho, address(swapper), amount);
 
         // Execute swap
-        uint256 amountOut = swapper.swapFrom(
-            MORPHO_ADDR,
-            WETH_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(MORPHO_ADDR, WETH_ADDR, amount, 0);
 
         // Verify swap results
         assertEq(morpho.balanceOf(address(swapper)), 0);
@@ -990,12 +943,7 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(weth.balanceOf(address(swapper)), 0);
 
         // Execute swap - should use V3 since fee is set
-        uint256 amountOut = swapper.swapFrom(
-            USDC_ADDR,
-            WETH_ADDR,
-            amount,
-            0
-        );
+        uint256 amountOut = swapper.swapFrom(USDC_ADDR, WETH_ADDR, amount, 0);
 
         // Verify swap completed successfully (using V3 path)
         assertEq(usdc.balanceOf(address(swapper)), 0);

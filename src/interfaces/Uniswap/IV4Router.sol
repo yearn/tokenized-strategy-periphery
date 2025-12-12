@@ -7,7 +7,9 @@ type Currency is address;
 
 /// @title IHooks
 /// @notice Interface for V4 hooks
-interface IHooks {}
+interface IHooks {
+
+}
 
 /// @title PoolKey
 /// @notice Identifies a Uniswap V4 pool
