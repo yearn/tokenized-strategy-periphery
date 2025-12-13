@@ -152,6 +152,9 @@ contract UniswapUniversalSwapperForkTest is Setup {
         0xd9f5cbaeb88b7f0d9b0549257ddd4c46f984e2fc4bccf056cc254b9fe3417fff;
     bytes32 public constant USDC_WETH_V4_POOL_ID =
         0xdce6394339af00981949f5f3baf27e3610c76326a700af57e4b3e3ae4977f78d;
+    // USDC/USDT V4 pool - fee: 10, tickSpacing: 1, no hooks
+    bytes32 public constant USDC_USDT_POOL_ID =
+        0x8aa4e11cbdf30eedc92100f4c8a31ff748e201d44712cc8c90d189edaa8e4e47;
 
     // V4 pool parameters (for manual setting if needed)
     uint24 public constant MORPHO_FEE = 2999;
@@ -320,9 +323,6 @@ contract UniswapUniversalSwapperForkTest is Setup {
      */
     function test_singleV4Hop_usdcToUsdt(uint256 amount) public {
         vm.assume(amount >= minUsdcAmount && amount <= maxUsdcAmount);
-
-        // USDC/USDT V4 pool - fee: 10, tickSpacing: 1, no hooks
-        bytes32 USDC_USDT_POOL_ID = 0x8aa4e11cbdf30eedc92100f4c8a31ff748e201d44712cc8c90d189edaa8e4e47;
 
         // Set V4 pool for USDC <-> USDT
         vm.prank(management);
@@ -949,5 +949,335 @@ contract UniswapUniversalSwapperForkTest is Setup {
         assertEq(usdc.balanceOf(address(swapper)), 0);
         assertGt(weth.balanceOf(address(swapper)), 0);
         assertEq(weth.balanceOf(address(swapper)), amountOut);
+    }
+
+    // ==================== TWO HOP WITH WETH AS INPUT/OUTPUT (NON-WETH BASE) ====================
+
+    /**
+     * @notice Test two V3 hops with WETH as input: WETH -> USDC (base) -> USDT
+     *         Base is USDC, not WETH
+     */
+    function test_twoV3Hops_wethAsInput_toAsset(uint256 amount) public {
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V3 fees for both hops
+        vm.prank(management);
+        swapper.setUniFees(WETH_ADDR, USDC_ADDR, V3_FEE_MID); // WETH -> USDC
+        vm.prank(management);
+        swapper.setUniFees(USDC_ADDR, address(asset), V3_FEE_LOW); // USDC -> USDT
+
+        // Airdrop WETH to swapper
+        airdrop(weth, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(weth.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+
+        // Execute swap: WETH -> USDC -> USDT
+        uint256 amountOut = swapper.swapFrom(
+            WETH_ADDR,
+            address(asset),
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(weth.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0); // No USDC left in swapper
+        assertGt(asset.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test two V3 hops with WETH as output: USDT -> USDC (base) -> WETH
+     *         Base is USDC, not WETH
+     */
+    function test_twoV3Hops_wethAsOutput_fromAsset(uint256 amount) public {
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V3 fees for both hops
+        vm.prank(management);
+        swapper.setUniFees(address(asset), USDC_ADDR, V3_FEE_LOW); // USDT -> USDC
+        vm.prank(management);
+        swapper.setUniFees(USDC_ADDR, WETH_ADDR, V3_FEE_MID); // USDC -> WETH
+
+        // Airdrop USDT to swapper
+        airdrop(asset, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(asset.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), 0);
+
+        // Execute swap: USDT -> USDC -> WETH
+        uint256 amountOut = swapper.swapFrom(
+            address(asset),
+            WETH_ADDR,
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0); // No USDC left in swapper
+        assertGt(weth.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test two V4 hops with WETH as input: WETH -> USDC (base) -> MORPHO
+     *         Base is USDC, not WETH. Tests V4 with native ETH as input.
+     */
+    function test_twoV4Hops_wethAsInput_toAsset(uint256 amount) public {
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V4 pools for both hops
+        vm.prank(management);
+        swapper.setV4Pool(WETH_ADDR, USDC_ADDR, USDC_WETH_V4_POOL_ID); // ETH -> USDC
+        vm.prank(management);
+        swapper.setV4Pool(USDC_ADDR, address(asset), USDC_USDT_POOL_ID); // USDC -> MORPHO (manual params)
+
+        // Airdrop WETH to swapper
+        airdrop(weth, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(weth.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+
+        // Execute swap: WETH -> USDC -> USDT
+        uint256 amountOut = swapper.swapFrom(
+            WETH_ADDR,
+            address(asset),
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(weth.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0); // No USDC left in swapper
+        assertGt(asset.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test two V4 hops with WETH as output: USDT -> USDC (base) -> WETH
+     *         Base is USDC, not WETH. Tests V4 with native ETH as output.
+     */
+    function test_twoV4Hops_wethAsOutput_fromAsset(uint256 amount) public {
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V4 pools for both hops
+        vm.prank(management);
+        swapper.setV4Pool(address(asset), USDC_ADDR, USDC_USDT_POOL_ID); // USDT -> USDC (manual params)
+        vm.prank(management);
+        swapper.setV4Pool(USDC_ADDR, WETH_ADDR, USDC_WETH_V4_POOL_ID); // USDC -> ETH
+
+        // Airdrop MORPHO to swapper
+        airdrop(asset, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(asset.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), 0);
+
+        // Execute swap: MORPHO -> USDC -> WETH
+        uint256 amountOut = swapper.swapFrom(
+            address(asset),
+            WETH_ADDR,
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0); // No USDC left in swapper
+        assertGt(weth.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test mixed V3 then V4 with WETH as input: WETH -> USDC (V3) -> MORPHO (V4)
+     *         Base is USDC. First hop uses WETH as input via V3.
+     */
+    function test_mixedV3ThenV4_wethAsInput(uint256 amount) public {
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V3 fee for first hop (WETH -> USDC)
+        vm.prank(management);
+        swapper.setUniFees(WETH_ADDR, USDC_ADDR, V3_FEE_MID);
+
+        // Set V4 pool for second hop (USDC -> MORPHO)
+        vm.prank(management);
+        swapper.setV4Pool(USDC_ADDR, address(asset), USDC_USDT_POOL_ID);
+
+        // Airdrop WETH to swapper
+        airdrop(weth, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(weth.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+
+        // Execute swap: WETH -> USDC -> USDT
+        uint256 amountOut = swapper.swapFrom(
+            WETH_ADDR,
+            address(asset),
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(weth.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertGt(asset.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test mixed V4 then V3 with WETH as output: MORPHO -> USDC (V4) -> WETH (V3)
+     *         Base is USDC. Second hop outputs WETH via V3.
+     */
+    function test_mixedV4ThenV3_wethAsOutput(uint256 amount) public {
+        vm.assume(amount >= minMorphoAmount && amount <= maxMorphoAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V4 pool for first hop (MORPHO -> USDC)
+        vm.prank(management);
+        swapper.setV4Pool(address(asset), USDC_ADDR, USDC_USDT_POOL_ID);
+
+        // Set V3 fee for second hop (USDC -> WETH)
+        vm.prank(management);
+        swapper.setUniFees(USDC_ADDR, WETH_ADDR, V3_FEE_MID);
+
+        // Airdrop USDT to swapper
+        airdrop(asset, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(asset.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), 0);
+
+        // Execute swap: USDT -> USDC -> WETH
+        uint256 amountOut = swapper.swapFrom(
+            address(asset),
+            WETH_ADDR,
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertGt(weth.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test mixed V3 then V4 with WETH as output: USDT -> USDC (V3) -> WETH (V4)
+     *         Base is USDC. Second hop outputs ETH via V4, needs wrapping.
+     */
+    function test_mixedV3ThenV4_wethAsOutput(uint256 amount) public {
+        vm.assume(amount >= minFuzzAmount && amount <= maxFuzzAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V3 fee for first hop (USDT -> USDC)
+        vm.prank(management);
+        swapper.setUniFees(address(asset), USDC_ADDR, V3_FEE_LOW);
+
+        // Set V4 pool for second hop (USDC -> WETH/ETH)
+        vm.prank(management);
+        swapper.setV4Pool(USDC_ADDR, WETH_ADDR, USDC_WETH_V4_POOL_ID);
+
+        // Airdrop USDT to swapper
+        airdrop(asset, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(asset.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), 0);
+
+        // Execute swap: USDT -> USDC -> WETH
+        uint256 amountOut = swapper.swapFrom(
+            address(asset),
+            WETH_ADDR,
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(asset.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertGt(weth.balanceOf(address(swapper)), 0);
+        assertEq(weth.balanceOf(address(swapper)), amountOut);
+    }
+
+    /**
+     * @notice Test mixed V4 then V3 with WETH as input: WETH -> USDC (V4) -> USDT (V3)
+     *         Base is USDC. First hop takes ETH via V4 (unwrap WETH first).
+     */
+    function test_mixedV4ThenV3_wethAsInput(uint256 amount) public {
+        vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
+
+        // Set base to USDC (not WETH)
+        vm.prank(management);
+        swapper.setBase(USDC_ADDR);
+
+        // Set V4 pool for first hop (WETH/ETH -> USDC)
+        vm.prank(management);
+        swapper.setV4Pool(WETH_ADDR, USDC_ADDR, USDC_WETH_V4_POOL_ID);
+
+        // Set V3 fee for second hop (USDC -> USDT)
+        vm.prank(management);
+        swapper.setUniFees(USDC_ADDR, address(asset), V3_FEE_LOW);
+
+        // Airdrop WETH to swapper
+        airdrop(weth, address(swapper), amount);
+
+        // Verify initial balances
+        assertEq(weth.balanceOf(address(swapper)), amount);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), 0);
+
+        // Execute swap: WETH -> USDC -> USDT
+        uint256 amountOut = swapper.swapFrom(
+            WETH_ADDR,
+            address(asset),
+            amount,
+            0
+        );
+
+        // Verify swap results
+        assertEq(weth.balanceOf(address(swapper)), 0);
+        assertEq(usdc.balanceOf(address(swapper)), 0);
+        assertGt(asset.balanceOf(address(swapper)), 0);
+        assertEq(asset.balanceOf(address(swapper)), amountOut);
     }
 }

@@ -4,12 +4,12 @@ pragma solidity >=0.8.18;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {IUniversalRouter} from "../interfaces/Uniswap/IUniversalRouter.sol";
-import {Currency, IHooks, PoolKey, PathKey, IV4Router} from "../interfaces/Uniswap/IV4Router.sol";
-import {Commands} from "../interfaces/Uniswap/Commands.sol";
-import {Actions} from "../interfaces/Uniswap/Actions.sol";
+import {IUniversalRouter} from "../interfaces/Uniswap/V4/IUniversalRouter.sol";
+import {Currency, IHooks, PoolKey, PathKey, IV4Router} from "../interfaces/Uniswap/V4/IV4Router.sol";
+import {Commands} from "../libraries/Uniswap/Commands.sol";
+import {Actions} from "../libraries/Uniswap/Actions.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {ActionConstants} from "../interfaces/Uniswap/ActionConstants.sol";
+import {ActionConstants} from "../libraries/Uniswap/ActionConstants.sol";
 
 interface IPermit2 {
     function approve(
@@ -172,18 +172,9 @@ contract UniswapUniversalSwapper is BaseSwapper {
     ) internal virtual returns (uint256 _amountOut) {
         if (_amountIn == 0 || _amountIn < minAmountToSell) return 0;
 
-        bool isSingleHop = (_from == base || _to == base);
-        bool hop1IsV3 = isSingleHop
-            ? uniFees[_from][_to] != 0
-            : uniFees[_from][base] != 0;
-        bool hop2IsV3 = isSingleHop
-            ? hop1IsV3
-            : uniFees[base][_to] != 0;
-
-
         bytes memory commands;
         bytes[] memory inputs;
-        if (isSingleHop) {
+        if (_from == base || _to == base) {
             (commands, inputs) = _buildSingleHop(
                 _from,
                 _to,
@@ -195,42 +186,15 @@ contract UniswapUniversalSwapper is BaseSwapper {
                 _from,
                 _to,
                 _amountIn,
-                _minAmountOut,
-                hop1IsV3,
-                hop2IsV3
+                _minAmountOut
             );
         }
 
         uint256 balanceOutBefore = ERC20(_to).balanceOf(address(this));
 
-        bool usesRouterUnwrap = isSingleHop &&
-            !hop1IsV3 &&
-            _from == weth;
+        ERC20(_from).safeTransfer(router, _amountIn);
 
-        // Fund router or Permit2 based on first hop
-        uint256 ethToSend = 0;
-        if (hop1IsV3) {
-            ERC20(_from).safeTransfer(router, _amountIn);
-        } else {
-            if (_from == weth) {
-                if (usesRouterUnwrap) {
-                    // Router will UNWRAP_WETH; keep WETH in router.
-                    ERC20(_from).safeTransfer(router, _amountIn);
-                } else {
-                    // V4 paths that expect native ETH; unwrap locally and send as value.
-                    IWETH(weth).withdraw(_amountIn);
-                    ethToSend = _amountIn;
-                }
-            } else {
-                _approvePermit2(_from, _amountIn);
-            }
-        }
-
-        IUniversalRouter(router).execute{value: ethToSend}(
-            commands,
-            inputs,
-            block.timestamp
-        );
+        IUniversalRouter(router).execute(commands, inputs, block.timestamp);
 
         uint256 ethBalance = address(this).balance;
         if (ethBalance > 0) {
@@ -271,14 +235,15 @@ contract UniswapUniversalSwapper is BaseSwapper {
         uint256 _amountIn,
         uint256 _minAmountOut
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
-        if (uniFees[_from][_to] != 0) {
+        uint24 fee = uniFees[_from][_to];
+        if (fee != 0) {
             commands = abi.encodePacked(uint8(Commands.V3_SWAP_EXACT_IN));
             inputs = new bytes[](1);
             inputs[0] = _buildV3ExactIn(
                 address(this),
                 _amountIn,
                 _minAmountOut,
-                abi.encodePacked(_from, uniFees[_from][_to], _to)
+                abi.encodePacked(_from, fee, _to)
             );
             return (commands, inputs);
         }
@@ -322,39 +287,58 @@ contract UniswapUniversalSwapper is BaseSwapper {
         address _from,
         address _to,
         uint256 _amountIn,
-        uint256 _minAmountOut,
-        bool hop1IsV3,
-        bool hop2IsV3
+        uint256 _minAmountOut
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
         bool baseIsWeth = (base == weth);
+        uint24 fee1 = uniFees[_from][base];
+        uint24 fee2 = uniFees[base][_to];
 
-        if (hop1IsV3 && hop2IsV3) {
-            return _buildTwoV3Hops(_from, _to, _amountIn, _minAmountOut);
+        if (fee1 != 0 && fee2 != 0) {
+            return
+                _buildTwoV3Hops(
+                    _from,
+                    _to,
+                    _amountIn,
+                    _minAmountOut,
+                    fee1,
+                    fee2
+                );
         }
 
-        if (!hop1IsV3 && !hop2IsV3) {
+        if (fee1 == 0 && fee2 == 0) {
             return _buildTwoV4Hops(_from, _to, _amountIn, _minAmountOut);
         }
 
-        if (hop1IsV3) {
+        if (fee1 != 0) {
             return
                 _buildV3ThenV4(
                     _from,
                     _to,
                     _amountIn,
                     _minAmountOut,
-                    baseIsWeth
+                    baseIsWeth,
+                    fee1
                 );
         }
 
-        return _buildV4ThenV3(_from, _to, _amountIn, _minAmountOut, baseIsWeth);
+        return
+            _buildV4ThenV3(
+                _from,
+                _to,
+                _amountIn,
+                _minAmountOut,
+                baseIsWeth,
+                fee2
+            );
     }
 
     function _buildTwoV3Hops(
         address _from,
         address _to,
         uint256 _amountIn,
-        uint256 _minAmountOut
+        uint256 _minAmountOut,
+        uint24 _fee1,
+        uint24 _fee2
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
         commands = abi.encodePacked(uint8(Commands.V3_SWAP_EXACT_IN));
         inputs = new bytes[](1);
@@ -362,13 +346,7 @@ contract UniswapUniversalSwapper is BaseSwapper {
             address(this),
             _amountIn,
             _minAmountOut,
-            abi.encodePacked(
-                _from,
-                uniFees[_from][base],
-                base,
-                uniFees[base][_to],
-                _to
-            )
+            abi.encodePacked(_from, _fee1, base, _fee2, _to)
         );
         return (commands, inputs);
     }
@@ -379,9 +357,24 @@ contract UniswapUniversalSwapper is BaseSwapper {
         uint256 _amountIn,
         uint256 _minAmountOut
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
-        commands = abi.encodePacked(uint8(Commands.V4_SWAP));
-        inputs = new bytes[](1);
-        inputs[0] = _buildV4MultiHopInput(_from, _to, _amountIn, _minAmountOut);
+        if (_from == weth) {
+            inputs = new bytes[](2);
+            commands = abi.encodePacked(
+                uint8(Commands.UNWRAP_WETH),
+                uint8(Commands.V4_SWAP)
+            );
+            inputs[0] = abi.encode(ActionConstants.ADDRESS_THIS, _amountIn);
+        } else {
+            inputs = new bytes[](1);
+            commands = abi.encodePacked(uint8(Commands.V4_SWAP));
+        }
+
+        inputs[inputs.length - 1] = _buildV4MultiHopInput(
+            _from,
+            _to,
+            _amountIn,
+            _minAmountOut
+        );
         return (commands, inputs);
     }
 
@@ -390,7 +383,8 @@ contract UniswapUniversalSwapper is BaseSwapper {
         address _to,
         uint256 _amountIn,
         uint256 _minAmountOut,
-        bool baseIsWeth
+        bool baseIsWeth,
+        uint24 _fee1
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
         uint256 length = baseIsWeth ? 3 : 2;
         commands = new bytes(length);
@@ -401,7 +395,7 @@ contract UniswapUniversalSwapper is BaseSwapper {
             ActionConstants.ADDRESS_THIS,
             _amountIn,
             0,
-            abi.encodePacked(_from, uniFees[_from][base], base)
+            abi.encodePacked(_from, _fee1, base)
         );
 
         if (baseIsWeth) {
@@ -425,7 +419,8 @@ contract UniswapUniversalSwapper is BaseSwapper {
         address _to,
         uint256 _amountIn,
         uint256 _minAmountOut,
-        bool baseIsWeth
+        bool baseIsWeth,
+        uint24 _fee2
     ) internal view returns (bytes memory commands, bytes[] memory inputs) {
         uint256 length = baseIsWeth || _from == weth ? 3 : 2;
         commands = new bytes(length);
@@ -474,7 +469,7 @@ contract UniswapUniversalSwapper is BaseSwapper {
             address(this),
             ActionConstants.CONTRACT_BALANCE,
             _minAmountOut,
-            abi.encodePacked(base, uniFees[base][_to], _to)
+            abi.encodePacked(base, _fee2, _to)
         );
 
         return (commands, inputs);
@@ -590,15 +585,21 @@ contract UniswapUniversalSwapper is BaseSwapper {
             });
 
         bytes memory actions = abi.encodePacked(
+            uint8(Actions.SETTLE),
             uint8(Actions.SWAP_EXACT_IN),
             uint8(Actions.SETTLE_ALL),
             uint8(Actions.TAKE_ALL)
         );
 
-        bytes[] memory params = new bytes[](3);
-        params[0] = abi.encode(swapParams);
-        params[1] = abi.encode(Currency.wrap(v4From), _amountIn);
-        params[2] = abi.encode(Currency.wrap(v4To), _minAmountOut);
+        bytes[] memory params = new bytes[](4);
+        params[0] = abi.encode(
+            Currency.wrap(v4From),
+            ActionConstants.CONTRACT_BALANCE,
+            false
+        );
+        params[1] = abi.encode(swapParams);
+        params[2] = abi.encode(Currency.wrap(v4From), _amountIn);
+        params[3] = abi.encode(Currency.wrap(v4To), _minAmountOut);
 
         return abi.encode(actions, params);
     }
