@@ -79,6 +79,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
 
+    /// @notice Whether only governance can kick auctions.
+    /// @dev Default is false.
+    bool public governanceOnlyKick;
+
     /// @notice The address that will receive the funds in the auction.
     address public receiver;
 
@@ -452,6 +456,16 @@ contract Auction is Governance2Step, ReentrancyGuard {
     }
 
     /**
+     * @notice Sets whether only governance can kick auctions.
+     * @param _governanceOnlyKick The new governance only kick setting.
+     */
+    function setGovernanceOnlyKick(
+        bool _governanceOnlyKick
+    ) external virtual onlyGovernance {
+        governanceOnlyKick = _governanceOnlyKick;
+    }
+
+    /**
      * @notice Sets the receiver address for the auction funds.
      * @param _receiver The new receiver address.
      */
@@ -560,6 +574,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function _kick(
         address _from
     ) internal virtual returns (uint256 _available) {
+        if (governanceOnlyKick) _checkGovernance();
+
         require(auctions[_from].scaler != 0, "not enabled");
         require(!isActive(_from), "too soon");
 

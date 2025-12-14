@@ -510,8 +510,35 @@ contract AuctionTest is Setup, ITaker {
         assertEq(ERC20(asset).balanceOf(address(auction)), 0);
     }
 
-    function test_setReceiver() public {
+    function test_setGovernanceOnlyKick() public {
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+
+        // Check initial value is false
+        assertEq(auction.governanceOnlyKick(), false);
+
+        // Set to true
+        auction.setGovernanceOnlyKick(true);
+        assertEq(auction.governanceOnlyKick(), true);
+
+        // Try kicking as non-governance - should revert
         address from = tokenAddrs["WBTC"];
+        auction.enable(from);
+        airdrop(ERC20(from), address(auction), 1e8);
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.kick(from);
+
+        // Set back to false
+        auction.setGovernanceOnlyKick(false);
+        assertEq(auction.governanceOnlyKick(), false);
+
+        // Test that non-governance cannot set
+        vm.prank(management);
+        vm.expectRevert("!governance");
+        auction.setGovernanceOnlyKick(true);
+    }
+
+    function test_setReceiver() public {
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
         // Check initial receiver is this contract

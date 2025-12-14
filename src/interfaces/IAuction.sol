@@ -61,6 +61,9 @@ interface IAuction {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Whether only governance can kick auctions.
+    function governanceOnlyKick() external view returns (bool);
+
     /// @notice The address that will receive the funds in the auction.
     function receiver() external view returns (address);
 
@@ -227,6 +230,12 @@ interface IAuction {
      * @return bool Whether there is an active auction.
      */
     function isAnActiveAuction() external view returns (bool);
+
+    /**
+     * @notice Sets whether only governance can kick auctions.
+     * @param _governanceOnlyKick The new governance only kick setting.
+     */
+    function setGovernanceOnlyKick(bool _governanceOnlyKick) external;
 
     /**
      * @notice Sets the receiver address for the auction funds.
