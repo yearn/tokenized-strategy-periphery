@@ -11,15 +11,6 @@ import {Actions} from "../libraries/Uniswap/Actions.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 import {ActionConstants} from "../libraries/Uniswap/ActionConstants.sol";
 
-interface IPermit2 {
-    function approve(
-        address token,
-        address spender,
-        uint160 amount,
-        uint48 expiration
-    ) external;
-}
-
 interface IPositionManager {
     struct PoolKeyPM {
         address currency0;
@@ -59,12 +50,6 @@ interface IWETH {
 contract UniswapUniversalSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
-    enum UsingWeth {
-        None,
-        Input,
-        Output
-    }
-
     // WETH address - immutable, set in constructor
     // V4 uses native ETH, so we wrap/unwrap as needed
     address public immutable weth;
@@ -78,10 +63,6 @@ contract UniswapUniversalSwapper is BaseSwapper {
     // V4 PositionManager - mainnet
     address public positionManager = 0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e;
 
-    // Permit2 - used for V4 settlement
-    address public constant PERMIT2 =
-        0x000000000022D473030F116dDEE9F6B43aC78BA3;
-
     constructor(address _weth) {
         weth = _weth;
         base = _weth;
@@ -93,10 +74,11 @@ contract UniswapUniversalSwapper is BaseSwapper {
     /**
      * @dev Convert token address for V4 - WETH becomes ETH (address(0)).
      * @param _token The token address to convert.
-     * @return The address to use in V4 (address(0) for ETH, original for others).
+     * @return The Currency to use in V4 (Currency.wrap(address(0)) for ETH, Currency.wrap(_token) for others).
      */
-    function _toV4Currency(address _token) internal view returns (address) {
-        return _token == weth ? address(0) : _token;
+    function _toV4Currency(address _token) internal view returns (Currency) {
+        return
+            _token == weth ? Currency.wrap(address(0)) : Currency.wrap(_token);
     }
 
     /// @notice V4 pool config
@@ -202,31 +184,6 @@ contract UniswapUniversalSwapper is BaseSwapper {
         }
 
         _amountOut = ERC20(_to).balanceOf(address(this)) - balanceOutBefore;
-    }
-
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal {
-        if (ERC20(_token).allowance(address(this), _contract) < _amount) {
-            ERC20(_token).forceApprove(_contract, _amount);
-        }
-    }
-
-    function _approvePermit2(address _token, uint256 _amount) internal {
-        // First approve the token for Permit2
-        if (ERC20(_token).allowance(address(this), PERMIT2) < _amount) {
-            ERC20(_token).forceApprove(PERMIT2, type(uint256).max);
-        }
-        // Then approve the router on Permit2
-        // Permit2.approve(token, spender, amount, expiration)
-        IPermit2(PERMIT2).approve(
-            _token,
-            router,
-            uint160(_amount),
-            uint48(block.timestamp + 3600)
-        );
     }
 
     function _buildSingleHop(
@@ -493,16 +450,15 @@ contract UniswapUniversalSwapper is BaseSwapper {
     ) internal view returns (bytes memory) {
         V4PoolConfig memory config = v4Pools[_tokenIn][_tokenOut];
 
-        address v4TokenIn = _toV4Currency(_tokenIn);
-        address v4TokenOut = _toV4Currency(_tokenOut);
+        Currency v4TokenIn = _toV4Currency(_tokenIn);
+        Currency v4TokenOut = _toV4Currency(_tokenOut);
 
-        (Currency currency0, Currency currency1) = v4TokenIn < v4TokenOut
-            ? (Currency.wrap(v4TokenIn), Currency.wrap(v4TokenOut))
-            : (Currency.wrap(v4TokenOut), Currency.wrap(v4TokenIn));
+        bool zeroForOne = Currency.unwrap(v4TokenIn) <
+            Currency.unwrap(v4TokenOut);
 
         PoolKey memory poolKey = PoolKey({
-            currency0: currency0,
-            currency1: currency1,
+            currency0: zeroForOne ? v4TokenIn : v4TokenOut,
+            currency1: zeroForOne ? v4TokenOut : v4TokenIn,
             fee: config.fee,
             tickSpacing: config.tickSpacing,
             hooks: IHooks(config.hooks)
@@ -511,18 +467,20 @@ contract UniswapUniversalSwapper is BaseSwapper {
         IV4Router.ExactInputSingleParams memory swapParams = IV4Router
             .ExactInputSingleParams({
                 poolKey: poolKey,
-                zeroForOne: v4TokenIn < v4TokenOut,
+                zeroForOne: zeroForOne,
                 amountIn: uint128(_amountIn),
                 amountOutMinimum: uint128(_minAmountOut),
                 hookData: bytes("")
             });
 
         bytes memory actions = abi.encodePacked(
+            // We either transfer in, or it post v3 swap so we need to settle balances.
             uint8(Actions.SETTLE),
             uint8(Actions.SWAP_EXACT_IN_SINGLE),
             uint8(Actions.SETTLE_ALL),
+            // WE take all if final swap, or take portion if to set router as recipient.
             uint8(
-                _takeRecipient == address(2)
+                _takeRecipient == ActionConstants.ADDRESS_THIS
                     ? Actions.TAKE_PORTION
                     : Actions.TAKE_ALL
             )
@@ -530,15 +488,15 @@ contract UniswapUniversalSwapper is BaseSwapper {
 
         bytes[] memory params = new bytes[](4);
         params[0] = abi.encode(
-            Currency.wrap(v4TokenIn),
+            v4TokenIn,
             ActionConstants.CONTRACT_BALANCE,
             false
         );
         params[1] = abi.encode(swapParams);
-        params[2] = abi.encode(Currency.wrap(v4TokenIn), type(uint128).max);
-        params[3] = _takeRecipient == address(2)
-            ? abi.encode(Currency.wrap(v4TokenOut), _takeRecipient, 10_000)
-            : abi.encode(Currency.wrap(v4TokenOut), _minAmountOut);
+        params[2] = abi.encode(v4TokenIn, type(uint128).max);
+        params[3] = _takeRecipient == ActionConstants.ADDRESS_THIS
+            ? abi.encode(v4TokenOut, _takeRecipient, 10_000)
+            : abi.encode(v4TokenOut, _minAmountOut);
 
         return abi.encode(actions, params);
     }
@@ -552,54 +510,50 @@ contract UniswapUniversalSwapper is BaseSwapper {
         uint256 _amountIn,
         uint256 _minAmountOut
     ) internal view returns (bytes memory) {
-        address v4From = _toV4Currency(_from);
-        address v4Base = _toV4Currency(base);
-        address v4To = _toV4Currency(_to);
+        Currency v4From = _toV4Currency(_from);
+        Currency v4Base = _toV4Currency(base);
+        Currency v4To = _toV4Currency(_to);
 
         PathKey[] memory path = new PathKey[](2);
 
-        V4PoolConfig memory config1 = v4Pools[_from][base];
+        V4PoolConfig memory config = v4Pools[_from][base];
         path[0] = PathKey({
-            intermediateCurrency: Currency.wrap(v4Base),
-            fee: config1.fee,
-            tickSpacing: config1.tickSpacing,
-            hooks: IHooks(config1.hooks),
+            intermediateCurrency: v4Base,
+            fee: config.fee,
+            tickSpacing: config.tickSpacing,
+            hooks: IHooks(config.hooks),
             hookData: bytes("")
         });
 
-        V4PoolConfig memory config2 = v4Pools[base][_to];
+        config = v4Pools[base][_to];
         path[1] = PathKey({
-            intermediateCurrency: Currency.wrap(v4To),
-            fee: config2.fee,
-            tickSpacing: config2.tickSpacing,
-            hooks: IHooks(config2.hooks),
+            intermediateCurrency: v4To,
+            fee: config.fee,
+            tickSpacing: config.tickSpacing,
+            hooks: IHooks(config.hooks),
             hookData: bytes("")
         });
 
         IV4Router.ExactInputParams memory swapParams = IV4Router
             .ExactInputParams({
-                currencyIn: Currency.wrap(v4From),
+                currencyIn: v4From,
                 path: path,
                 amountIn: uint128(_amountIn),
                 amountOutMinimum: uint128(_minAmountOut)
             });
 
         bytes memory actions = abi.encodePacked(
-            uint8(Actions.SETTLE),
+            uint8(Actions.SETTLE), // We transfer in so first need to settle balances.
             uint8(Actions.SWAP_EXACT_IN),
             uint8(Actions.SETTLE_ALL),
             uint8(Actions.TAKE_ALL)
         );
 
         bytes[] memory params = new bytes[](4);
-        params[0] = abi.encode(
-            Currency.wrap(v4From),
-            ActionConstants.CONTRACT_BALANCE,
-            false
-        );
+        params[0] = abi.encode(v4From, ActionConstants.CONTRACT_BALANCE, false);
         params[1] = abi.encode(swapParams);
-        params[2] = abi.encode(Currency.wrap(v4From), _amountIn);
-        params[3] = abi.encode(Currency.wrap(v4To), _minAmountOut);
+        params[2] = abi.encode(v4From, _amountIn);
+        params[3] = abi.encode(v4To, _minAmountOut);
 
         return abi.encode(actions, params);
     }
