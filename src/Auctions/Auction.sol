@@ -14,9 +14,10 @@ interface ICowSettlement {
 }
 
 /**
- *   @title Auction
+ *   @title Auction (Curious Cow edition)
  *   @author yearn.fi
- *   @notice General use dutch auction contract for token sales.
+ *   @notice General use dutch auction contract for token sales, with the option to allow Cowswap solvers to take
+ *    based on the upcoming price instead of the current one.
  */
 contract Auction is Governance2Step, ReentrancyGuard {
     using GPv2Order for GPv2Order.Data;
@@ -39,6 +40,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /// @notice Emitted when the step duration is updated.
     event UpdatedStepDuration(uint256 indexed stepDuration);
+
+    /// @notice Emitted when we update whether COW can use the next price or not.
+    event UpdatedLetCowPeek(bool letCowPeek);
 
     /// @notice Emitted when the auction is settled.
     event AuctionSettled(address indexed from);
@@ -93,6 +97,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Array of all the enabled auction for this contract.
     address[] public enabledAuctions;
 
+    /// @notice Whether we allow cow solvers to submit solutions based on the next price.
+    bool public letCowPeek;
+
     constructor() Governance2Step(msg.sender) {}
 
     /**
@@ -140,7 +147,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function version() external pure returns (string memory) {
-        return "1.0.3";
+        return "1.0.3cc";
     }
 
     /**
@@ -496,6 +503,17 @@ contract Auction is Governance2Step, ReentrancyGuard {
         emit UpdatedStepDuration(_stepDuration);
     }
 
+    /**
+     * @notice Sets whether we let cow solvers use the next price.
+     * @dev Because COW takes several blocks to solve, we know that other takers will beat them to the current price.
+     * @param _letCowPeek Whether we let cow solvers peek at the next price.
+     */
+    function setLetCowPeek(bool _letCowPeek) external virtual onlyGovernance {
+        letCowPeek = _letCowPeek;
+
+        emit UpdatedLetCowPeek(_letCowPeek);
+    }
+
     /*//////////////////////////////////////////////////////////////
                       PARTICIPATE IN AUCTION
     //////////////////////////////////////////////////////////////*/
@@ -658,11 +676,22 @@ contract Auction is Governance2Step, ReentrancyGuard {
         AuctionInfo memory auction = auctions[address(order.sellToken)];
 
         // Get the current amount needed for the auction.
-        uint256 paymentAmount = _getAmountNeeded(
-            auction,
-            order.sellAmount,
-            block.timestamp
-        );
+        uint256 paymentAmount;
+
+        // if enabled, get the next payment amount to let cow peek
+        if (letCowPeek) {
+            paymentAmount = _getAmountNeeded(
+                auction,
+                order.sellAmount,
+                block.timestamp + stepDuration
+            );
+        } else {
+            paymentAmount = _getAmountNeeded(
+                auction,
+                order.sellAmount,
+                block.timestamp
+            );
+        }
 
         // Verify the order details.
         // Retreive domain seperator each time for chains it is not deployed on yet
