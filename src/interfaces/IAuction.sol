@@ -19,6 +19,12 @@ interface IAuction {
     /// @notice Emitted when auction has been kicked.
     event AuctionKicked(address indexed from, uint256 available);
 
+    /// @notice Emitted when the receiver is updated.
+    event UpdatedReceiver(address indexed receiver);
+
+    /// @notice Emitted when the minimum price is updated.
+    event UpdatedMinimumPrice(uint256 minimumPrice);
+
     /// @notice Emitted when the starting price is updated.
     event UpdatedStartingPrice(uint256 startingPrice);
 
@@ -55,8 +61,14 @@ interface IAuction {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Whether only governance can kick auctions.
+    function governanceOnlyKick() external view returns (bool);
+
     /// @notice The address that will receive the funds in the auction.
     function receiver() external view returns (address);
+
+    /// @notice The minimum price for the auction, scaled to 1e18.
+    function minimumPrice() external view returns (uint256);
 
     /// @notice The amount to start the auction at.
     function startingPrice() external view returns (uint256);
@@ -218,6 +230,25 @@ interface IAuction {
      * @return bool Whether there is an active auction.
      */
     function isAnActiveAuction() external view returns (bool);
+
+    /**
+     * @notice Sets whether only governance can kick auctions.
+     * @param _governanceOnlyKick The new governance only kick setting.
+     */
+    function setGovernanceOnlyKick(bool _governanceOnlyKick) external;
+
+    /**
+     * @notice Sets the receiver address for the auction funds.
+     * @param _receiver The new receiver address.
+     */
+    function setReceiver(address _receiver) external;
+
+    /**
+     * @notice Sets the minimum price for the auction.
+     * @dev If the price per auction goes below this, the auction is considered inactive.
+     * @param _minimumPrice The new minimum price for the auction.
+     */
+    function setMinimumPrice(uint256 _minimumPrice) external;
 
     /**
      * @notice Sets the starting price for the auction.

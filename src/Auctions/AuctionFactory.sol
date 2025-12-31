@@ -21,7 +21,7 @@ contract AuctionFactory is ClonableCreate2 {
     }
 
     function version() external pure returns (string memory) {
-        return "1.0.3";
+        return "1.0.4";
     }
 
     /**

@@ -15,4 +15,5 @@ docs/
 
 .vscode/
 node_modules/
+foundry.lock
 .gas-snapshot
