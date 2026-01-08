@@ -12,11 +12,6 @@ import {BaseHealthCheck, ERC20} from "../HealthCheck/BaseHealthCheck.sol";
  *   or transfer hooks in their strategy.
  */
 abstract contract BaseHooks is BaseHealthCheck, Hooks {
-    constructor(
-        address _asset,
-        string memory _name
-    ) BaseHealthCheck(_asset, _name) {}
-
     // Deposit
     function deposit(
         uint256 assets,
