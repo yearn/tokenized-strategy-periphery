@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.8.18;
 
-import {BaseHooks, ERC20} from "../../Bases/Hooks/BaseHooks.sol";
+import {BaseHooks, ERC20, BaseHealthCheck} from "../../Bases/Hooks/BaseHooks.sol";
 
 contract HookEvents {
     event PreDepositHook(uint256 assets, uint256 shares, address receiver);
@@ -35,7 +35,7 @@ contract HookEvents {
 }
 
 contract MockHooks is BaseHooks, HookEvents {
-    constructor(address _asset) BaseHooks(_asset, "Hooked") {}
+    constructor(address _asset) BaseHealthCheck(_asset, "Hooked") {}
 
     function _preDepositHook(
         uint256 assets,

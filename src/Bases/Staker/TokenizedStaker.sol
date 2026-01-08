@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import {BaseHooks, ERC20} from "../Hooks/BaseHooks.sol";
+import {BaseHooks, ERC20, BaseHealthCheck} from "../Hooks/BaseHooks.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
@@ -117,7 +117,10 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     uint256 internal constant PRECISION = 1e18;
 
-    constructor(address _asset, string memory _name) BaseHooks(_asset, _name) {}
+    constructor(
+        address _asset,
+        string memory _name
+    ) BaseHealthCheck(_asset, _name) {}
 
     function _preDepositHook(
         uint256 /* assets */,
