@@ -38,7 +38,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     event UpdatedMinimumPrice(uint256 indexed minimumPrice);
 
     /// @notice Emitted when the starting price is updated.
-    event UpdatedStartingPrice(uint256 startingPrice);
+    event UpdatedStartingPrice(uint256 indexed startingPrice);
 
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
