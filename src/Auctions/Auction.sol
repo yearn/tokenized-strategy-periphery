@@ -31,8 +31,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Emitted when auction has been kicked.
     event AuctionKicked(address indexed from, uint256 available);
 
+    /// @notice Emitted when the receiver is updated.
+    event UpdatedReceiver(address indexed receiver);
+
+    /// @notice Emitted when the minimum price is updated.
+    event UpdatedMinimumPrice(uint256 indexed minimumPrice);
+
     /// @notice Emitted when the starting price is updated.
-    event UpdatedStartingPrice(uint256 startingPrice);
+    event UpdatedStartingPrice(uint256 indexed startingPrice);
 
     /// @notice Emitted when the step decay rate is updated.
     event UpdatedStepDecayRate(uint256 indexed stepDecayRate);
@@ -73,8 +79,17 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @notice Struct to hold the info for `want`.
     TokenInfo internal wantInfo;
 
+    /// @notice Whether only governance can kick auctions.
+    /// @dev Default is false.
+    bool public governanceOnlyKick;
+
     /// @notice The address that will receive the funds in the auction.
     address public receiver;
+
+    /// @notice The minimum price for the auction, scaled to 1e18.
+    /// @dev If the price per auction goes below this, the auction is considered inactive.
+    /// @dev Default is 0 (i.e. no minimum).
+    uint256 public minimumPrice;
 
     /// @notice The amount to start the auction at.
     /// @dev This is an unscaled "lot size" essentially to start the pricing in "want".
@@ -140,7 +155,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function version() external pure returns (string memory) {
-        return "1.0.3";
+        return "1.0.4";
     }
 
     /**
@@ -185,7 +200,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @return . Whether the auction is active.
      */
     function isActive(address _from) public view virtual returns (bool) {
-        return auctions[_from].kicked + AUCTION_LENGTH >= block.timestamp;
+        return price(_from, block.timestamp) > 0;
     }
 
     /**
@@ -342,7 +357,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
         uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
 
         // Apply the decay to get the current price
-        return Maths.rmul(initialPrice, decayMultiplier);
+        uint256 currentPrice = Maths.rmul(initialPrice, decayMultiplier);
+
+        // Return price `0` if below the minimum price
+        return currentPrice < minimumPrice ? 0 : currentPrice;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -438,6 +456,48 @@ contract Auction is Governance2Step, ReentrancyGuard {
     }
 
     /**
+     * @notice Sets whether only governance can kick auctions.
+     * @param _governanceOnlyKick The new governance only kick setting.
+     */
+    function setGovernanceOnlyKick(
+        bool _governanceOnlyKick
+    ) external virtual onlyGovernance {
+        governanceOnlyKick = _governanceOnlyKick;
+    }
+
+    /**
+     * @notice Sets the receiver address for the auction funds.
+     * @param _receiver The new receiver address.
+     */
+    function setReceiver(address _receiver) external virtual onlyGovernance {
+        require(_receiver != address(0), "ZERO ADDRESS");
+
+        // Don't change the receiver when an auction is active.
+        require(!isAnActiveAuction(), "active auction");
+
+        receiver = _receiver;
+
+        emit UpdatedReceiver(_receiver);
+    }
+
+    /**
+     * @notice Sets the minimum price for the auction.
+     * @dev If the price per auction goes below this, the auction is considered inactive.
+     * @dev Default is 0 (i.e. no minimum).
+     * @param _minimumPrice The new minimum price per auction, scaled to 1e18.
+     */
+    function setMinimumPrice(
+        uint256 _minimumPrice
+    ) external virtual onlyGovernance {
+        // Don't change the min price when an auction is active.
+        require(!isAnActiveAuction(), "active auction");
+
+        minimumPrice = _minimumPrice;
+
+        emit UpdatedMinimumPrice(_minimumPrice);
+    }
+
+    /**
      * @notice Sets the starting price for the auction.
      * @dev This is an unscaled "lot size" essentially to start the pricing in "want".
      *   The kicked amount of _from is divided by this to get the per auction initial price.
@@ -514,11 +574,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function _kick(
         address _from
     ) internal virtual returns (uint256 _available) {
+        if (governanceOnlyKick) _checkGovernance();
+
         require(auctions[_from].scaler != 0, "not enabled");
-        require(
-            block.timestamp > auctions[_from].kicked + AUCTION_LENGTH,
-            "too soon"
-        );
+        require(!isActive(_from), "too soon");
 
         // Just use current balance.
         _available = ERC20(_from).balanceOf(address(this));
@@ -596,17 +655,15 @@ contract Auction is Governance2Step, ReentrancyGuard {
         bytes memory _data
     ) internal virtual nonReentrant returns (uint256 _amountTaken) {
         AuctionInfo memory auction = auctions[_from];
-        // Make sure the auction is active.
-        require(
-            auction.kicked + AUCTION_LENGTH >= block.timestamp,
-            "not kicked"
-        );
 
         // Max amount that can be taken.
-        uint256 _available = available(_from);
+        uint256 _available = Maths.min(
+            auction.initialAvailable,
+            ERC20(_from).balanceOf(address(this))
+        );
         _amountTaken = _available > _maxAmount ? _maxAmount : _available;
 
-        // Get the amount needed
+        // Get the amount needed. Returns 0 if auction not active.
         uint256 needed = _getAmountNeeded(
             auction,
             _amountTaken,
@@ -681,6 +738,14 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(address(order.buyToken) == want(), "bad token");
         require(order.receiver == receiver, "bad receiver");
         require(order.sellAmount <= auction.initialAvailable, "bad amount");
+        require(
+            order.sellTokenBalance == keccak256("erc20"),
+            "bad sell token balance"
+        );
+        require(
+            order.buyTokenBalance == keccak256("erc20"),
+            "bad buy token balance"
+        );
 
         // If all checks pass, return the magic value
         return this.isValidSignature.selector;
