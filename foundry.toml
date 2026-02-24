@@ -3,6 +3,7 @@ src = 'src'
 out = 'out'
 solc = "0.8.18"
 libs = ['lib']
+evm_version = "cancun"
 
 optimizer = true
 optimizer_runs = 200
