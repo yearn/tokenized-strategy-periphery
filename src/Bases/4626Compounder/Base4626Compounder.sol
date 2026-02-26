@@ -200,10 +200,13 @@ contract Base4626Compounder is BaseHealthCheck {
      * @return . The available amount the `_owner` can deposit in terms of `asset`
      */
     function availableDepositLimit(
-        address
+        address _owner
     ) public view virtual override returns (uint256) {
+        uint256 depositLimit = super.availableDepositLimit(_owner);
+        if (depositLimit == 0) return 0;
+
         // Return the max amount the vault will allow for deposits.
-        return vault.maxDeposit(address(this));
+        return Math.min(depositLimit, vault.maxDeposit(address(this)));
     }
 
     /**
