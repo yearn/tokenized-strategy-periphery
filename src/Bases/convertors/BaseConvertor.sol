@@ -171,6 +171,8 @@ contract BaseConvertor is BaseHealthCheck {
     function auctionTrigger(
         address _from
     ) external view returns (bool shouldKick, bytes memory data) {
+        if (_from == address(want)) return (false, bytes("want"));
+
         uint256 kickableAmount = kickable(_from);
         if (kickableAmount >= minAmountToSell) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));

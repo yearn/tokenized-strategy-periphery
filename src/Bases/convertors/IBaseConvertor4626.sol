@@ -8,6 +8,10 @@ interface IBaseConvertor4626 is IBaseConvertor {
 
     function deployLooseWant() external returns (uint256);
 
+    function freeWant(uint256 _wantAmount) external;
+
+    function freeWantFromVault(uint256 _wantAmount) external;
+
     function balanceOfVault() external view returns (uint256);
 
     function valueOfVault() external view returns (uint256);

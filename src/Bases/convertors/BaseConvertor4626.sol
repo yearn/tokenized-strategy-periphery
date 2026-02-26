@@ -32,10 +32,29 @@ contract BaseConvertor4626 is BaseConvertor {
         want.forceApprove(_vault, type(uint256).max);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                            EXTERNAL API
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Deploy loose `want` into the vault.
-    function deployLooseWant() external onlyManagement returns (uint256) {
+    function deployLooseWant() external onlyKeepers returns (uint256) {
         return _deployLooseWant();
     }
+
+    function freeWant(uint256 _wantAmount) external onlyKeepers {
+        uint256 freedWant = _freeWantFromVault(_wantAmount);
+        if (freedWant > 0) {
+            _kickConfiguredAuction(buyAssetAuction, address(want));
+        }
+    }
+
+    function freeWantFromVault(uint256 _wantAmount) external onlyKeepers {
+        _freeWantFromVault(_wantAmount);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                VIEWS
+    //////////////////////////////////////////////////////////////*/
 
     function balanceOfVault() public view virtual returns (uint256) {
         return vault.balanceOf(address(this));
@@ -54,6 +73,22 @@ contract BaseConvertor4626 is BaseConvertor {
             );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL VIEWS
+    //////////////////////////////////////////////////////////////*/
+
+    function _valueOfVaultInWant() internal view virtual returns (uint256) {
+        return vault.convertToAssets(balanceOfVault());
+    }
+
+    function _deployableWant() internal view virtual returns (uint256) {
+        return Math.min(balanceOfWant(), vault.maxDeposit(address(this)));
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           STRATEGY HOOKS
+    //////////////////////////////////////////////////////////////*/
+
     function availableDepositLimit(
         address _owner
     ) public view virtual override returns (uint256) {
@@ -68,52 +103,34 @@ contract BaseConvertor4626 is BaseConvertor {
         return Math.min(depositLimit, _quoteAssetFromWant(maxDepositInWant));
     }
 
-    function kickable(
-        address _from
-    ) public view virtual override returns (uint256) {
-        uint256 _kickable = super.kickable(_from);
-        if (_from == address(want)) {
-            if (
-                buyAssetAuction.isActive(_from) &&
-                buyAssetAuction.available(_from) > 0
-            ) {
-                return 0;
-            }
-            _kickable += vault.convertToAssets(vault.maxRedeem(address(this)));
-        }
-        return _kickable;
+    function _claimAndSellRewards() internal virtual override {
+        _deployLooseWant();
     }
 
-    function _claimAndSellRewards() internal virtual override {
-        super._claimAndSellRewards();
+    function _tend(uint256) internal virtual override {
         _deployLooseWant();
+    }
+
+    function _tendTrigger() internal view virtual override returns (bool) {
+        return _deployableWant() > minAmountToSell;
     }
 
     function totalWant() internal view virtual override returns (uint256) {
         return super.totalWant() + _valueOfVaultInWant();
     }
 
-    function _kickConfiguredAuction(
-        Auction _auction,
-        address _from
-    ) internal virtual override returns (uint256) {
-        if (_from == address(want)) {
-            _freeWantFromVault(type(uint256).max);
-        }
-
-        return super._kickConfiguredAuction(_auction, _from);
+    function _emergencyWithdraw(uint256 _amount) internal virtual override {
+        uint256 wantAmount = _quoteWantFromAsset(_amount);
+        _freeWantFromVault(wantAmount);
+        _kickConfiguredAuction(buyAssetAuction, address(want));
     }
 
+    /*//////////////////////////////////////////////////////////////
+                          INTERNAL ACTIONS
+    //////////////////////////////////////////////////////////////*/
+
     function _deployLooseWant() internal virtual returns (uint256 _deployed) {
-        uint256 loose = balanceOfWant();
-        if (loose == 0) return 0;
-
-        uint256 maxDeposit = vault.maxDeposit(address(this));
-        if (maxDeposit == 0) return 0;
-
-        _deployed = maxDeposit == type(uint256).max
-            ? loose
-            : Math.min(loose, maxDeposit);
+        _deployed = _deployableWant();
 
         if (_deployed != 0) {
             vault.deposit(_deployed, address(this));
@@ -122,32 +139,20 @@ contract BaseConvertor4626 is BaseConvertor {
 
     function _freeWantFromVault(
         uint256 _wantAmount
-    ) internal virtual returns (uint256 _freedWant) {
-        uint256 maxRedeem = vault.maxRedeem(address(this));
-        if (maxRedeem == 0) return 0;
+    ) internal virtual returns (uint256) {
+        uint256 wantBalance = balanceOfWant();
 
-        uint256 maxWithdraw = vault.convertToAssets(maxRedeem);
-        if (maxWithdraw == 0) return 0;
+        if (wantBalance >= _wantAmount) return _wantAmount;
 
-        uint256 toWithdraw = Math.min(_wantAmount, maxWithdraw);
-        if (toWithdraw == 0) return 0;
+        _wantAmount -= wantBalance;
 
-        uint256 shares = vault.previewWithdraw(toWithdraw);
-        shares = Math.min(shares, maxRedeem);
+        uint256 shares = Math.min(
+            vault.previewWithdraw(vault.balanceOf(address(this))),
+            Math.min(_wantAmount, vault.maxRedeem(address(this)))
+        );
 
         if (shares == 0) return 0;
 
-        uint256 beforeWant = balanceOfWant();
-        vault.redeem(shares, address(this), address(this));
-        _freedWant = balanceOfWant() - beforeWant;
-    }
-
-    function _valueOfVaultInWant() internal view virtual returns (uint256) {
-        return vault.convertToAssets(balanceOfVault());
-    }
-
-    function _emergencyWithdraw(uint256 _amount) internal virtual override {
-        uint256 wantAmount = _quoteWantFromAsset(_amount);
-        _freeWantFromVault(wantAmount);
+        return vault.redeem(shares, address(this), address(this));
     }
 }
