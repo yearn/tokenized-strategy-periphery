@@ -5,11 +5,13 @@ import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
 
 import {MockStrategy} from "./mocks/MockStrategy.sol";
 import {BaseConvertor4626} from "../Bases/convertors/BaseConvertor4626.sol";
+import {IBaseConvertor4626} from "../Bases/convertors/IBaseConvertor4626.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
 import {Auction} from "../Auctions/Auction.sol";
 
 contract BaseConvertor4626Test is Setup {
     BaseConvertor4626 public convertor;
+    IBaseConvertor4626 public convertorInterface;
     IStrategy public convertorStrategy;
     IStrategy public targetVault;
     MockConvertorOracle public oracle;
@@ -33,6 +35,7 @@ contract BaseConvertor4626Test is Setup {
             address(targetVault),
             address(oracle)
         );
+        convertorInterface = IBaseConvertor4626(address(convertor));
         convertorStrategy = IStrategy(address(convertor));
 
         convertorStrategy.setKeeper(keeper);
@@ -71,7 +74,7 @@ contract BaseConvertor4626Test is Setup {
 
         airdrop(want, address(convertor), _amount);
 
-        vm.prank(management);
+        vm.prank(keeper);
         uint256 deployed = convertor.deployLooseWant();
 
         assertEq(deployed, _amount);
@@ -79,21 +82,84 @@ contract BaseConvertor4626Test is Setup {
         assertGt(convertor.balanceOfVault(), 0);
     }
 
-    function test_kickWantAuction_withVaultFunds(uint256 _amount) public {
+    function test_tendTrigger_depositsLooseWant(uint256 _amount) public {
+        vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
+
+        (bool shouldTend, ) = convertorStrategy.tendTrigger();
+        assertFalse(shouldTend);
+
+        airdrop(want, address(convertor), _amount);
+
+        (shouldTend, ) = convertorStrategy.tendTrigger();
+        assertTrue(shouldTend);
+
+        vm.prank(keeper);
+        convertorStrategy.tend();
+
+        assertEq(convertor.balanceOfWant(), 0);
+        assertGt(convertor.balanceOfVault(), 0);
+
+        (shouldTend, ) = convertorStrategy.tendTrigger();
+        assertFalse(shouldTend);
+    }
+
+    function test_freeWantFromVault_keeperOnly(uint256 _amount) public {
         vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
 
         airdrop(want, address(convertor), _amount);
 
-        vm.prank(management);
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        uint256 toFree = _amount / 2;
+        vm.prank(user);
+        vm.expectRevert();
+        convertorInterface.freeWantFromVault(toFree);
+
+        vm.prank(keeper);
+        convertorInterface.freeWantFromVault(toFree);
+
+        assertGt(convertor.balanceOfWant(), 0);
+    }
+
+    function test_kickWantAuction_afterFreeWantFromVault(
+        uint256 _amount
+    ) public {
+        vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
+
+        airdrop(want, address(convertor), _amount);
+
+        vm.prank(keeper);
         convertor.deployLooseWant();
 
         assertEq(convertor.balanceOfWant(), 0);
         assertGt(convertor.balanceOfVault(), 0);
 
         vm.prank(keeper);
+        convertorInterface.freeWantFromVault(type(uint256).max);
+        assertGt(convertor.balanceOfWant(), 0);
+
+        vm.prank(keeper);
         uint256 kicked = convertor.kickAuction(address(want));
 
         assertGt(kicked, 0);
+        assertTrue(convertor.buyAssetAuction().isActive(address(want)));
+    }
+
+    function test_freeWant_freesAndKicksWantAuction(uint256 _amount) public {
+        vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
+
+        airdrop(want, address(convertor), _amount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        assertEq(convertor.balanceOfWant(), 0);
+        assertGt(convertor.balanceOfVault(), 0);
+
+        vm.prank(keeper);
+        convertorInterface.freeWant(type(uint256).max);
+
         assertTrue(convertor.buyAssetAuction().isActive(address(want)));
     }
 
@@ -107,7 +173,7 @@ contract BaseConvertor4626Test is Setup {
         uint256 buySide = _amount / 5;
 
         airdrop(want, address(convertor), vaultWant);
-        vm.prank(management);
+        vm.prank(keeper);
         convertor.deployLooseWant();
 
         airdrop(asset, address(convertor.sellAssetAuction()), sellSide);
