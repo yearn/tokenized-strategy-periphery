@@ -29,14 +29,20 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.3.5
 
       - name: Run Forge build
         run: |
+          unset FOUNDRY_CONFIG
+          unset FOUNDRY_PROFILE
           forge --version
           forge build --sizes
         id: build
 
       - name: Run Forge tests
         run: |
+          unset FOUNDRY_CONFIG
+          unset FOUNDRY_PROFILE
           forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }} --ffi
         id: test
