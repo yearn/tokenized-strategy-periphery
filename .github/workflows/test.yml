@@ -34,15 +34,21 @@ jobs:
 
       - name: Run Forge build
         run: |
+          export HOME="$RUNNER_TEMP/foundry-home"
+          mkdir -p "$HOME"
           unset FOUNDRY_CONFIG
           unset FOUNDRY_PROFILE
+          unset DAPP_CONFIG
           forge --version
-          forge build --sizes
+          forge build --sizes --config-path ./foundry.toml
         id: build
 
       - name: Run Forge tests
         run: |
+          export HOME="$RUNNER_TEMP/foundry-home"
+          mkdir -p "$HOME"
           unset FOUNDRY_CONFIG
           unset FOUNDRY_PROFILE
-          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }} --ffi
+          unset DAPP_CONFIG
+          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }} --ffi --config-path ./foundry.toml
         id: test
