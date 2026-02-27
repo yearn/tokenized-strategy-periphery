@@ -177,7 +177,7 @@ contract PendleSwapperForkTest is Setup {
 
     // Pendle market for USDC PT
     address public constant PENDLE_MARKET =
-        0x307c15f808914Df5a5DbE17E5608f84953fFa023;
+        0xaC24A6f0068d9701EAEa76AB0B418021017F8D59;
 
     // Pendle Router V4
     address public constant PENDLE_ROUTER =
