@@ -18,6 +18,8 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function decayRate() external view returns (uint256);
 
+    function reportBuffer() external view returns (uint16);
+
     function setOracle(address _oracle) external;
 
     function setMaxSlippageBps(uint16 _maxSlippageBps) external;
@@ -25,6 +27,8 @@ interface IBaseConvertor is IBaseHealthCheck {
     function setStartingPriceBps(uint16 _startingPriceBps) external;
 
     function setDecayRate(uint256 _decayRate) external;
+
+    function setReportBuffer(uint16 _reportBuffer) external;
 
     function setAuctionStepDecayRate(
         address _from,

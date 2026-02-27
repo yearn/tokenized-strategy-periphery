@@ -2,6 +2,7 @@
 pragma solidity >=0.8.18;
 
 import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {MockStrategy} from "./mocks/MockStrategy.sol";
 import {BaseConvertor4626} from "../Bases/convertors/BaseConvertor4626.sol";
@@ -189,5 +190,41 @@ contract BaseConvertor4626Test is Setup {
             convertor.valueOfVault();
 
         assertEq(convertorStrategy.totalAssets(), expected);
+    }
+
+    function test_reportBuffer_discountsWantValueInEstimatedTotalAssets(
+        uint256 _amount
+    ) public {
+        vm.assume(_amount > 4e8 && _amount < maxFuzzAmount);
+
+        uint256 vaultWant = _amount / 2;
+        uint256 looseWant = _amount / 3;
+        uint256 auctionWant = _amount / 4;
+        uint16 bugger = 700;
+
+        airdrop(want, address(convertor), vaultWant);
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        airdrop(want, address(convertor), looseWant);
+        airdrop(want, address(convertor.buyAssetAuction()), auctionWant);
+
+        vm.prank(management);
+        convertor.setReportBuffer(bugger);
+
+        uint256 totalWant = convertor.balanceOfWant() +
+            convertor.balanceOfWantInAuction() +
+            targetVault.convertToAssets(convertor.balanceOfVault());
+        uint256 discountedWant = Math.mulDiv(
+            totalWant,
+            MAX_BPS - bugger,
+            MAX_BPS
+        );
+
+        uint256 expected = convertor.balanceOfAsset() +
+            convertor.balanceOfAssetInAuction() +
+            discountedWant;
+
+        assertEq(convertor.estimatedTotalAssets(), expected);
     }
 }

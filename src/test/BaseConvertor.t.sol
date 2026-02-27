@@ -64,6 +64,7 @@ contract BaseConvertorTest is Setup {
         assertEq(address(convertor.want()), address(want));
         assertEq(convertor.oracle(), address(oracle));
         assertEq(convertor.decayRate(), 1);
+        assertEq(convertor.reportBuffer(), 0);
         assertEq(convertorStrategy.management(), management);
         assertEq(convertorStrategy.keeper(), keeper);
 
@@ -116,6 +117,48 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor.kickAuction(address(want));
         assertEq(buyAuction.stepDecayRate(), 7);
+    }
+
+    function test_setReportBuffer_invalid() public {
+        vm.prank(management);
+        vm.expectRevert("report buffer");
+        convertor.setReportBuffer(uint16(MAX_BPS + 1));
+    }
+
+    function test_reportBuffer_discountsTotalWantInEstimatedTotalAssets(
+        uint256 _assetAmount,
+        uint256 _looseWant,
+        uint256 _auctionWant,
+        uint16 _reportBuffer
+    ) public {
+        _assetAmount = bound(_assetAmount, 1e8, maxFuzzAmount);
+        _looseWant = bound(_looseWant, 1e8, maxFuzzAmount);
+        _auctionWant = bound(_auctionWant, 1e8, maxFuzzAmount);
+        _reportBuffer = uint16(bound(uint256(_reportBuffer), 1, MAX_BPS));
+
+        airdrop(asset, address(convertor), _assetAmount);
+        airdrop(want, address(convertor), _looseWant);
+        airdrop(want, address(convertor.buyAssetAuction()), _auctionWant);
+
+        uint256 totalWantValue = _looseWant + _auctionWant;
+        assertEq(
+            convertor.estimatedTotalAssets(),
+            _assetAmount + totalWantValue
+        );
+
+        vm.prank(management);
+        convertor.setReportBuffer(_reportBuffer);
+
+        uint256 expectedDiscountedWant = Math.mulDiv(
+            totalWantValue,
+            MAX_BPS - _reportBuffer,
+            MAX_BPS
+        );
+
+        assertEq(
+            convertor.estimatedTotalAssets(),
+            _assetAmount + expectedDiscountedWant
+        );
     }
 
     function test_enableSweepAuctionToken_passthrough(uint256 _amount) public {
