@@ -7,9 +7,6 @@ on:
     - develop
   pull_request:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
   check:
     strategy:
