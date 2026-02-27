@@ -25,6 +25,7 @@ contract BaseConvertor is BaseHealthCheck {
     event MaxSlippageBpsSet(uint16 indexed maxSlippageBps);
     event StartingPriceBpsSet(uint16 indexed startingPriceBps);
     event DecayRateSet(uint256 indexed decayRate);
+    event ReportBufferSet(uint16 indexed reportBuffer);
 
     /// @notice Token converted to/from strategy `asset`.
     ERC20 public immutable want;
@@ -46,6 +47,9 @@ contract BaseConvertor is BaseHealthCheck {
 
     /// @notice Minimum amount required before an auction kick is allowed.
     uint256 public minAmountToSell;
+
+    /// @notice Bps haircut applied to want-denominated value in reports.
+    uint16 public reportBuffer;
 
     uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
     uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000;
@@ -87,6 +91,8 @@ contract BaseConvertor is BaseHealthCheck {
         _setStartingPriceBps(uint16(MAX_BPS + 10));
         _setMaxSlippageBps(5);
         _setOracle(_oracle);
+        // Default to no triggers until minAmountToSell is set.
+        _setMinAmountToSell(type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -115,6 +121,10 @@ contract BaseConvertor is BaseHealthCheck {
 
     function setDecayRate(uint256 _decayRate) external onlyManagement {
         _setDecayRate(_decayRate);
+    }
+
+    function setReportBuffer(uint16 _reportBuffer) external onlyManagement {
+        _setReportBuffer(_reportBuffer);
     }
 
     /// @notice Management passthrough to set auction step decay rate.
@@ -201,10 +211,10 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function estimatedTotalAssets() public view virtual returns (uint256) {
-        return
-            balanceOfAsset() +
-            balanceOfAssetInAuction() +
-            _quoteAssetFromWant(totalWant());
+        uint256 wantValueInAsset = (_quoteAssetFromWant(totalWant()) *
+            (MAX_BPS - reportBuffer)) / MAX_BPS;
+
+        return balanceOfAsset() + balanceOfAssetInAuction() + wantValueInAsset;
     }
 
     function _claimAndSellRewards() internal virtual {}
@@ -276,6 +286,12 @@ contract BaseConvertor is BaseHealthCheck {
         require(_decayRate > 0 && _decayRate < MAX_BPS, "decay rate");
         decayRate = _decayRate;
         emit DecayRateSet(_decayRate);
+    }
+
+    function _setReportBuffer(uint16 _reportBuffer) internal virtual {
+        require(_reportBuffer <= MAX_BPS, "report buffer");
+        reportBuffer = _reportBuffer;
+        emit ReportBufferSet(_reportBuffer);
     }
 
     function _kickConfiguredAuction(
