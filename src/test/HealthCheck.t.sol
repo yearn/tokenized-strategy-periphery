@@ -430,4 +430,29 @@ contract HealthCheckTest is Setup {
             "doHealthCheck should be true"
         );
     }
+
+    function test_depositorWhitelist_openOrAllowed() public {
+        // Defaults open.
+        assertTrue(healthCheck.open());
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+
+        // Close strategy deposits.
+        vm.prank(management);
+        healthCheck.setOpen(false);
+
+        assertFalse(healthCheck.open());
+        assertEq(healthCheck.availableDepositLimit(user), 0);
+
+        // Allow user explicitly.
+        vm.prank(management);
+        healthCheck.setAllowed(user, true);
+        assertTrue(healthCheck.allowed(user));
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+
+        // Remove explicit allow and verify blocked again.
+        vm.prank(management);
+        healthCheck.setAllowed(user, false);
+        assertFalse(healthCheck.allowed(user));
+        assertEq(healthCheck.availableDepositLimit(user), 0);
+    }
 }
