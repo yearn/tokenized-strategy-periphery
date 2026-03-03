@@ -7,7 +7,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {Auction} from "../../Auctions/AuctionFactory.sol";
 import {BaseConvertor} from "./BaseConvertor.sol";
 
 /**
@@ -112,10 +111,11 @@ contract BaseConvertor4626 is BaseConvertor {
     }
 
     function _tendTrigger() internal view virtual override returns (bool) {
+        if (!(_isBaseFeeAcceptable())) return false;
         return _deployableWant() > minAmountToSell;
     }
 
-    function totalWant() internal view virtual override returns (uint256) {
+    function totalWant() public view virtual override returns (uint256) {
         return super.totalWant() + _valueOfVaultInWant();
     }
 

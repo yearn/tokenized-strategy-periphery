@@ -7,6 +7,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IFluidDexT1} from "../interfaces/Fluid/IFluidDexV2Router.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 
+interface IWETH {
+    function deposit() external payable;
+
+    function withdraw(uint256) external;
+}
+
 /**
  * @title FluidSwapper
  * @author Yearn.finance
@@ -18,8 +24,18 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 contract FluidSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
-    // Defaults to WETH on mainnet.
-    address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal constant NATIVE_ETH =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    address public immutable weth;
+
+    // Defaults to weth.
+    address public base;
+
+    constructor(address _weth) {
+        weth = _weth;
+        base = _weth;
+    }
 
     struct FluidDexConfig {
         address dex;
@@ -28,6 +44,8 @@ contract FluidSwapper is BaseSwapper {
 
     /// @notice Token pair => Fluid DEX config used for swaps.
     mapping(address => mapping(address => FluidDexConfig)) public fluidDexes;
+
+    receive() external payable virtual {}
 
     /**
      * @dev Set Fluid DEX for a token pair. Stored both directions.
@@ -54,6 +72,9 @@ contract FluidSwapper is BaseSwapper {
 
         IFluidDexT1.ConstantViews memory _constants = IFluidDexT1(_dex)
             .constantsView();
+
+        if (_constants.token0 == NATIVE_ETH) _constants.token0 = weth;
+        if (_constants.token1 == NATIVE_ETH) _constants.token1 = weth;
 
         if (_constants.token0 == _token0 && _constants.token1 == _token1) {
             _setFluidDex(_token0, _token1, _dex, true);
@@ -141,14 +162,28 @@ contract FluidSwapper is BaseSwapper {
         FluidDexConfig memory _config = fluidDexes[_from][_to];
         require(_config.dex != address(0), "dex not set");
 
-        _checkAllowance(_config.dex, _from, _amountIn);
+        uint256 _msgValue;
 
-        _amountOut = IFluidDexT1(_config.dex).swapIn(
+        if (_from == weth) {
+            IWETH(weth).withdraw(_amountIn);
+            _msgValue = _amountIn;
+        } else {
+            _checkAllowance(_config.dex, _from, _amountIn);
+        }
+
+        _amountOut = IFluidDexT1(_config.dex).swapIn{value: _msgValue}(
             _config.swap0to1,
             _amountIn,
             _minAmountOut,
             address(this)
         );
+
+        if (_to == weth) {
+            uint256 _ethBalance = address(this).balance;
+            if (_ethBalance > 0) {
+                IWETH(weth).deposit{value: _ethBalance}();
+            }
+        }
     }
 
     /**

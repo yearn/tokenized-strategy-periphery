@@ -20,7 +20,13 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function reportBuffer() external view returns (uint16);
 
+    function minAmountToSell() external view returns (uint256);
+
+    function maxGasPriceToTend() external view returns (uint256);
+
     function setOracle(address _oracle) external;
+
+    function setMinAmountToSell(uint256 _minAmountToSell) external;
 
     function setMaxSlippageBps(uint16 _maxSlippageBps) external;
 
@@ -29,6 +35,8 @@ interface IBaseConvertor is IBaseHealthCheck {
     function setDecayRate(uint256 _decayRate) external;
 
     function setReportBuffer(uint16 _reportBuffer) external;
+
+    function setMaxGasPriceToTend(uint256 _maxGasPriceToTend) external;
 
     function setAuctionStepDecayRate(
         address _from,
@@ -59,4 +67,6 @@ interface IBaseConvertor is IBaseHealthCheck {
     function balanceOfAssetInAuction() external view returns (uint256);
 
     function balanceOfWantInAuction() external view returns (uint256);
+
+    function totalWant() external view returns (uint256);
 }

@@ -8,6 +8,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {AuctionFactory, Auction} from "../../Auctions/AuctionFactory.sol";
 
+import {IMerklDistributor} from "../../interfaces/IMerklDistributor.sol";
+
 interface IMorphoOracle {
     function price() external view returns (uint256);
 }
@@ -26,6 +28,16 @@ contract BaseConvertor is BaseHealthCheck {
     event StartingPriceBpsSet(uint16 indexed startingPriceBps);
     event DecayRateSet(uint256 indexed decayRate);
     event ReportBufferSet(uint16 indexed reportBuffer);
+    event MinAmountToSellSet(uint256 indexed minAmountToSell);
+    event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
+
+    uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
+    uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000;
+    uint256 internal constant DEFAULT_AUCTION_DECAY_RATE = 50;
+
+    /// @notice The Merkl Distributor contract for claiming rewards
+    IMerklDistributor public constant MERKL_DISTRIBUTOR =
+        IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
 
     /// @notice Token converted to/from strategy `asset`.
     ERC20 public immutable want;
@@ -39,6 +51,9 @@ contract BaseConvertor is BaseHealthCheck {
     /// @notice Morpho-style oracle with answer = asset per want, scaled 1e36.
     address public oracle;
 
+    /// @notice Bps haircut applied to want-denominated value in reports.
+    uint16 public reportBuffer;
+
     /// @notice Maximum tolerated slippage from 1:1 price in bps.
     uint16 public maxSlippageBps;
 
@@ -48,15 +63,11 @@ contract BaseConvertor is BaseHealthCheck {
     /// @notice Minimum amount required before an auction kick is allowed.
     uint256 public minAmountToSell;
 
-    /// @notice Bps haircut applied to want-denominated value in reports.
-    uint16 public reportBuffer;
-
-    uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
-    uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000;
-    uint256 internal constant DEFAULT_AUCTION_DECAY_RATE = 50;
-
     /// @notice Management configured step decay rate applied to asset/want auctions.
     uint256 public decayRate;
+
+    /// @notice Max base fee accepted for tend trigger. 0 disables the check.
+    uint256 public maxGasPriceToTend;
 
     constructor(
         address _asset,
@@ -127,6 +138,12 @@ contract BaseConvertor is BaseHealthCheck {
         _setReportBuffer(_reportBuffer);
     }
 
+    function setMaxGasPriceToTend(
+        uint256 _maxGasPriceToTend
+    ) external onlyManagement {
+        _setMaxGasPriceToTend(_maxGasPriceToTend);
+    }
+
     /// @notice Management passthrough to set auction step decay rate.
     function setAuctionStepDecayRate(
         address _from,
@@ -183,6 +200,8 @@ contract BaseConvertor is BaseHealthCheck {
     ) external view returns (bool shouldKick, bytes memory data) {
         if (_from == address(want)) return (false, bytes("want"));
 
+        if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
+
         uint256 kickableAmount = kickable(_from);
         if (kickableAmount >= minAmountToSell) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));
@@ -219,7 +238,7 @@ contract BaseConvertor is BaseHealthCheck {
 
     function _claimAndSellRewards() internal virtual {}
 
-    function totalWant() internal view virtual returns (uint256) {
+    function totalWant() public view virtual returns (uint256) {
         return balanceOfWant() + balanceOfWantInAuction();
     }
 
@@ -258,6 +277,7 @@ contract BaseConvertor is BaseHealthCheck {
 
     function _setMinAmountToSell(uint256 _minAmountToSell) internal virtual {
         minAmountToSell = _minAmountToSell;
+        emit MinAmountToSellSet(_minAmountToSell);
     }
 
     function _setMaxSlippageBps(uint16 _maxSlippageBps) internal virtual {
@@ -292,6 +312,19 @@ contract BaseConvertor is BaseHealthCheck {
         require(_reportBuffer <= MAX_BPS, "report buffer");
         reportBuffer = _reportBuffer;
         emit ReportBufferSet(_reportBuffer);
+    }
+
+    function _setMaxGasPriceToTend(
+        uint256 _maxGasPriceToTend
+    ) internal virtual {
+        maxGasPriceToTend = _maxGasPriceToTend;
+        emit MaxGasPriceToTendSet(_maxGasPriceToTend);
+    }
+
+    function _isBaseFeeAcceptable() internal view virtual returns (bool) {
+        uint256 _maxGasPriceToTend = maxGasPriceToTend;
+        if (_maxGasPriceToTend == 0) return true;
+        return block.basefee <= _maxGasPriceToTend;
     }
 
     function _kickConfiguredAuction(
@@ -440,4 +473,20 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function _emergencyWithdraw(uint256) internal virtual override {}
+
+    /**
+     * @notice Claims rewards from Merkl distributor
+     * @param users Recipients of tokens
+     * @param tokens ERC20 tokens being claimed
+     * @param amounts Amounts of tokens that will be sent to the corresponding users
+     * @param proofs Array of Merkle proofs verifying the claims
+     */
+    function claim(
+        address[] calldata users,
+        address[] calldata tokens,
+        uint256[] calldata amounts,
+        bytes32[][] calldata proofs
+    ) external {
+        MERKL_DISTRIBUTOR.claim(users, tokens, amounts, proofs);
+    }
 }
