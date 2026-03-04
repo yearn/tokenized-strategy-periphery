@@ -131,21 +131,26 @@ contract FluidSwapper is BaseSwapper {
         uint256 _minAmountOut
     ) internal virtual returns (uint256 _amountOut) {
         if (_amountIn != 0 && _amountIn >= minAmountToSell) {
+            if (_from == weth) {
+                IWETH(weth).withdraw(_amountIn);
+            }
+
             if (_from == base || _to == base) {
                 _amountOut = _fluidSwapInStep(
-                    _from,
-                    _to,
-                    _amountIn,
-                    _minAmountOut
+                    _from, _to, _amountIn, _minAmountOut
                 );
             } else {
                 _amountOut = _fluidSwapInStep(_from, base, _amountIn, 0);
                 _amountOut = _fluidSwapInStep(
-                    base,
-                    _to,
-                    _amountOut,
-                    _minAmountOut
+                    base, _to, _amountOut, _minAmountOut
                 );
+            }
+
+            if (_to == weth) {
+                uint256 _ethBalance = address(this).balance;
+                if (_ethBalance > 0) {
+                    IWETH(weth).deposit{value: _ethBalance}();
+                }
             }
         }
     }
@@ -165,7 +170,6 @@ contract FluidSwapper is BaseSwapper {
         uint256 _msgValue;
 
         if (_from == weth) {
-            IWETH(weth).withdraw(_amountIn);
             _msgValue = _amountIn;
         } else {
             _checkAllowance(_config.dex, _from, _amountIn);
@@ -177,13 +181,6 @@ contract FluidSwapper is BaseSwapper {
             _minAmountOut,
             address(this)
         );
-
-        if (_to == weth) {
-            uint256 _ethBalance = address(this).balance;
-            if (_ethBalance > 0) {
-                IWETH(weth).deposit{value: _ethBalance}();
-            }
-        }
     }
 
     /**
