@@ -10,18 +10,16 @@ contract FluidSwapperTest is Setup {
     IMockFluidSwapper public fluidSwapper;
 
     ERC20 public base;
-    ERC20 public weth;
     ERC20 public swapTo;
 
     // Mainnet Fluid USDC/USDT dex deployment.
     address internal constant DEX_USDC_USDT =
         0x667701e51B4D1Ca244F17C78F7aB8744B4C99F9B;
-    // Mainnet Fluid fxUSD/USDC dex deployment.
-    address internal constant DEX_FXUSD_USDC =
-        0x0C88C9713520E9546252B09E57fAa46e9854743A;
-    // fxUSD token.
-    address internal constant FXUSD =
-        0x085780639CC2cACd35E474e71f4d000e2405d8f6;
+    // Mainnet Fluid USDC/GHO dex deployment.
+    address internal constant DEX_USDC_GHO =
+        0xdE632C3a214D5f14C1d8ddF0b92F8BCd188fee45;
+    // GHO token.
+    address internal constant GHO = 0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f;
 
     // USDT (asset) fuzz bounds
     uint256 public minUsdtAmount = 1e6;
@@ -35,11 +33,10 @@ contract FluidSwapperTest is Setup {
         super.setUp();
 
         base = ERC20(tokenAddrs["USDC"]);
-        weth = ERC20(tokenAddrs["WETH"]);
-        swapTo = ERC20(FXUSD);
+        swapTo = ERC20(GHO);
 
         fluidSwapper = IMockFluidSwapper(
-            address(new MockFluidSwapper(address(asset), address(weth)))
+            address(new MockFluidSwapper(address(asset)))
         );
 
         fluidSwapper.setKeeper(keeper);
@@ -58,7 +55,8 @@ contract FluidSwapperTest is Setup {
         fluidSwapper.setFluidDex(
             address(base),
             address(swapTo),
-            DEX_FXUSD_USDC
+            DEX_USDC_GHO,
+            false
         );
     }
 
@@ -197,24 +195,6 @@ contract FluidSwapperTest is Setup {
         assertEq(swapTo.balanceOf(address(fluidSwapper)), amountOut);
     }
 
-    function test_swapFrom_multiHop_swapToToAsset() public {
-        uint256 amount = 100e18; // fxUSD has 18 decimals
-
-        airdrop(swapTo, address(fluidSwapper), amount);
-
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(swapTo),
-            address(asset),
-            amount,
-            0
-        );
-
-        assertEq(swapTo.balanceOf(address(fluidSwapper)), 0);
-        assertEq(base.balanceOf(address(fluidSwapper)), 0);
-        assertGt(asset.balanceOf(address(fluidSwapper)), 0);
-        assertEq(asset.balanceOf(address(fluidSwapper)), amountOut);
-    }
-
     function test_badBase_reverts(uint256 amount) public {
         vm.assume(amount >= minUsdtAmount && amount <= maxUsdtAmount);
 
@@ -227,116 +207,5 @@ contract FluidSwapperTest is Setup {
 
         vm.expectRevert("dex not set");
         fluidSwapper.swapFrom(address(asset), address(swapTo), amount, 0);
-    }
-
-    // -----------------------------------------------------------------------
-    //  WETH / native-ETH tests
-    // -----------------------------------------------------------------------
-
-    // Mainnet Fluid USDC/ETH dex (Dex 12). token0=USDC, token1=native ETH
-    address internal constant DEX_USDC_ETH =
-        0x836951EB21F3Df98273517B7249dCEFF270d34bf;
-    // Mainnet Fluid wstETH/ETH dex (Dex 1). token0=wstETH, token1=native ETH
-    address internal constant DEX_WSTETH_ETH =
-        0x0B1a513ee24972DAEf112bC777a5610d4325C9e7;
-
-    address internal constant WSTETH =
-        0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-
-    /// @dev Reset base to WETH and register native-ETH dexes on the existing instance.
-    function _setupWethBase() internal {
-        vm.prank(management);
-        fluidSwapper.setBase(address(weth));
-
-        vm.prank(management);
-        fluidSwapper.setFluidDex(address(base), address(weth), DEX_USDC_ETH);
-        vm.prank(management);
-        fluidSwapper.setFluidDex(address(weth), WSTETH, DEX_WSTETH_ETH);
-    }
-
-    function test_swapFrom_weth_assetToBase() public {
-        _setupWethBase();
-        uint256 amount = 1_000e6; // 1 000 USDC
-
-        airdrop(base, address(fluidSwapper), amount);
-
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(base),
-            address(weth),
-            amount,
-            0
-        );
-
-        assertEq(base.balanceOf(address(fluidSwapper)), 0);
-        assertGt(weth.balanceOf(address(fluidSwapper)), 0);
-        assertEq(weth.balanceOf(address(fluidSwapper)), amountOut);
-        assertEq(address(fluidSwapper).balance, 0);
-    }
-
-    function test_swapFrom_weth_baseToAsset() public {
-        _setupWethBase();
-        uint256 amount = 0.5 ether;
-
-        airdrop(weth, address(fluidSwapper), amount);
-
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(weth),
-            address(base),
-            amount,
-            0
-        );
-
-        assertEq(weth.balanceOf(address(fluidSwapper)), 0);
-        assertGt(base.balanceOf(address(fluidSwapper)), 0);
-        assertEq(base.balanceOf(address(fluidSwapper)), amountOut);
-        assertEq(address(fluidSwapper).balance, 0);
-    }
-
-    function test_swapFrom_weth_multiHop_assetToSwapTo() public {
-        _setupWethBase();
-        uint256 amount = 1_000e6; // USDC
-
-        airdrop(base, address(fluidSwapper), amount);
-
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(base),
-            WSTETH,
-            amount,
-            0
-        );
-
-        assertEq(base.balanceOf(address(fluidSwapper)), 0);
-        assertEq(weth.balanceOf(address(fluidSwapper)), 0);
-        assertGt(ERC20(WSTETH).balanceOf(address(fluidSwapper)), 0);
-        assertEq(ERC20(WSTETH).balanceOf(address(fluidSwapper)), amountOut);
-        assertEq(address(fluidSwapper).balance, 0);
-    }
-
-    function test_swapFrom_weth_multiHop_swapToToAsset() public {
-        _setupWethBase();
-        uint256 amount = 1e18; // 1 wstETH
-
-        airdrop(ERC20(WSTETH), address(fluidSwapper), amount);
-
-        uint256 amountOut = fluidSwapper.swapFrom(
-            WSTETH,
-            address(base),
-            amount,
-            0
-        );
-
-        assertEq(ERC20(WSTETH).balanceOf(address(fluidSwapper)), 0);
-        assertEq(weth.balanceOf(address(fluidSwapper)), 0);
-        assertGt(base.balanceOf(address(fluidSwapper)), 0);
-        assertEq(base.balanceOf(address(fluidSwapper)), amountOut);
-        assertEq(address(fluidSwapper).balance, 0);
-    }
-
-    function test_setFluidDex_weth_normalizesNativeEth() public {
-        _setupWethBase();
-
-        // Verify dex mapping uses WETH (not native ETH) as the key
-        (address dex, ) = fluidSwapper.fluidDexes(address(base), address(weth));
-        assertEq(dex, DEX_USDC_ETH);
     }
 }
