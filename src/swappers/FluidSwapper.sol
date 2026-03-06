@@ -7,6 +7,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IFluidDexT1} from "../interfaces/Fluid/IFluidDexV2Router.sol";
 import {BaseSwapper} from "./BaseSwapper.sol";
 
+interface IWETH {
+    function deposit() external payable;
+
+    function withdraw(uint256) external;
+}
+
 /**
  * @title FluidSwapper
  * @author Yearn.finance
@@ -18,8 +24,18 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 contract FluidSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
-    // Defaults to WETH on mainnet.
-    address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal constant NATIVE_ETH =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    address public immutable WETH;
+
+    // Defaults to weth.
+    address public base;
+
+    constructor(address _weth) {
+        WETH = _weth;
+        base = _weth;
+    }
 
     struct FluidDexConfig {
         address dex;
@@ -28,6 +44,8 @@ contract FluidSwapper is BaseSwapper {
 
     /// @notice Token pair => Fluid DEX config used for swaps.
     mapping(address => mapping(address => FluidDexConfig)) public fluidDexes;
+
+    receive() external payable virtual {}
 
     /**
      * @dev Set Fluid DEX for a token pair. Stored both directions.
@@ -44,16 +62,11 @@ contract FluidSwapper is BaseSwapper {
         address _token1,
         address _dex
     ) internal virtual {
-        require(
-            _token0 != address(0) &&
-                _token1 != address(0) &&
-                _dex != address(0),
-            "bad token"
-        );
-        require(_token0 != _token1, "same token");
-
         IFluidDexT1.ConstantViews memory _constants = IFluidDexT1(_dex)
             .constantsView();
+
+        if (_constants.token0 == NATIVE_ETH) _constants.token0 = WETH;
+        if (_constants.token1 == NATIVE_ETH) _constants.token1 = WETH;
 
         if (_constants.token0 == _token0 && _constants.token1 == _token1) {
             _setFluidDex(_token0, _token1, _dex, true);
@@ -110,6 +123,10 @@ contract FluidSwapper is BaseSwapper {
         uint256 _minAmountOut
     ) internal virtual returns (uint256 _amountOut) {
         if (_amountIn != 0 && _amountIn >= minAmountToSell) {
+            if (_from == WETH) {
+                IWETH(WETH).withdraw(_amountIn);
+            }
+
             if (_from == base || _to == base) {
                 _amountOut = _fluidSwapInStep(
                     _from,
@@ -126,6 +143,13 @@ contract FluidSwapper is BaseSwapper {
                     _minAmountOut
                 );
             }
+
+            if (_to == WETH) {
+                uint256 _ethBalance = address(this).balance;
+                if (_ethBalance > 0) {
+                    IWETH(WETH).deposit{value: _ethBalance}();
+                }
+            }
         }
     }
 
@@ -141,27 +165,19 @@ contract FluidSwapper is BaseSwapper {
         FluidDexConfig memory _config = fluidDexes[_from][_to];
         require(_config.dex != address(0), "dex not set");
 
-        _checkAllowance(_config.dex, _from, _amountIn);
+        uint256 _msgValue;
 
-        _amountOut = IFluidDexT1(_config.dex).swapIn(
+        if (_from == WETH) {
+            _msgValue = _amountIn;
+        } else {
+            ERC20(_from).forceApprove(_config.dex, _amountIn);
+        }
+
+        _amountOut = IFluidDexT1(_config.dex).swapIn{value: _msgValue}(
             _config.swap0to1,
             _amountIn,
             _minAmountOut,
             address(this)
         );
-    }
-
-    /**
-     * @dev Ensure `_contract` has sufficient allowance for `_token`.
-     */
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal virtual {
-        if (ERC20(_token).allowance(address(this), _contract) < _amount) {
-            ERC20(_token).forceApprove(_contract, 0);
-            ERC20(_token).forceApprove(_contract, _amount);
-        }
     }
 }

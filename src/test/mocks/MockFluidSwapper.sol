@@ -5,7 +5,13 @@ import {FluidSwapper} from "../../swappers/FluidSwapper.sol";
 import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
 contract MockFluidSwapper is BaseStrategy, FluidSwapper {
-    constructor(address _asset) BaseStrategy(_asset, "Mock Fluid") {}
+    constructor(
+        address _asset,
+        address _weth
+    ) BaseStrategy(_asset, "Mock Fluid") FluidSwapper(_weth) {}
+
+    // BaseStrategy's fallback is not payable, so we need an explicit receive.
+    receive() external payable override {}
 
     function _deployFunds(uint256) internal override {}
 
