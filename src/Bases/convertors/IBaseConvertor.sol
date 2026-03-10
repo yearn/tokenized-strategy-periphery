@@ -4,11 +4,11 @@ pragma solidity >=0.8.18;
 import {IBaseHealthCheck} from "../HealthCheck/IBaseHealthCheck.sol";
 
 interface IBaseConvertor is IBaseHealthCheck {
-    function want() external view returns (address);
+    function WANT() external view returns (address);
 
-    function sellAssetAuction() external view returns (address);
+    function SELL_ASSET_AUCTION() external view returns (address);
 
-    function buyAssetAuction() external view returns (address);
+    function BUY_ASSET_AUCTION() external view returns (address);
 
     function oracle() external view returns (address);
 
@@ -37,11 +37,6 @@ interface IBaseConvertor is IBaseHealthCheck {
     function setReportBuffer(uint16 _reportBuffer) external;
 
     function setMaxGasPriceToTend(uint256 _maxGasPriceToTend) external;
-
-    function setAuctionStepDecayRate(
-        address _from,
-        uint256 _stepDecayRate
-    ) external;
 
     function setAuctionStepDuration(
         address _from,

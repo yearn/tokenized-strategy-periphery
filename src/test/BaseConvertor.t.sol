@@ -61,15 +61,15 @@ contract BaseConvertorTest is Setup {
 
     function test_setup() public {
         assertEq(convertorStrategy.asset(), address(asset));
-        assertEq(address(convertor.want()), address(want));
+        assertEq(address(convertor.WANT()), address(want));
         assertEq(convertor.oracle(), address(oracle));
         assertEq(convertor.decayRate(), 1);
         assertEq(convertor.reportBuffer(), 0);
         assertEq(convertorStrategy.management(), management);
         assertEq(convertorStrategy.keeper(), keeper);
 
-        Auction sellAuction = convertor.sellAssetAuction();
-        Auction buyAuction = convertor.buyAssetAuction();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
         assertEq(sellAuction.receiver(), address(convertor));
         assertEq(buyAuction.receiver(), address(convertor));
         assertEq(sellAuction.want(), address(want));
@@ -83,25 +83,21 @@ contract BaseConvertorTest is Setup {
     }
 
     function test_setAuctionStep_passthrough() public {
-        Auction sellAuction = convertor.sellAssetAuction();
-        Auction buyAuction = convertor.buyAssetAuction();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
 
         vm.startPrank(management);
-        convertor.setAuctionStepDecayRate(address(asset), 7);
-        convertor.setAuctionStepDecayRate(address(want), 9);
         convertor.setAuctionStepDuration(address(asset), 120);
         convertor.setAuctionStepDuration(address(want), 180);
         vm.stopPrank();
 
-        assertEq(sellAuction.stepDecayRate(), 7);
-        assertEq(buyAuction.stepDecayRate(), 9);
         assertEq(sellAuction.stepDuration(), 120);
         assertEq(buyAuction.stepDuration(), 180);
     }
 
     function test_setDecayRate_appliedForAssetAndWantAuctions() public {
-        Auction sellAuction = convertor.sellAssetAuction();
-        Auction buyAuction = convertor.buyAssetAuction();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
 
         vm.prank(management);
         convertor.setDecayRate(7);
@@ -138,7 +134,7 @@ contract BaseConvertorTest is Setup {
 
         airdrop(asset, address(convertor), _assetAmount);
         airdrop(want, address(convertor), _looseWant);
-        airdrop(want, address(convertor.buyAssetAuction()), _auctionWant);
+        airdrop(want, address(convertor.BUY_ASSET_AUCTION()), _auctionWant);
 
         uint256 totalWantValue = _looseWant + _auctionWant;
         assertEq(
@@ -165,24 +161,24 @@ contract BaseConvertorTest is Setup {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         ERC20 otherToken = ERC20(tokenAddrs["DAI"]);
-        Auction buyAuction = convertor.buyAssetAuction();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
 
-        (, uint64 scalerBefore, ) = buyAuction.auctions(address(otherToken));
+        (, uint64 scalerBefore, ) = sellAuction.auctions(address(otherToken));
         assertEq(scalerBefore, 0);
 
         vm.prank(management);
         convertor.enableAuctionToken(address(otherToken));
 
-        (, uint64 scalerEnabled, ) = buyAuction.auctions(address(otherToken));
+        (, uint64 scalerEnabled, ) = sellAuction.auctions(address(otherToken));
         assertGt(scalerEnabled, 0);
 
-        airdrop(otherToken, address(buyAuction), _amount);
+        airdrop(otherToken, address(sellAuction), _amount);
         uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
 
         vm.prank(management);
         convertor.sweepAuctionToken(address(otherToken), address(otherToken));
 
-        assertEq(otherToken.balanceOf(address(buyAuction)), 0);
+        assertEq(otherToken.balanceOf(address(sellAuction)), 0);
         assertEq(
             otherToken.balanceOf(address(convertor)),
             strategyBalBefore + _amount
@@ -198,7 +194,7 @@ contract BaseConvertorTest is Setup {
         uint256 kicked = convertor.kickAuction(address(asset));
 
         assertEq(kicked, _amount);
-        assertTrue(convertor.sellAssetAuction().isActive(address(asset)));
+        assertTrue(convertor.SELL_ASSET_AUCTION().isActive(address(asset)));
     }
 
     function test_kickAuction_want(uint256 _amount) public {
@@ -210,7 +206,7 @@ contract BaseConvertorTest is Setup {
         uint256 kicked = convertor.kickAuction(address(want));
 
         assertEq(kicked, _amount);
-        assertTrue(convertor.buyAssetAuction().isActive(address(want)));
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
     function test_kickAuction_pricesFromOracle() public {
@@ -228,9 +224,9 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor.kickAuction(address(asset));
 
-        assertEq(convertor.sellAssetAuction().startingPrice(), 50);
+        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 50);
         assertEq(
-            convertor.sellAssetAuction().minimumPrice(),
+            convertor.SELL_ASSET_AUCTION().minimumPrice(),
             475_000_000_000_000_000
         );
 
@@ -238,9 +234,9 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor.kickAuction(address(want));
 
-        assertEq(convertor.buyAssetAuction().startingPrice(), 200);
+        assertEq(convertor.BUY_ASSET_AUCTION().startingPrice(), 200);
         assertEq(
-            convertor.buyAssetAuction().minimumPrice(),
+            convertor.BUY_ASSET_AUCTION().minimumPrice(),
             1_900_000_000_000_000_000
         );
     }
@@ -259,10 +255,12 @@ contract BaseConvertorTest is Setup {
         uint256 kicked = convertor.kickAuction(address(otherToken));
 
         assertEq(kicked, _amount);
-        assertTrue(convertor.buyAssetAuction().isActive(address(otherToken)));
-        assertEq(convertor.buyAssetAuction().startingPrice(), 1_000_000);
-        assertEq(convertor.buyAssetAuction().minimumPrice(), 0);
-        assertEq(convertor.buyAssetAuction().stepDecayRate(), 50);
+        assertTrue(
+            convertor.SELL_ASSET_AUCTION().isActive(address(otherToken))
+        );
+        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 1_000_000);
+        assertEq(convertor.SELL_ASSET_AUCTION().minimumPrice(), 0);
+        assertEq(convertor.SELL_ASSET_AUCTION().stepDecayRate(), 50);
     }
 
     function test_kickAuction_pricesFromOracle_decimalMismatch() public {
@@ -297,9 +295,9 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor18.kickAuction(address(asset));
 
-        assertEq(convertor18.sellAssetAuction().startingPrice(), 1_000);
+        assertEq(convertor18.SELL_ASSET_AUCTION().startingPrice(), 1_000);
         assertEq(
-            convertor18.sellAssetAuction().minimumPrice(),
+            convertor18.SELL_ASSET_AUCTION().minimumPrice(),
             475_000_000_000_000
         );
 
@@ -309,9 +307,9 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor18.kickAuction(address(want18));
 
-        assertEq(convertor18.buyAssetAuction().startingPrice(), 20_000);
+        assertEq(convertor18.BUY_ASSET_AUCTION().startingPrice(), 20_000);
         assertEq(
-            convertor18.buyAssetAuction().minimumPrice(),
+            convertor18.BUY_ASSET_AUCTION().minimumPrice(),
             1_900_000_000_000_000_000_000
         );
     }
@@ -363,8 +361,8 @@ contract BaseConvertorTest is Setup {
         uint256 buySide = _amount / 4;
         uint256 looseWant = _amount / 5;
 
-        airdrop(asset, address(convertor.sellAssetAuction()), sellSide);
-        airdrop(want, address(convertor.buyAssetAuction()), buySide);
+        airdrop(asset, address(convertor.SELL_ASSET_AUCTION()), sellSide);
+        airdrop(want, address(convertor.BUY_ASSET_AUCTION()), buySide);
         airdrop(want, address(convertor), looseWant);
 
         vm.prank(keeper);
@@ -440,11 +438,11 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         _convertor.kickAuction(address(_asset));
         assertEq(
-            _convertor.sellAssetAuction().startingPrice(),
+            _convertor.SELL_ASSET_AUCTION().startingPrice(),
             _expectedSellStart
         );
         assertEq(
-            _convertor.sellAssetAuction().minimumPrice(),
+            _convertor.SELL_ASSET_AUCTION().minimumPrice(),
             _expectedSellMin
         );
 
@@ -452,10 +450,13 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         _convertor.kickAuction(address(_want));
         assertEq(
-            _convertor.buyAssetAuction().startingPrice(),
+            _convertor.BUY_ASSET_AUCTION().startingPrice(),
             _expectedBuyStart
         );
-        assertEq(_convertor.buyAssetAuction().minimumPrice(), _expectedBuyMin);
+        assertEq(
+            _convertor.BUY_ASSET_AUCTION().minimumPrice(),
+            _expectedBuyMin
+        );
     }
 
     function _expectedSellAuctionPricing(

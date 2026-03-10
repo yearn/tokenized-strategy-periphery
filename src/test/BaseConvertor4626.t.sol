@@ -33,8 +33,8 @@ contract BaseConvertor4626Test is Setup {
             address(asset),
             "Base Convertor 4626",
             address(want),
-            address(targetVault),
-            address(oracle)
+            address(oracle),
+            address(targetVault)
         );
         convertorInterface = IBaseConvertor4626(address(convertor));
         convertorStrategy = IStrategy(address(convertor));
@@ -54,12 +54,12 @@ contract BaseConvertor4626Test is Setup {
 
     function test_setup() public {
         assertEq(convertorStrategy.asset(), address(asset));
-        assertEq(address(convertor.want()), address(want));
+        assertEq(address(convertor.WANT()), address(want));
         assertEq(address(convertor.vault()), address(targetVault));
         assertEq(convertor.oracle(), address(oracle));
 
-        Auction sellAuction = convertor.sellAssetAuction();
-        Auction buyAuction = convertor.buyAssetAuction();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
         assertEq(sellAuction.want(), address(want));
         assertEq(buyAuction.want(), address(asset));
         assertEq(sellAuction.stepDecayRate(), 1);
@@ -144,7 +144,7 @@ contract BaseConvertor4626Test is Setup {
         uint256 kicked = convertor.kickAuction(address(want));
 
         assertGt(kicked, 0);
-        assertTrue(convertor.buyAssetAuction().isActive(address(want)));
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
     function test_freeWant_freesAndKicksWantAuction(uint256 _amount) public {
@@ -161,7 +161,7 @@ contract BaseConvertor4626Test is Setup {
         vm.prank(keeper);
         convertorInterface.freeWant(type(uint256).max);
 
-        assertTrue(convertor.buyAssetAuction().isActive(address(want)));
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
     function test_report_accountsVaultAndAuctionBalances(
@@ -177,8 +177,8 @@ contract BaseConvertor4626Test is Setup {
         vm.prank(keeper);
         convertor.deployLooseWant();
 
-        airdrop(asset, address(convertor.sellAssetAuction()), sellSide);
-        airdrop(want, address(convertor.buyAssetAuction()), buySide);
+        airdrop(asset, address(convertor.SELL_ASSET_AUCTION()), sellSide);
+        airdrop(want, address(convertor.BUY_ASSET_AUCTION()), buySide);
 
         vm.prank(keeper);
         convertorStrategy.report();
@@ -207,7 +207,7 @@ contract BaseConvertor4626Test is Setup {
         convertor.deployLooseWant();
 
         airdrop(want, address(convertor), looseWant);
-        airdrop(want, address(convertor.buyAssetAuction()), auctionWant);
+        airdrop(want, address(convertor.BUY_ASSET_AUCTION()), auctionWant);
 
         vm.prank(management);
         convertor.setReportBuffer(bugger);

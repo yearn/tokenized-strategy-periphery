@@ -40,13 +40,13 @@ contract BaseConvertor is BaseHealthCheck {
         IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
 
     /// @notice Token converted to/from strategy `asset`.
-    ERC20 public immutable want;
+    ERC20 public immutable WANT;
 
     /// @notice Auction selling `asset` into `want`.
-    Auction public immutable sellAssetAuction;
+    Auction public immutable SELL_ASSET_AUCTION;
 
     /// @notice Auction selling `want` into `asset`.
-    Auction public immutable buyAssetAuction;
+    Auction public immutable BUY_ASSET_AUCTION;
 
     /// @notice Morpho-style oracle with answer = asset per want, scaled 1e36.
     address public oracle;
@@ -75,7 +75,7 @@ contract BaseConvertor is BaseHealthCheck {
         address _want,
         address _oracle
     ) BaseHealthCheck(_asset, _name) {
-        want = ERC20(_want);
+        WANT = ERC20(_want);
 
         AuctionFactory factory = AuctionFactory(
             0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e
@@ -87,7 +87,7 @@ contract BaseConvertor is BaseHealthCheck {
         _sellAssetAuction.enable(_asset);
         _sellAssetAuction.setStepDecayRate(1);
         _sellAssetAuction.setGovernanceOnlyKick(true);
-        sellAssetAuction = _sellAssetAuction;
+        SELL_ASSET_AUCTION = _sellAssetAuction;
 
         Auction _buyAssetAuction = Auction(
             factory.createNewAuction(_asset, address(this), address(this))
@@ -95,8 +95,10 @@ contract BaseConvertor is BaseHealthCheck {
         _buyAssetAuction.enable(_want);
         _buyAssetAuction.setStepDecayRate(1);
         _buyAssetAuction.setGovernanceOnlyKick(true);
-        buyAssetAuction = _buyAssetAuction;
+        BUY_ASSET_AUCTION = _buyAssetAuction;
 
+        // We store the default decay rate in case a custom one
+        // is ever used for a specific auction we can reset it to the default.
         decayRate = 1;
 
         _setStartingPriceBps(uint16(MAX_BPS + 10));
@@ -130,6 +132,8 @@ contract BaseConvertor is BaseHealthCheck {
         _setStartingPriceBps(_startingPriceBps);
     }
 
+    /// @notice Set the default decay rate used for want/asset auctions.
+    ///  Reward token auctions always use DEFAULT_AUCTION_DECAY_RATE.
     function setDecayRate(uint256 _decayRate) external onlyManagement {
         _setDecayRate(_decayRate);
     }
@@ -142,14 +146,6 @@ contract BaseConvertor is BaseHealthCheck {
         uint256 _maxGasPriceToTend
     ) external onlyManagement {
         _setMaxGasPriceToTend(_maxGasPriceToTend);
-    }
-
-    /// @notice Management passthrough to set auction step decay rate.
-    function setAuctionStepDecayRate(
-        address _from,
-        uint256 _stepDecayRate
-    ) external onlyManagement {
-        _auctionForToken(_from).setStepDecayRate(_stepDecayRate);
     }
 
     /// @notice Management passthrough to set auction step duration.
@@ -182,23 +178,25 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function _kickAuction(address _from) internal virtual returns (uint256) {
-        if (_from == address(asset)) {
-            return _kickConfiguredAuction(sellAssetAuction, _from);
+        if (_from == address(WANT)) {
+            return _kickConfiguredAuction(BUY_ASSET_AUCTION, _from);
         }
-        return _kickConfiguredAuction(buyAssetAuction, _from);
+        return _kickConfiguredAuction(SELL_ASSET_AUCTION, _from);
     }
 
     function kickable(address _from) public view virtual returns (uint256) {
-        if (_from == address(asset)) {
-            return _kickableFromAuction(sellAssetAuction, _from);
+        if (_from == address(WANT)) {
+            return _kickableFromAuction(BUY_ASSET_AUCTION, _from);
         }
-        return _kickableFromAuction(buyAssetAuction, _from);
+        return _kickableFromAuction(SELL_ASSET_AUCTION, _from);
     }
 
+    /// @notice We use trigger to go from asset -> want.
+    /// We cannot assume loose want should be converted, so it does not go back.
     function auctionTrigger(
         address _from
     ) external view returns (bool shouldKick, bytes memory data) {
-        if (_from == address(want)) return (false, bytes("want"));
+        if (_from == address(WANT)) return (false, bytes("want"));
 
         if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
 
@@ -247,15 +245,15 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function balanceOfWant() public view virtual returns (uint256) {
-        return want.balanceOf(address(this));
+        return WANT.balanceOf(address(this));
     }
 
     function balanceOfAssetInAuction() public view virtual returns (uint256) {
-        return asset.balanceOf(address(sellAssetAuction));
+        return asset.balanceOf(address(SELL_ASSET_AUCTION));
     }
 
     function balanceOfWantInAuction() public view virtual returns (uint256) {
-        return want.balanceOf(address(buyAssetAuction));
+        return WANT.balanceOf(address(BUY_ASSET_AUCTION));
     }
 
     function availableWithdrawLimit(
@@ -272,6 +270,10 @@ contract BaseConvertor is BaseHealthCheck {
         require(_oracle != address(0), "ZERO ADDRESS");
 
         oracle = _oracle;
+
+        // Call _oraclePrice() to ensure the oracle is valid.
+        _oraclePrice();
+
         emit OracleSet(_oracle);
     }
 
@@ -337,7 +339,6 @@ contract BaseConvertor is BaseHealthCheck {
         }
 
         _available = _kickableFromAuction(_auction, _from);
-        if (_available < minAmountToSell) return 0;
 
         _setAuctionPricing(_auction, _from, _available);
 
@@ -385,8 +386,8 @@ contract BaseConvertor is BaseHealthCheck {
     function _auctionForToken(
         address _from
     ) internal view returns (Auction _auction) {
-        if (_from == address(asset)) return sellAssetAuction;
-        return buyAssetAuction;
+        if (_from == address(WANT)) return BUY_ASSET_AUCTION;
+        return SELL_ASSET_AUCTION;
     }
 
     function _oraclePrice() internal view virtual returns (uint256 _price) {
@@ -407,7 +408,8 @@ contract BaseConvertor is BaseHealthCheck {
             uint256 _stepDecayRate
         )
     {
-        if (_from != address(asset) && _from != address(want)) {
+        // If non want/asset tokens, use the default auction pricing.
+        if (_from != address(asset) && _from != address(WANT)) {
             return (
                 DEFAULT_AUCTION_STARTING_PRICE,
                 0,
@@ -424,6 +426,7 @@ contract BaseConvertor is BaseHealthCheck {
             Math.Rounding.Up
         );
 
+        // Auction starting price is a lot size, so we need to adjust for amount.
         _startingPrice = Math.mulDiv(
             _amount,
             startUnitPrice,
@@ -446,10 +449,10 @@ contract BaseConvertor is BaseHealthCheck {
         if (_from == address(asset)) {
             uint256 oneAsset = 10 ** asset.decimals();
             uint256 quoteWant = _quoteWantFromAsset(oneAsset);
-            return Math.mulDiv(quoteWant, 1e18, 10 ** want.decimals());
+            return Math.mulDiv(quoteWant, 1e18, 10 ** WANT.decimals());
         }
 
-        uint256 oneWant = 10 ** want.decimals();
+        uint256 oneWant = 10 ** WANT.decimals();
         uint256 quoteAsset = _quoteAssetFromWant(oneWant);
         return Math.mulDiv(quoteAsset, 1e18, 10 ** asset.decimals());
     }

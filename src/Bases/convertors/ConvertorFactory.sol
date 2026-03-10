@@ -68,7 +68,7 @@ contract ConvertorFactory {
         address _strategy
     ) external view returns (bool) {
         IBaseConvertor convertor = IBaseConvertor(_strategy);
-        return deployments[convertor.asset()][convertor.want()] == _strategy;
+        return deployments[convertor.asset()][convertor.WANT()] == _strategy;
     }
 
     function _configureStrategy(IBaseConvertor _strategy) internal {

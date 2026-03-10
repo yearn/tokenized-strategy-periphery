@@ -22,13 +22,13 @@ contract BaseConvertor4626 is BaseConvertor {
         address _asset,
         string memory _name,
         address _want,
-        address _vault,
-        address _oracle
+        address _oracle,
+        address _vault
     ) BaseConvertor(_asset, _name, _want, _oracle) {
         vault = IERC4626(_vault);
         require(vault.asset() == _want, "wrong vault");
 
-        want.forceApprove(_vault, type(uint256).max);
+        WANT.forceApprove(_vault, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ contract BaseConvertor4626 is BaseConvertor {
     function freeWant(uint256 _wantAmount) external onlyKeepers {
         uint256 freedWant = _freeWantFromVault(_wantAmount);
         if (freedWant > 0) {
-            _kickConfiguredAuction(buyAssetAuction, address(want));
+            _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT));
         }
     }
 
@@ -122,7 +122,7 @@ contract BaseConvertor4626 is BaseConvertor {
     function _emergencyWithdraw(uint256 _amount) internal virtual override {
         uint256 wantAmount = _quoteWantFromAsset(_amount);
         _freeWantFromVault(wantAmount);
-        _kickConfiguredAuction(buyAssetAuction, address(want));
+        _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT));
     }
 
     /*//////////////////////////////////////////////////////////////

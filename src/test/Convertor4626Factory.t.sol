@@ -35,14 +35,14 @@ contract Convertor4626FactoryTest is Setup {
             address(asset),
             "Factory 4626 Convertor",
             want,
-            address(vault),
-            address(oracle)
+            address(oracle),
+            address(vault)
         );
 
         IBaseConvertor4626 convertor = IBaseConvertor4626(deployed);
 
         assertEq(convertor.asset(), address(asset));
-        assertEq(address(convertor.want()), want);
+        assertEq(address(convertor.WANT()), want);
         assertEq(convertor.oracle(), address(oracle));
         assertEq(address(convertor.vault()), address(vault));
         assertEq(convertor.performanceFeeRecipient(), performanceFeeRecipient);
@@ -65,8 +65,8 @@ contract Convertor4626FactoryTest is Setup {
             address(asset),
             "Factory 4626 Convertor",
             want,
-            address(vault),
-            address(oracle)
+            address(oracle),
+            address(vault)
         );
 
         vm.expectRevert(
@@ -79,8 +79,8 @@ contract Convertor4626FactoryTest is Setup {
             address(asset),
             "Factory 4626 Convertor",
             want,
-            address(vault),
-            address(oracle)
+            address(oracle),
+            address(vault)
         );
     }
 

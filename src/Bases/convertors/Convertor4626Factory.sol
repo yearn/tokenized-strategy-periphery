@@ -39,15 +39,15 @@ contract Convertor4626Factory {
         address _asset,
         string calldata _name,
         address _want,
-        address _vault,
-        address _oracle
+        address _oracle,
+        address _vault
     ) external returns (address) {
         address deployed = deployments4626[_asset][_want][_vault];
         if (deployed != address(0)) revert AlreadyDeployed(deployed);
 
         IBaseConvertor4626 _newConvertor = IBaseConvertor4626(
             address(
-                new BaseConvertor4626(_asset, _name, _want, _vault, _oracle)
+                new BaseConvertor4626(_asset, _name, _want, _oracle, _vault)
             )
         );
 
@@ -75,7 +75,7 @@ contract Convertor4626Factory {
     ) external view returns (bool) {
         IBaseConvertor4626 convertor = IBaseConvertor4626(_strategy);
         return
-            deployments4626[convertor.asset()][convertor.want()][
+            deployments4626[convertor.asset()][convertor.WANT()][
                 convertor.vault()
             ] == _strategy;
     }

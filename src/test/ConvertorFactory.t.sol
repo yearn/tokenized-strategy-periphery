@@ -39,7 +39,7 @@ contract ConvertorFactoryTest is Setup {
         IBaseConvertor convertor = IBaseConvertor(deployed);
 
         assertEq(convertor.asset(), address(asset));
-        assertEq(address(convertor.want()), want);
+        assertEq(address(convertor.WANT()), want);
         assertEq(convertor.oracle(), address(oracle));
         assertEq(convertor.performanceFeeRecipient(), performanceFeeRecipient);
         assertEq(convertor.keeper(), keeper);
