@@ -23,9 +23,18 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
  *   needed before reporting an unexpected loss or profit.
  */
 abstract contract BaseHealthCheck is BaseStrategy {
+    event OpenSet(bool indexed open);
+    event AllowedSet(address indexed depositor, bool indexed allowed);
+
     // Can be used to determine if a healthcheck should be called.
     // Defaults to true;
     bool public doHealthCheck = true;
+
+    // If open is true, anyone can deposit. Else only `allowed[_owner]`.
+    bool public open = true;
+
+    // Per depositor whitelist when `open == false`.
+    mapping(address => bool) public allowed;
 
     uint256 internal constant MAX_BPS = 10_000;
 
@@ -111,6 +120,26 @@ abstract contract BaseHealthCheck is BaseStrategy {
     }
 
     /**
+     * @notice Open or close strategy deposits globally.
+     * @dev If closed, only `allowed[_owner]` addresses can deposit.
+     */
+    function setOpen(bool _open) external onlyManagement {
+        open = _open;
+        emit OpenSet(_open);
+    }
+
+    /**
+     * @notice Set whitelist status for a single depositor.
+     */
+    function setAllowed(
+        address _depositor,
+        bool _allowed
+    ) external onlyManagement {
+        allowed[_depositor] = _allowed;
+        emit AllowedSet(_depositor, _allowed);
+    }
+
+    /**
      * @notice OVerrides the default {harvestAndReport} to include a healthcheck.
      * @return _totalAssets New totalAssets post report.
      */
@@ -157,5 +186,16 @@ abstract contract BaseHealthCheck is BaseStrategy {
                 "healthCheck"
             );
         }
+    }
+
+    /**
+     * @notice Deposit limit with whitelist gating.
+     * @dev Open mode allows all deposits. Closed mode requires `allowed[_owner]`.
+     */
+    function availableDepositLimit(
+        address _owner
+    ) public view virtual override returns (uint256) {
+        if (!open && !allowed[_owner]) return 0;
+        return super.availableDepositLimit(_owner);
     }
 }
