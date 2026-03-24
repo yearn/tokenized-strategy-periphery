@@ -33,7 +33,8 @@ contract CurveSwapper is BaseSwapper {
         address[5] pools;
     }
 
-    mapping(address => mapping(address => CurveRouteParams)) internal _curveRoutes;
+    mapping(address => mapping(address => CurveRouteParams))
+        internal _curveRoutes;
 
     /**
      * @dev Set the Curve route for a token pair.
@@ -51,7 +52,11 @@ contract CurveSwapper is BaseSwapper {
         address[5] memory _pools
     ) internal virtual {
         require(_route[0] == _from, "!route");
-        _curveRoutes[_from][_to] = CurveRouteParams(_route, _swapParams, _pools);
+        _curveRoutes[_from][_to] = CurveRouteParams(
+            _route,
+            _swapParams,
+            _pools
+        );
     }
 
     /**

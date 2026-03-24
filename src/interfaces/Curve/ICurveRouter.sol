@@ -2,7 +2,6 @@
 pragma solidity >=0.8.18;
 
 interface ICurveRouter {
-
     /// @notice Performs up to 5 swaps in a single transaction
     /// @param _route Array of [token_in, pool, token_out, pool, ...] with unused slots as address(0)
     /// @param _swap_params Array of [i, j, swap_type, pool_type, n_coins] per swap step
