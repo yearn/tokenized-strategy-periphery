@@ -28,6 +28,6 @@ contract MockCurveSwapper is CurveSwapper {
         uint256 _amountIn,
         uint256 _minAmountOut
     ) external returns (uint256) {
-        return _swapFrom(_from, _to, _amountIn, _minAmountOut);
+        return _curveSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }

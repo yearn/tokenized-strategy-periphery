@@ -73,7 +73,7 @@ contract CurveSwapper is BaseSwapper {
      * @param _minAmountOut The min of `_to` to get out.
      * @return _amountOut The actual amount of `_to` that was swapped to.
      */
-    function _swapFrom(
+    function _curveSwapFrom(
         address _from,
         address _to,
         uint256 _amountIn,
