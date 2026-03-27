@@ -56,6 +56,8 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function kickAuction(address _from) external returns (uint256);
 
+    function freeWant(uint256 _wantAmount) external;
+
     function kickable(address _from) external view returns (uint256);
 
     function auctionTrigger(

@@ -40,13 +40,6 @@ contract BaseConvertor4626 is BaseConvertor {
         return _deployLooseWant();
     }
 
-    function freeWant(uint256 _wantAmount) external onlyKeepers {
-        uint256 freedWant = _freeWantFromVault(_wantAmount);
-        if (freedWant > 0) {
-            _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT));
-        }
-    }
-
     function freeWantFromVault(uint256 _wantAmount) external onlyKeepers {
         _freeWantFromVault(_wantAmount);
     }
@@ -120,9 +113,7 @@ contract BaseConvertor4626 is BaseConvertor {
     }
 
     function _emergencyWithdraw(uint256 _amount) internal virtual override {
-        uint256 wantAmount = _quoteWantFromAsset(_amount);
-        _freeWantFromVault(wantAmount);
-        _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT));
+        _freeWant(_quoteWantFromAsset(_amount));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -135,6 +126,11 @@ contract BaseConvertor4626 is BaseConvertor {
         if (_deployed != 0) {
             vault.deposit(_deployed, address(this));
         }
+    }
+
+    function _freeWant(uint256 _wantAmount) internal virtual override {
+        _freeWantFromVault(_wantAmount);
+        super._freeWant(_wantAmount);
     }
 
     function _freeWantFromVault(

@@ -121,6 +121,7 @@ contract BaseConvertor4626Test is Setup {
         convertorInterface.freeWantFromVault(toFree);
 
         assertGt(convertor.balanceOfWant(), 0);
+        assertFalse(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
     function test_kickWantAuction_afterFreeWantFromVault(
@@ -162,6 +163,96 @@ contract BaseConvertor4626Test is Setup {
         convertorInterface.freeWant(type(uint256).max);
 
         assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
+    }
+
+    function test_freeWant_usesLooseWantBeforeRedeemingVault() public {
+        uint256 vaultAmount = 100 * 10 ** want.decimals();
+        uint256 looseWant = 30 * 10 ** want.decimals();
+        uint256 toKick = 20 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), vaultAmount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        uint256 vaultBalanceBefore = convertor.balanceOfVault();
+
+        airdrop(want, address(convertor), looseWant);
+
+        vm.prank(keeper);
+        convertorInterface.freeWant(toKick);
+
+        assertEq(convertor.balanceOfVault(), vaultBalanceBefore);
+        assertEq(
+            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
+            toKick
+        );
+        assertEq(convertor.balanceOfWant(), looseWant - toKick);
+    }
+
+    function test_freeWant_redeemsVaultAndKicksRequestedAmount() public {
+        uint256 vaultAmount = 100 * 10 ** want.decimals();
+        uint256 looseWant = 10 * 10 ** want.decimals();
+        uint256 toKick = 40 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), vaultAmount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        uint256 vaultBalanceBefore = convertor.balanceOfVault();
+
+        airdrop(want, address(convertor), looseWant);
+
+        vm.prank(keeper);
+        convertorInterface.freeWant(toKick);
+
+        assertLt(convertor.balanceOfVault(), vaultBalanceBefore);
+        assertEq(
+            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
+            toKick
+        );
+        assertEq(convertor.balanceOfWant(), 0);
+    }
+
+    function test_freeWant_partialIfVaultCannotFreeFullAmount() public {
+        uint256 vaultAmount = 30 * 10 ** want.decimals();
+        uint256 toKick = 100 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), vaultAmount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        vm.prank(keeper);
+        convertorInterface.freeWant(toKick);
+
+        assertEq(convertor.balanceOfVault(), 0);
+        assertEq(
+            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
+            vaultAmount
+        );
+        assertEq(convertor.balanceOfWant(), 0);
+    }
+
+    function test_freeWant_respectsMaxAmountToSwap() public {
+        uint256 vaultAmount = 100 * 10 ** want.decimals();
+        uint256 toKick = 40 * 10 ** want.decimals();
+        uint256 cap = 25 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), vaultAmount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(want), cap);
+
+        vm.prank(keeper);
+        convertorInterface.freeWant(toKick);
+
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
+        assertEq(convertor.balanceOfWant(), toKick - cap);
     }
 
     function test_kickAuction_maxAmountToSwap_inheritedForWant() public {

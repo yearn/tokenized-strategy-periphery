@@ -192,11 +192,25 @@ contract BaseConvertor is BaseHealthCheck {
         return _kickAuction(_from);
     }
 
+    function freeWant(uint256 _wantAmount) external virtual onlyKeepers {
+        _freeWant(_wantAmount);
+    }
+
     function _kickAuction(address _from) internal virtual returns (uint256) {
         if (_from == address(WANT)) {
-            return _kickConfiguredAuction(BUY_ASSET_AUCTION, _from);
+            return
+                _kickConfiguredAuction(
+                    BUY_ASSET_AUCTION,
+                    _from,
+                    type(uint256).max
+                );
         }
-        return _kickConfiguredAuction(SELL_ASSET_AUCTION, _from);
+        return
+            _kickConfiguredAuction(
+                SELL_ASSET_AUCTION,
+                _from,
+                type(uint256).max
+            );
     }
 
     function kickable(address _from) public view virtual returns (uint256) {
@@ -230,6 +244,10 @@ contract BaseConvertor is BaseHealthCheck {
     function _deployFunds(uint256) internal virtual override {}
 
     function _freeFunds(uint256) internal virtual override {}
+
+    function _freeWant(uint256 _wantAmount) internal virtual {
+        _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT), _wantAmount);
+    }
 
     function _harvestAndReport()
         internal
@@ -354,7 +372,8 @@ contract BaseConvertor is BaseHealthCheck {
 
     function _kickConfiguredAuction(
         Auction _auction,
-        address _from
+        address _from,
+        uint256 _maxKickAmount
     ) internal virtual returns (uint256 _available) {
         if (_auction.isActive(_from)) {
             // Will revert if the auction still has available funds.
@@ -370,6 +389,8 @@ contract BaseConvertor is BaseHealthCheck {
         }
 
         _available = _kickableFromAuction(_auction, _from);
+        _available = Math.min(_available, _maxKickAmount);
+        if (_available == 0) return 0;
 
         _setAuctionPricing(_auction, _from, _available);
 

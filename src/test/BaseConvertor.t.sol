@@ -259,6 +259,58 @@ contract BaseConvertorTest is Setup {
         assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
     }
 
+    function test_freeWant_kicksRequestedWantAmount() public {
+        uint256 amount = 100 * 10 ** want.decimals();
+        uint256 toKick = 40 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(keeper);
+        convertor.freeWant(toKick);
+
+        assertEq(want.balanceOf(address(convertor)), amount - toKick);
+        assertEq(
+            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
+            toKick
+        );
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
+    }
+
+    function test_freeWant_capsToAvailableWant() public {
+        uint256 amount = 25 * 10 ** want.decimals();
+        uint256 toKick = 40 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(keeper);
+        convertor.freeWant(toKick);
+
+        assertEq(want.balanceOf(address(convertor)), 0);
+        assertEq(
+            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
+            amount
+        );
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
+    }
+
+    function test_freeWant_respectsMaxAmountToSwap() public {
+        uint256 amount = 100 * 10 ** want.decimals();
+        uint256 toKick = 40 * 10 ** want.decimals();
+        uint256 cap = 30 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(want), cap);
+
+        vm.prank(keeper);
+        convertor.freeWant(toKick);
+
+        assertEq(want.balanceOf(address(convertor)), amount - cap);
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
+        assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
+    }
+
     function test_kickAuction_maxAmountToSwap_sweepsExcessAuctionBalance()
         public
     {
