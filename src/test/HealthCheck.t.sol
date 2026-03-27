@@ -20,6 +20,7 @@ contract HealthCheckTest is Setup {
         healthCheck.setKeeper(keeper);
         healthCheck.setPerformanceFeeRecipient(performanceFeeRecipient);
         healthCheck.setPendingManagement(management);
+        healthCheck.setOpen(true);
         // Accept management.
         vm.prank(management);
         healthCheck.acceptManagement();
@@ -429,5 +430,30 @@ contract HealthCheckTest is Setup {
             true,
             "doHealthCheck should be true"
         );
+    }
+
+    function test_depositorWhitelist_openOrAllowed() public {
+        // Defaults open.
+        assertTrue(healthCheck.open());
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+
+        // Close strategy deposits.
+        vm.prank(management);
+        healthCheck.setOpen(false);
+
+        assertFalse(healthCheck.open());
+        assertEq(healthCheck.availableDepositLimit(user), 0);
+
+        // Allow user explicitly.
+        vm.prank(management);
+        healthCheck.setAllowed(user, true);
+        assertTrue(healthCheck.allowed(user));
+        assertEq(healthCheck.availableDepositLimit(user), type(uint256).max);
+
+        // Remove explicit allow and verify blocked again.
+        vm.prank(management);
+        healthCheck.setAllowed(user, false);
+        assertFalse(healthCheck.allowed(user));
+        assertEq(healthCheck.availableDepositLimit(user), 0);
     }
 }

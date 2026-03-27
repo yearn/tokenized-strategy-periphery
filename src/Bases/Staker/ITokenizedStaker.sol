@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
+import {IBaseHealthCheck} from "../HealthCheck/IBaseHealthCheck.sol";
 
-interface ITokenizedStaker is IStrategy {
+interface ITokenizedStaker is IBaseHealthCheck {
     struct Reward {
         /// @notice The only address able to top up rewards for a token (aka notifyRewardAmount()).
         address rewardsDistributor;

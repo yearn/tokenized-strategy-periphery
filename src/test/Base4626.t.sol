@@ -15,7 +15,7 @@ contract Base4626CompounderTest is Setup {
 
         // we save the compounder as a IStrategyInterface to give it the needed interface
         // Use the compounder as the vault to use.
-        IStrategy _compounder = IStrategy(
+        IBase4626Compounder _compounder = IBase4626Compounder(
             address(
                 new Base4626Compounder(
                     address(asset),
@@ -31,6 +31,8 @@ contract Base4626CompounderTest is Setup {
         _compounder.setPerformanceFeeRecipient(performanceFeeRecipient);
         // set management of the compounder
         _compounder.setPendingManagement(management);
+
+        _compounder.setOpen(true);
 
         vm.prank(management);
         _compounder.acceptManagement();
