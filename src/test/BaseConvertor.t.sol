@@ -363,6 +363,57 @@ contract BaseConvertorTest is Setup {
         assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
+    function test_kickAuction_activeAuctionWithAvailable_reverts() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.prank(keeper);
+        convertor.kickAuction(address(asset));
+
+        assertTrue(convertor.SELL_ASSET_AUCTION().isActive(address(asset)));
+        assertEq(
+            convertor.SELL_ASSET_AUCTION().available(address(asset)),
+            amount
+        );
+
+        airdrop(asset, address(convertor), amount / 2);
+
+        vm.prank(keeper);
+        vm.expectRevert("!empty");
+        convertor.kickAuction(address(asset));
+    }
+
+    function test_kickAuction_activeAuctionEmpty_settlesAndRekicks() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+        uint256 extra = 25 * 10 ** asset.decimals();
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.prank(keeper);
+        convertor.kickAuction(address(asset));
+
+        vm.prank(address(convertor));
+        sellAuction.sweep(address(asset));
+
+        assertTrue(sellAuction.isActive(address(asset)));
+        assertEq(sellAuction.available(address(asset)), 0);
+        assertEq(asset.balanceOf(address(sellAuction)), 0);
+        assertEq(asset.balanceOf(address(convertor)), amount);
+
+        airdrop(asset, address(convertor), extra);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(asset));
+
+        assertEq(kicked, amount + extra);
+        assertTrue(sellAuction.isActive(address(asset)));
+        assertEq(sellAuction.available(address(asset)), amount + extra);
+        assertEq(asset.balanceOf(address(sellAuction)), amount + extra);
+        assertEq(asset.balanceOf(address(convertor)), 0);
+    }
+
     function test_kickAuction_pricesFromOracle() public {
         uint256 amount = 100 * 10 ** asset.decimals();
 
