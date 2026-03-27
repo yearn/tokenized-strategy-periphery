@@ -109,7 +109,7 @@ contract BaseConvertor is BaseHealthCheck {
         // is ever used for a specific auction we can reset it to the default.
         decayRate = 1;
 
-        _setStartingPriceBps(uint16(MAX_BPS + 10));
+        _setStartingPriceBps(uint16(MAX_BPS + 5));
         _setMaxSlippageBps(5);
         _setOracle(_oracle);
         // Default to no triggers until minAmountToSell is set.
@@ -176,12 +176,9 @@ contract BaseConvertor is BaseHealthCheck {
         _auctionForToken(_from).enable(_from);
     }
 
-    /// @notice Management passthrough to sweep tokens from an auction back to strategy.
-    function sweepAuctionToken(
-        address _from,
-        address _token
-    ) external onlyManagement {
-        _auctionForToken(_from).sweep(_token);
+    /// @notice Management passthrough to sweep the auction token back to strategy.
+    function sweepAuctionToken(address _from) external onlyManagement {
+        _auctionForToken(_from).sweep(_from);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -380,14 +377,6 @@ contract BaseConvertor is BaseHealthCheck {
             _auction.settle(_from);
         }
 
-        uint256 maxAmount = maxAmountToSwap[_from];
-        if (
-            maxAmount != 0 &&
-            ERC20(_from).balanceOf(address(_auction)) > maxAmount
-        ) {
-            _auction.sweep(_from);
-        }
-
         _available = _kickableFromAuction(_auction, _from);
         _available = Math.min(_available, _maxKickAmount);
         if (_available == 0) return 0;
@@ -400,6 +389,9 @@ contract BaseConvertor is BaseHealthCheck {
                 address(_auction),
                 _available - balanceInAuction
             );
+        } else {
+            _auction.sweep(_from);
+            ERC20(_from).safeTransfer(address(_auction), _available);
         }
 
         _available = _auction.kick(_from);

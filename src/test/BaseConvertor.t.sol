@@ -176,7 +176,7 @@ contract BaseConvertorTest is Setup {
         uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
 
         vm.prank(management);
-        convertor.sweepAuctionToken(address(otherToken), address(otherToken));
+        convertor.sweepAuctionToken(address(otherToken));
 
         assertEq(otherToken.balanceOf(address(sellAuction)), 0);
         assertEq(

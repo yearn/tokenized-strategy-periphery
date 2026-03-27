@@ -52,7 +52,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function enableAuctionToken(address _from) external;
 
-    function sweepAuctionToken(address _from, address _token) external;
+    function sweepAuctionToken(address _from) external;
 
     function kickAuction(address _from) external returns (uint256);
 
