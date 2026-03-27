@@ -27,6 +27,7 @@ contract TokenizedStakerTest is Setup {
         staker.setKeeper(keeper);
         staker.setPerformanceFeeRecipient(performanceFeeRecipient);
         staker.setPendingManagement(management);
+        staker.setOpen(true);
         // Accept management.
         vm.prank(management);
         staker.acceptManagement();
@@ -409,6 +410,7 @@ contract TokenizedStakerTestLowerDecimals is TokenizedStakerTest {
         staker.setKeeper(keeper);
         staker.setPerformanceFeeRecipient(performanceFeeRecipient);
         staker.setPendingManagement(management);
+        staker.setOpen(true);
         // Accept management.
         vm.prank(management);
         staker.acceptManagement();

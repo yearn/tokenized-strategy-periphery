@@ -20,6 +20,7 @@ contract HealthCheckTest is Setup {
         healthCheck.setKeeper(keeper);
         healthCheck.setPerformanceFeeRecipient(performanceFeeRecipient);
         healthCheck.setPendingManagement(management);
+        healthCheck.setOpen(true);
         // Accept management.
         vm.prank(management);
         healthCheck.acceptManagement();

@@ -29,6 +29,10 @@ contract BaseConvertor is BaseHealthCheck {
     event DecayRateSet(uint256 indexed decayRate);
     event ReportBufferSet(uint16 indexed reportBuffer);
     event MinAmountToSellSet(uint256 indexed minAmountToSell);
+    event MaxAmountToSwapSet(
+        address indexed from,
+        uint256 indexed maxAmountToSwap
+    );
     event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
 
     uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
@@ -68,6 +72,10 @@ contract BaseConvertor is BaseHealthCheck {
 
     /// @notice Max base fee accepted for tend trigger. 0 disables the check.
     uint256 public maxGasPriceToTend;
+
+    /// @notice Maximum amount of a token to kick into auction at once.
+    /// @dev Zero means unlimited.
+    mapping(address => uint256) public maxAmountToSwap;
 
     constructor(
         address _asset,
@@ -120,6 +128,13 @@ contract BaseConvertor is BaseHealthCheck {
 
     function setOracle(address _oracle) external onlyManagement {
         _setOracle(_oracle);
+    }
+
+    function setMaxAmountToSwap(
+        address _from,
+        uint256 _maxAmountToSwap
+    ) external onlyManagement {
+        _setMaxAmountToSwap(_from, _maxAmountToSwap);
     }
 
     function setMaxSlippageBps(uint16 _maxSlippageBps) external onlyManagement {
@@ -282,6 +297,14 @@ contract BaseConvertor is BaseHealthCheck {
         emit MinAmountToSellSet(_minAmountToSell);
     }
 
+    function _setMaxAmountToSwap(
+        address _from,
+        uint256 _maxAmountToSwap
+    ) internal virtual {
+        maxAmountToSwap[_from] = _maxAmountToSwap;
+        emit MaxAmountToSwapSet(_from, _maxAmountToSwap);
+    }
+
     function _setMaxSlippageBps(uint16 _maxSlippageBps) internal virtual {
         require(_maxSlippageBps <= MAX_BPS, "slippage");
         require(
@@ -338,13 +361,24 @@ contract BaseConvertor is BaseHealthCheck {
             _auction.settle(_from);
         }
 
+        uint256 maxAmount = maxAmountToSwap[_from];
+        if (
+            maxAmount != 0 &&
+            ERC20(_from).balanceOf(address(_auction)) > maxAmount
+        ) {
+            _auction.sweep(_from);
+        }
+
         _available = _kickableFromAuction(_auction, _from);
 
         _setAuctionPricing(_auction, _from, _available);
 
-        uint256 balanceHere = ERC20(_from).balanceOf(address(this));
-        if (balanceHere != 0) {
-            ERC20(_from).safeTransfer(address(_auction), balanceHere);
+        uint256 balanceInAuction = ERC20(_from).balanceOf(address(_auction));
+        if (balanceInAuction < _available) {
+            ERC20(_from).safeTransfer(
+                address(_auction),
+                _available - balanceInAuction
+            );
         }
 
         _available = _auction.kick(_from);
@@ -378,9 +412,15 @@ contract BaseConvertor is BaseHealthCheck {
     ) internal view virtual returns (uint256) {
         if (_auction.isActive(_from) && _auction.available(_from) > 0) return 0;
 
-        return
-            ERC20(_from).balanceOf(address(this)) +
+        uint256 _kickable = ERC20(_from).balanceOf(address(this)) +
             ERC20(_from).balanceOf(address(_auction));
+        uint256 _maxAmountToSwap = maxAmountToSwap[_from];
+
+        if (_maxAmountToSwap != 0 && _kickable > _maxAmountToSwap) {
+            return _maxAmountToSwap;
+        }
+
+        return _kickable;
     }
 
     function _auctionForToken(

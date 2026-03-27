@@ -185,6 +185,108 @@ contract BaseConvertorTest is Setup {
         );
     }
 
+    function test_setMaxAmountToSwap() public {
+        assertEq(convertor.maxAmountToSwap(address(asset)), 0);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(asset), 42);
+
+        assertEq(convertor.maxAmountToSwap(address(asset)), 42);
+    }
+
+    function test_kickable_maxAmountToSwap_capsAssetAmount() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+        uint256 cap = 40 * 10 ** asset.decimals();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(asset), cap);
+
+        assertEq(convertor.kickable(address(asset)), cap);
+    }
+
+    function test_auctionTrigger_maxAmountToSwap_usesEffectiveAmount() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+        uint256 cap = 40 * 10 ** asset.decimals();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.startPrank(management);
+        convertor.setMaxAmountToSwap(address(asset), cap);
+        convertor.setMinAmountToSell(cap + 1);
+        vm.stopPrank();
+
+        (bool shouldKick, bytes memory data) = convertor.auctionTrigger(
+            address(asset)
+        );
+
+        assertFalse(shouldKick);
+        assertEq(data, bytes("not enough kickable"));
+    }
+
+    function test_kickAuction_maxAmountToSwap_assetLeavesResidual() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+        uint256 cap = 40 * 10 ** asset.decimals();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(asset), cap);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(asset));
+
+        assertEq(kicked, cap);
+        assertEq(asset.balanceOf(address(convertor)), amount - cap);
+        assertEq(asset.balanceOf(address(convertor.SELL_ASSET_AUCTION())), cap);
+    }
+
+    function test_kickAuction_maxAmountToSwap_wantLeavesResidual() public {
+        uint256 amount = 100 * 10 ** want.decimals();
+        uint256 cap = 40 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(want), cap);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(want));
+
+        assertEq(kicked, cap);
+        assertEq(want.balanceOf(address(convertor)), amount - cap);
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
+    }
+
+    function test_kickAuction_maxAmountToSwap_sweepsExcessAuctionBalance()
+        public
+    {
+        uint256 amountInAuction = 100 * 10 ** asset.decimals();
+        uint256 amountInStrategy = 25 * 10 ** asset.decimals();
+        uint256 cap = 40 * 10 ** asset.decimals();
+
+        airdrop(
+            asset,
+            address(convertor.SELL_ASSET_AUCTION()),
+            amountInAuction
+        );
+        airdrop(asset, address(convertor), amountInStrategy);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(asset), cap);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(asset));
+
+        assertEq(kicked, cap);
+        assertEq(asset.balanceOf(address(convertor.SELL_ASSET_AUCTION())), cap);
+        assertEq(
+            asset.balanceOf(address(convertor)),
+            amountInAuction + amountInStrategy - cap
+        );
+    }
+
     function test_kickAuction_asset(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 

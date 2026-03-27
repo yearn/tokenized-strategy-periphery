@@ -164,6 +164,23 @@ contract BaseConvertor4626Test is Setup {
         assertTrue(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
+    function test_kickAuction_maxAmountToSwap_inheritedForWant() public {
+        uint256 amount = 100 * 10 ** want.decimals();
+        uint256 cap = 40 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(management);
+        convertor.setMaxAmountToSwap(address(want), cap);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(want));
+
+        assertEq(kicked, cap);
+        assertEq(want.balanceOf(address(convertor)), amount - cap);
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
+    }
+
     function test_report_accountsVaultAndAuctionBalances(
         uint256 _amount
     ) public {

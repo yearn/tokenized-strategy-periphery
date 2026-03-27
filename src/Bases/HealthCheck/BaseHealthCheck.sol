@@ -31,7 +31,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
     bool public doHealthCheck = true;
 
     // If open is true, anyone can deposit. Else only `allowed[_owner]`.
-    bool public open = true;
+    bool public open;
 
     // Per depositor whitelist when `open == false`.
     mapping(address => bool) public allowed;

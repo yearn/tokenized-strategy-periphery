@@ -22,11 +22,18 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function minAmountToSell() external view returns (uint256);
 
+    function maxAmountToSwap(address _from) external view returns (uint256);
+
     function maxGasPriceToTend() external view returns (uint256);
 
     function setOracle(address _oracle) external;
 
     function setMinAmountToSell(uint256 _minAmountToSell) external;
+
+    function setMaxAmountToSwap(
+        address _from,
+        uint256 _maxAmountToSwap
+    ) external;
 
     function setMaxSlippageBps(uint16 _maxSlippageBps) external;
 
