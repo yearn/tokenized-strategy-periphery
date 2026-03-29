@@ -89,7 +89,7 @@ abstract contract BaseHooks is BaseHealthCheck, Hooks {
         address receiver,
         address owner,
         uint256 maxLoss
-    ) public returns (uint256 assets) {
+    ) public virtual returns (uint256 assets) {
         _preWithdrawHook(assets, shares, receiver, owner, maxLoss);
         assets = abi.decode(
             _delegateCall(

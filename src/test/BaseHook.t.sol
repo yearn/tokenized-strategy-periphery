@@ -3,6 +3,7 @@ pragma solidity >=0.8.18;
 
 import {Setup, IStrategy, SafeERC20, ERC20} from "./utils/Setup.sol";
 
+import {IBaseHealthCheck} from "../Bases/HealthCheck/IBaseHealthCheck.sol";
 import {MockHooks, HookEvents} from "./mocks/MockHooks.sol";
 
 contract BaseHookTest is Setup, HookEvents {
@@ -17,6 +18,7 @@ contract BaseHookTest is Setup, HookEvents {
         mockStrategy.setKeeper(keeper);
         mockStrategy.setPerformanceFeeRecipient(performanceFeeRecipient);
         mockStrategy.setPendingManagement(management);
+        IBaseHealthCheck(address(mockStrategy)).setOpen(true);
         // Accept management.
         vm.prank(management);
         mockStrategy.acceptManagement();
