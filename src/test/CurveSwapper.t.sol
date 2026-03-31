@@ -35,9 +35,8 @@ contract CurveSwapperTest is Setup {
 
         curveSwapper = new MockCurveSwapper();
 
-        // Set up multi-hop routes: WETH <-> DAI via tricrypto2 + 3pool
+        // Set up multi-hop route: WETH <-> DAI via tricrypto2 + 3pool
         _setRouteWethToDai();
-        _setRouteDaiToWeth();
     }
 
     // -----------------------------------------------------------------------
@@ -215,29 +214,4 @@ contract CurveSwapperTest is Setup {
         );
     }
 
-    function _setRouteDaiToWeth() internal {
-        // Multi-hop: DAI -> USDT (3pool) -> WETH (tricrypto2)
-        address[11] memory route;
-        route[0] = address(dai);
-        route[1] = THREE_POOL;
-        route[2] = address(usdt); // USDT (intermediate)
-        route[3] = TRICRYPTO2;
-        route[4] = address(weth);
-
-        uint256[5][5] memory swapParams;
-        // Hop 1: DAI(0) -> USDT(2) in 3pool (stable pool, 3 coins)
-        swapParams[0] = [uint256(0), 2, 1, 1, 3];
-        // Hop 2: USDT(0) -> WETH(2) in tricrypto2 (crypto pool, 3 coins)
-        swapParams[1] = [uint256(0), 2, 1, 2, 3];
-
-        address[5] memory pools;
-
-        curveSwapper.setCurveRoute(
-            address(dai),
-            address(weth),
-            route,
-            swapParams,
-            pools
-        );
-    }
 }

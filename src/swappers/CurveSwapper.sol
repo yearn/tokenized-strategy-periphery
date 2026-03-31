@@ -36,14 +36,12 @@ contract CurveSwapper is BaseSwapper {
     mapping(address => mapping(address => CurveRouteParams))
         internal _curveRoutes;
 
-    /**
-     * @dev Set the Curve route for a token pair.
-     * @param _from The input token.
-     * @param _to The output token.
-     * @param _route The route array [token_in, pool, token_out, pool, ...].
-     * @param _swapParams The swap params array [i, j, swap_type, pool_type, n_coins] per step.
-     * @param _pools Pool addresses (only needed for swap_type 3).
-     */
+    /// @notice Set the Curve route for a token pair (sets both directions automatically)
+    /// @param _from The input token
+    /// @param _to The output token
+    /// @param _route The route array [token_in, pool, token_out, pool, ...]
+    /// @param _swapParams The swap params array [i, j, swap_type, pool_type, n_coins] per step
+    /// @param _pools Pool addresses (only needed for swap_type 3)
     function _setCurveRoute(
         address _from,
         address _to,
@@ -52,9 +50,37 @@ contract CurveSwapper is BaseSwapper {
         address[5] memory _pools
     ) internal virtual {
         require(_route[0] == _from, "!route");
+
+        // Set forward route
         _curveRoutes[_from][_to] = CurveRouteParams(
             _route,
             _swapParams,
+            _pools
+        );
+
+        // Count hops
+        uint256 _n;
+        for (_n = 0; _n < 5; _n++) {
+            if (_swapParams[_n][2] == 0) break; // swap_type == 0 means unused
+        }
+
+        // Build reverse route: reverse the first 2*n+1 entries
+        address[11] memory _reverseRoute;
+        for (uint256 _i = 0; _i <= 2 * _n; _i++) {
+            _reverseRoute[_i] = _route[2 * _n - _i];
+        }
+
+        // Build reverse params: reverse hop order and swap i/j
+        uint256[5][5] memory _reverseParams;
+        for (uint256 _i = 0; _i < _n; _i++) {
+            uint256[5] memory _hop = _swapParams[_n - 1 - _i];
+            _reverseParams[_i] = [_hop[1], _hop[0], _hop[2], _hop[3], _hop[4]];
+        }
+
+        // Set reverse route
+        _curveRoutes[_to][_from] = CurveRouteParams(
+            _reverseRoute,
+            _reverseParams,
             _pools
         );
     }
