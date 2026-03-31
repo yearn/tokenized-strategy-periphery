@@ -766,7 +766,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      */
     function settle(address _from) external virtual {
-        require(isActive(_from), "!active");
+        require(auctions[_from].kicked != 0, "!kicked");
         require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
 
         auctions[_from].kicked = uint64(0);
