@@ -7,10 +7,10 @@ import {Convertor4626Factory} from "../src/Bases/convertors/Convertor4626Factory
 
 /// @notice Deploy both convertor factories.
 contract DeployConvertor is BaseScript {
-    address internal constant MANAGEMENT;
-    address internal constant PERFORMANCE_FEE_RECIPIENT;
-    address internal constant KEEPER;
-    address internal constant EMERGENCY_ADMIN;
+    address internal MANAGEMENT;
+    address internal PERFORMANCE_FEE_RECIPIENT;
+    address internal KEEPER;
+    address internal EMERGENCY_ADMIN;
 
     function run() external {
         vm.startBroadcast();
