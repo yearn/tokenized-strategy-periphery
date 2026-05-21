@@ -77,6 +77,10 @@ abstract contract BaseHooksUpgradeable is BaseHealthCheckUpgradeable, Hooks {
         uint256 assets,
         address receiver
     ) external virtual returns (uint256 shares) {
+        if (assets == type(uint256).max) {
+            assets = asset.balanceOf(msg.sender);
+        }
+
         _preDepositHook(assets, shares, receiver);
         shares = abi.decode(
             _delegateCall(

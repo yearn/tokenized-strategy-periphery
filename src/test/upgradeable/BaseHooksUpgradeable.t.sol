@@ -51,6 +51,28 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
         assertEq(mockStrategy.balanceOf(user), _amount);
     }
 
+    function test_depositHooksUpgradeableClampMaxUint(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        airdrop(asset, user, _amount);
+        uint256 assets = asset.balanceOf(user);
+
+        vm.startPrank(user);
+        asset.forceApprove(address(mockStrategy), type(uint256).max);
+        vm.stopPrank();
+
+        vm.expectEmit(true, true, true, true, address(mockStrategy));
+        emit PreDepositHook(assets, 0, user);
+
+        vm.expectEmit(true, true, true, true, address(mockStrategy));
+        emit PostDepositHook(assets, assets, user);
+
+        vm.prank(user);
+        mockStrategy.deposit(type(uint256).max, user);
+
+        assertEq(mockStrategy.balanceOf(user), assets);
+    }
+
     function test_mintHooksUpgradeable(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
