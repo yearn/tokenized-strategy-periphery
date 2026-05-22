@@ -104,8 +104,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * This address should be the same for every strategy, never be adjusted
      * and always be checked before any integration with the Strategy.
      */
-    address public constant tokenizedStrategyAddress =
-        0xD377919FA87120584B21279a491F82D5265A139c;
+    address public constant tokenizedStrategyAddress = 0xD377919FA87120584B21279a491F82D5265A139c;
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
@@ -202,8 +201,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
         // Initialize the strategy's storage variables via delegatecall.
         _delegateCall(
             abi.encodeCall(
-                ITokenizedStrategy.initialize,
-                (_asset, _name, _management, _performanceFeeRecipient, _keeper)
+                ITokenizedStrategy.initialize, (_asset, _name, _management, _performanceFeeRecipient, _keeper)
             )
         );
     }
@@ -270,10 +268,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @return _totalAssets A trusted and accurate account for the total
      * amount of 'asset' the strategy currently holds including idle funds.
      */
-    function _harvestAndReport()
-        internal
-        virtual
-        returns (uint256 _totalAssets);
+    function _harvestAndReport() internal virtual returns (uint256 _totalAssets);
 
     /*//////////////////////////////////////////////////////////////
                     OPTIONAL TO OVERRIDE BY STRATEGIST
@@ -348,9 +343,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @param . The address that is depositing into the strategy.
      * @return . The available amount the `_owner` can deposit in terms of `asset`
      */
-    function availableDepositLimit(
-        address /*_owner*/
-    ) public view virtual returns (uint256) {
+    function availableDepositLimit(address /*_owner*/ ) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
@@ -372,9 +365,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @param . The address that is withdrawing from the strategy.
      * @return . The available amount that can be withdrawn in terms of `asset`
      */
-    function availableWithdrawLimit(
-        address /*_owner*/
-    ) public view virtual returns (uint256) {
+    function availableWithdrawLimit(address /*_owner*/ ) public view virtual returns (uint256) {
         return type(uint256).max;
     }
 
@@ -497,12 +488,9 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @param _calldata The abi encoded calldata to use in delegatecall.
      * @return . The return value if the call was successful in bytes.
      */
-    function _delegateCall(
-        bytes memory _calldata
-    ) internal returns (bytes memory) {
+    function _delegateCall(bytes memory _calldata) internal returns (bytes memory) {
         // Delegate call the tokenized strategy with provided calldata.
-        (bool success, bytes memory result) = tokenizedStrategyAddress
-            .delegatecall(_calldata);
+        (bool success, bytes memory result) = tokenizedStrategyAddress.delegatecall(_calldata);
 
         // If the call reverted. Return the error.
         if (!success) {
@@ -537,24 +525,13 @@ abstract contract BaseStrategyUpgradeable is Initializable {
             // Copy function selector and any arguments.
             calldatacopy(0, 0, calldatasize())
             // Execute function delegatecall.
-            let result := delegatecall(
-                gas(),
-                _tokenizedStrategyAddress,
-                0,
-                calldatasize(),
-                0,
-                0
-            )
+            let result := delegatecall(gas(), _tokenizedStrategyAddress, 0, calldatasize(), 0, 0)
             // Get any return value
             returndatacopy(0, 0, returndatasize())
             // Return any return value or error back to the caller
             switch result
-            case 0 {
-                revert(0, returndatasize())
-            }
-            default {
-                return(0, returndatasize())
-            }
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
         }
     }
 }

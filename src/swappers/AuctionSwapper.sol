@@ -61,10 +61,7 @@ contract AuctionSwapper is BaseSwapper {
     /// @param _auction The auction contract address. Must have this contract as receiver.
     function _setAuction(address _auction) internal virtual {
         if (_auction != address(0)) {
-            require(
-                Auction(_auction).receiver() == address(this),
-                "wrong receiver"
-            );
+            require(Auction(_auction).receiver() == address(this), "wrong receiver");
             // Automatically enable auctions when setting a non-zero auction address
             if (!useAuction) {
                 useAuction = true;
@@ -95,16 +92,11 @@ contract AuctionSwapper is BaseSwapper {
         address _auction = auction;
         if (_auction == address(0)) return 0;
 
-        if (
-            Auction(_auction).isActive(_token) &&
-            Auction(_auction).available(_token) > 0
-        ) {
+        if (Auction(_auction).isActive(_token) && Auction(_auction).available(_token) > 0) {
             return 0;
         }
 
-        return
-            ERC20(_token).balanceOf(address(this)) +
-            ERC20(_token).balanceOf(_auction);
+        return ERC20(_token).balanceOf(address(this)) + ERC20(_token).balanceOf(_auction);
     }
 
     /**
@@ -155,9 +147,7 @@ contract AuctionSwapper is BaseSwapper {
      * @return data Encoded calldata for `kickAuction(_from)` if shouldKick is true,
      *              otherwise a descriptive error message explaining why not.
      */
-    function auctionTrigger(
-        address _from
-    ) external view virtual returns (bool shouldKick, bytes memory data) {
+    function auctionTrigger(address _from) external view virtual returns (bool shouldKick, bytes memory data) {
         address _auction = auction;
         if (_auction == address(0)) {
             return (false, bytes("No auction set"));

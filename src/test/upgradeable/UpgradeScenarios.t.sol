@@ -5,7 +5,10 @@ import {UpgradeableSetup, IStrategy, SafeERC20, ERC20} from "../utils/Upgradeabl
 import {MockUpgradeableStrategy, MockUpgradeableStrategyV2} from "../mocks/MockUpgradeableStrategy.sol";
 import {MockHealthCheckUpgradeable} from "../mocks/MockHealthCheckUpgradeable.sol";
 import {MockHooksUpgradeable} from "../mocks/MockHooksUpgradeable.sol";
-import {TransparentUpgradeableProxy, ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy,
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract UpgradeScenariosTest is UpgradeableSetup {
     using SafeERC20 for ERC20;
@@ -13,11 +16,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
     function test_deployAndUpgradeV1ToV2() public {
         // Deploy V1
         address implV1 = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            implV1,
-            address(asset),
-            "Strategy V1"
-        );
+        address proxy = deployUpgradeableStrategy(implV1, address(asset), "Strategy V1");
 
         MockUpgradeableStrategy strategyV1 = MockUpgradeableStrategy(proxy);
 
@@ -42,21 +41,9 @@ contract UpgradeScenariosTest is UpgradeableSetup {
         MockUpgradeableStrategyV2 strategyV2 = MockUpgradeableStrategyV2(proxy);
 
         // Verify state preserved
-        assertEq(
-            IStrategy(proxy).totalAssets(),
-            totalAssets,
-            "totalAssets changed"
-        );
-        assertEq(
-            IStrategy(proxy).balanceOf(user),
-            userBalance,
-            "user balance changed"
-        );
-        assertEq(
-            strategyV2.deployedFunds(),
-            deployedFunds,
-            "deployedFunds changed"
-        );
+        assertEq(IStrategy(proxy).totalAssets(), totalAssets, "totalAssets changed");
+        assertEq(IStrategy(proxy).balanceOf(user), userBalance, "user balance changed");
+        assertEq(strategyV2.deployedFunds(), deployedFunds, "deployedFunds changed");
 
         // Test new V2 functionality
         vm.prank(management);
@@ -79,11 +66,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
 
         // Step 1: Deploy as basic strategy
         address strategyImpl = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            strategyImpl,
-            address(asset),
-            "Basic Strategy"
-        );
+        address proxy = deployUpgradeableStrategy(strategyImpl, address(asset), "Basic Strategy");
 
         mintAndDepositIntoStrategy(IStrategy(proxy), user, depositAmount);
 
@@ -91,9 +74,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
         address healthCheckImpl = address(new MockHealthCheckUpgradeable());
         upgradeProxy(proxy, healthCheckImpl);
 
-        MockHealthCheckUpgradeable healthCheck = MockHealthCheckUpgradeable(
-            proxy
-        );
+        MockHealthCheckUpgradeable healthCheck = MockHealthCheckUpgradeable(proxy);
 
         // Initialize health check values after upgrade
         vm.prank(management);
@@ -133,11 +114,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
     function test_storageGapUsage() public {
         // Deploy V1 with basic storage
         address implV1 = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            implV1,
-            address(asset),
-            "Gap Test"
-        );
+        address proxy = deployUpgradeableStrategy(implV1, address(asset), "Gap Test");
 
         // Add some data
         mintAndDepositIntoStrategy(IStrategy(proxy), user, maxFuzzAmount / 2);
@@ -172,41 +149,19 @@ contract UpgradeScenariosTest is UpgradeableSetup {
 
         // Try to initialize implementations directly - should all revert
         vm.expectRevert("Initializable: contract is already initialized");
-        strategyImpl.initialize(
-            address(asset),
-            "Direct",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        strategyImpl.initialize(address(asset), "Direct", management, performanceFeeRecipient, keeper);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        healthCheckImpl.initialize(
-            address(asset),
-            "Direct",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        healthCheckImpl.initialize(address(asset), "Direct", management, performanceFeeRecipient, keeper);
 
         vm.expectRevert("Initializable: contract is already initialized");
-        hooksImpl.initialize(
-            address(asset),
-            "Direct",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        hooksImpl.initialize(address(asset), "Direct", management, performanceFeeRecipient, keeper);
     }
 
     function test_proxyAdminControl() public {
         // Deploy strategy
         address impl = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Admin Test"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Admin Test");
 
         // Deploy new implementation
         address newImpl = address(new MockUpgradeableStrategyV2());
@@ -214,10 +169,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
         // Try to upgrade without admin - should revert
         vm.expectRevert();
         vm.prank(user);
-        proxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(proxy)),
-            newImpl
-        );
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(proxy)), newImpl);
 
         // Admin can upgrade
         upgradeProxy(proxy, newImpl);
@@ -232,11 +184,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
     function test_emergencyUpgrade() public {
         // Deploy and use strategy
         address impl = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Emergency Test"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Emergency Test");
 
         mintAndDepositIntoStrategy(IStrategy(proxy), user, maxFuzzAmount);
 
@@ -262,10 +210,7 @@ contract UpgradeScenariosTest is UpgradeableSetup {
         IStrategy(proxy).redeem(shares, user, user);
 
         // User should get back at least 99% of their deposit
-        assertGe(
-            asset.balanceOf(user) - balanceBefore,
-            (maxFuzzAmount * 99) / 100
-        );
+        assertGe(asset.balanceOf(user) - balanceBefore, (maxFuzzAmount * 99) / 100);
     }
 
     function test_crossVersionCompatibility() public {
@@ -273,33 +218,17 @@ contract UpgradeScenariosTest is UpgradeableSetup {
         address[] memory proxies = new address[](3);
 
         // V1 Strategy
-        proxies[0] = deployUpgradeableStrategy(
-            address(new MockUpgradeableStrategy()),
-            address(asset),
-            "V1"
-        );
+        proxies[0] = deployUpgradeableStrategy(address(new MockUpgradeableStrategy()), address(asset), "V1");
 
         // HealthCheck version
-        proxies[1] = deployUpgradeableStrategy(
-            address(new MockHealthCheckUpgradeable()),
-            address(asset),
-            "HealthCheck"
-        );
+        proxies[1] = deployUpgradeableStrategy(address(new MockHealthCheckUpgradeable()), address(asset), "HealthCheck");
 
         // Hooks version
-        proxies[2] = deployUpgradeableStrategy(
-            address(new MockHooksUpgradeable()),
-            address(asset),
-            "Hooks"
-        );
+        proxies[2] = deployUpgradeableStrategy(address(new MockHooksUpgradeable()), address(asset), "Hooks");
 
         // All should be able to operate simultaneously
         for (uint256 i = 0; i < proxies.length; i++) {
-            mintAndDepositIntoStrategy(
-                IStrategy(proxies[i]),
-                user,
-                minFuzzAmount
-            );
+            mintAndDepositIntoStrategy(IStrategy(proxies[i]), user, minFuzzAmount);
 
             assertEq(IStrategy(proxies[i]).totalAssets(), minFuzzAmount);
         }

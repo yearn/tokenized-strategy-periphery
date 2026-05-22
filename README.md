@@ -16,8 +16,6 @@ NOTE: If you are on a windows machine it is recommended to use [WSL](https://lea
 
     pip install vyper==0.3.7
 
-    yarn
-
 
 ### Set your environment Variables
 

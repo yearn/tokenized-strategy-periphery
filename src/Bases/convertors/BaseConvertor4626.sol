@@ -18,13 +18,9 @@ contract BaseConvertor4626 is BaseConvertor {
 
     IERC4626 public immutable vault;
 
-    constructor(
-        address _asset,
-        string memory _name,
-        address _want,
-        address _oracle,
-        address _vault
-    ) BaseConvertor(_asset, _name, _want, _oracle) {
+    constructor(address _asset, string memory _name, address _want, address _oracle, address _vault)
+        BaseConvertor(_asset, _name, _want, _oracle)
+    {
         vault = IERC4626(_vault);
         require(vault.asset() == _want, "wrong vault");
 
@@ -59,10 +55,7 @@ contract BaseConvertor4626 is BaseConvertor {
 
     /// @notice Asset-denominated max withdrawable value from vault.
     function vaultsMaxWithdraw() public view virtual returns (uint256) {
-        return
-            _quoteAssetFromWant(
-                vault.convertToAssets(vault.maxRedeem(address(this)))
-            );
+        return _quoteAssetFromWant(vault.convertToAssets(vault.maxRedeem(address(this))));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -81,9 +74,7 @@ contract BaseConvertor4626 is BaseConvertor {
                            STRATEGY HOOKS
     //////////////////////////////////////////////////////////////*/
 
-    function availableDepositLimit(
-        address _owner
-    ) public view virtual override returns (uint256) {
+    function availableDepositLimit(address _owner) public view virtual override returns (uint256) {
         uint256 depositLimit = super.availableDepositLimit(_owner);
         if (depositLimit == 0) return 0;
 
@@ -133,9 +124,7 @@ contract BaseConvertor4626 is BaseConvertor {
         super._freeWant(_wantAmount);
     }
 
-    function _freeWantFromVault(
-        uint256 _wantAmount
-    ) internal virtual returns (uint256) {
+    function _freeWantFromVault(uint256 _wantAmount) internal virtual returns (uint256) {
         uint256 wantBalance = balanceOfWant();
 
         if (wantBalance >= _wantAmount) return _wantAmount;
@@ -143,8 +132,7 @@ contract BaseConvertor4626 is BaseConvertor {
         _wantAmount -= wantBalance;
 
         uint256 shares = Math.min(
-            vault.previewWithdraw(vault.balanceOf(address(this))),
-            Math.min(_wantAmount, vault.maxRedeem(address(this)))
+            vault.previewWithdraw(vault.balanceOf(address(this))), Math.min(_wantAmount, vault.maxRedeem(address(this)))
         );
 
         if (shares == 0) return 0;

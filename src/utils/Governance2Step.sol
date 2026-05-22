@@ -17,9 +17,7 @@ contract Governance2Step is Governance {
      * @dev Throws if the caller is not current governance.
      * @param _newGovernance The new governance address.
      */
-    function transferGovernance(
-        address _newGovernance
-    ) external virtual override onlyGovernance {
+    function transferGovernance(address _newGovernance) external virtual override onlyGovernance {
         require(_newGovernance != address(0), "ZERO ADDRESS");
         pendingGovernance = _newGovernance;
 

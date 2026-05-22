@@ -67,11 +67,9 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     uint256 internal constant WAD = 1e18;
 
-    address internal constant COW_SETTLEMENT =
-        0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
+    address internal constant COW_SETTLEMENT = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
-    address internal constant VAULT_RELAYER =
-        0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
+    address internal constant VAULT_RELAYER = 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110;
 
     /// @notice The time that each auction lasts.
     uint256 internal constant AUCTION_LENGTH = 1 days;
@@ -117,12 +115,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _governance Address of the contract governance.
      * @param _startingPrice Starting price for each auction.
      */
-    function initialize(
-        address _want,
-        address _receiver,
-        address _governance,
-        uint256 _startingPrice
-    ) public virtual {
+    function initialize(address _want, address _receiver, address _governance, uint256 _startingPrice) public virtual {
         require(stepDecayRate == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
         require(_startingPrice != 0, "starting price");
@@ -132,10 +125,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(decimals <= 18, "unsupported decimals");
 
         // Set variables
-        wantInfo = TokenInfo({
-            tokenAddress: _want,
-            scaler: uint96(WAD / 10 ** decimals)
-        });
+        wantInfo = TokenInfo({tokenAddress: _want, scaler: uint96(WAD / 10 ** decimals)});
 
         receiver = _receiver;
         governance = _governance;
@@ -178,11 +168,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function available(address _from) public view virtual returns (uint256) {
         if (!isActive(_from)) return 0;
 
-        return
-            Maths.min(
-                auctions[_from].initialAvailable,
-                ERC20(_from).balanceOf(address(this))
-            );
+        return Maths.min(auctions[_from].initialAvailable, ERC20(_from).balanceOf(address(this)));
     }
 
     /**
@@ -206,12 +192,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /**
      * @notice Get all the enabled auctions.
      */
-    function getAllEnabledAuctions()
-        external
-        view
-        virtual
-        returns (address[] memory)
-    {
+    function getAllEnabledAuctions() external view virtual returns (address[] memory) {
         return enabledAuctions;
     }
 
@@ -234,15 +215,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(
-        address _from
-    ) external view virtual returns (uint256) {
-        return
-            _getAmountNeeded(
-                auctions[_from],
-                available(_from),
-                block.timestamp
-            );
+    function getAmountNeeded(address _from) external view virtual returns (uint256) {
+        return _getAmountNeeded(auctions[_from], available(_from), block.timestamp);
     }
 
     /**
@@ -251,12 +225,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _amountToTake The amount of `from` to take in the auction.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(
-        address _from,
-        uint256 _amountToTake
-    ) external view virtual returns (uint256) {
-        return
-            _getAmountNeeded(auctions[_from], _amountToTake, block.timestamp);
+    function getAmountNeeded(address _from, uint256 _amountToTake) external view virtual returns (uint256) {
+        return _getAmountNeeded(auctions[_from], _amountToTake, block.timestamp);
     }
 
     /**
@@ -266,35 +236,33 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _timestamp The specific timestamp for calculating the amount needed.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(
-        address _from,
-        uint256 _amountToTake,
-        uint256 _timestamp
-    ) external view virtual returns (uint256) {
+    function getAmountNeeded(address _from, uint256 _amountToTake, uint256 _timestamp)
+        external
+        view
+        virtual
+        returns (uint256)
+    {
         return _getAmountNeeded(auctions[_from], _amountToTake, _timestamp);
     }
 
     /**
      * @dev Return the amount of `want` needed to buy `_amountToTake`.
      */
-    function _getAmountNeeded(
-        AuctionInfo memory _auction,
-        uint256 _amountToTake,
-        uint256 _timestamp
-    ) internal view virtual returns (uint256) {
+    function _getAmountNeeded(AuctionInfo memory _auction, uint256 _amountToTake, uint256 _timestamp)
+        internal
+        view
+        virtual
+        returns (uint256)
+    {
         return
-            // Scale _amountToTake to 1e18
-            (_amountToTake *
-                _auction.scaler *
-                // Price is always 1e18
-                _price(
-                    _auction.kicked,
-                    _auction.initialAvailable * _auction.scaler,
-                    _timestamp
-                )) /
-            1e18 /
-            // Scale back down to want.
-            wantInfo.scaler;
+        // Scale _amountToTake to 1e18
+        (
+            _amountToTake * _auction.scaler
+            // Price is always 1e18
+            * _price(_auction.kicked, _auction.initialAvailable * _auction.scaler, _timestamp)
+        ) / 1e18
+        // Scale back down to want.
+        / wantInfo.scaler;
     }
 
     /**
@@ -312,17 +280,10 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _timestamp The specific timestamp for calculating the price.
      * @return . The price of the auction.
      */
-    function price(
-        address _from,
-        uint256 _timestamp
-    ) public view virtual returns (uint256) {
+    function price(address _from, uint256 _timestamp) public view virtual returns (uint256) {
         // Get unscaled price and scale it down.
-        return
-            _price(
-                auctions[_from].kicked,
-                auctions[_from].initialAvailable * auctions[_from].scaler,
-                _timestamp
-            ) / wantInfo.scaler;
+        return _price(auctions[_from].kicked, auctions[_from].initialAvailable * auctions[_from].scaler, _timestamp)
+            / wantInfo.scaler;
     }
 
     /**
@@ -332,11 +293,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _timestamp The specific timestamp for calculating the price.
      * @return . The calculated price scaled to 1e18.
      */
-    function _price(
-        uint256 _kicked,
-        uint256 _available,
-        uint256 _timestamp
-    ) internal view virtual returns (uint256) {
+    function _price(uint256 _kicked, uint256 _available, uint256 _timestamp) internal view virtual returns (uint256) {
         if (_available == 0) return 0;
 
         uint256 secondsElapsed = _timestamp - _kicked;
@@ -406,10 +363,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token being sold.
      * @param _index The index the auctionId is at in the array.
      */
-    function disable(
-        address _from,
-        uint256 _index
-    ) public virtual onlyGovernance {
+    function disable(address _from, uint256 _index) public virtual onlyGovernance {
         // Make sure the auction was enabled.
         require(auctions[_from].scaler != 0, "not enabled");
 
@@ -432,9 +386,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
         // Move the id to the last spot if not there.
         if (_index < _enabledAuctions.length - 1) {
-            _enabledAuctions[_index] = _enabledAuctions[
-                _enabledAuctions.length - 1
-            ];
+            _enabledAuctions[_index] = _enabledAuctions[_enabledAuctions.length - 1];
             // Update the array.
             enabledAuctions = _enabledAuctions;
         }
@@ -459,9 +411,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @notice Sets whether only governance can kick auctions.
      * @param _governanceOnlyKick The new governance only kick setting.
      */
-    function setGovernanceOnlyKick(
-        bool _governanceOnlyKick
-    ) external virtual onlyGovernance {
+    function setGovernanceOnlyKick(bool _governanceOnlyKick) external virtual onlyGovernance {
         governanceOnlyKick = _governanceOnlyKick;
     }
 
@@ -486,9 +436,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @dev Default is 0 (i.e. no minimum).
      * @param _minimumPrice The new minimum price per auction, scaled to 1e18.
      */
-    function setMinimumPrice(
-        uint256 _minimumPrice
-    ) external virtual onlyGovernance {
+    function setMinimumPrice(uint256 _minimumPrice) external virtual onlyGovernance {
         // Don't change the min price when an auction is active.
         require(!isAnActiveAuction(), "active auction");
 
@@ -503,9 +451,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      *   The kicked amount of _from is divided by this to get the per auction initial price.
      * @param _startingPrice The new starting price for the auction.
      */
-    function setStartingPrice(
-        uint256 _startingPrice
-    ) external virtual onlyGovernance {
+    function setStartingPrice(uint256 _startingPrice) external virtual onlyGovernance {
         require(_startingPrice != 0, "starting price");
 
         // Don't change the price when an auction is active.
@@ -521,13 +467,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @dev The decay rate is in basis points (e.g., 50 for 0.5% decay per step).
      * @param _stepDecayRate The new decay rate per step in basis points (max 10000 = 100%).
      */
-    function setStepDecayRate(
-        uint256 _stepDecayRate
-    ) external virtual onlyGovernance {
-        require(
-            _stepDecayRate > 0 && _stepDecayRate < 10_000,
-            "invalid decay rate"
-        );
+    function setStepDecayRate(uint256 _stepDecayRate) external virtual onlyGovernance {
+        require(_stepDecayRate > 0 && _stepDecayRate < 10_000, "invalid decay rate");
 
         // Don't change the decay rate when an auction is active.
         require(!isAnActiveAuction(), "active auction");
@@ -541,13 +482,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @notice Sets the step duration for the auction.
      * @param _stepDuration The new step duration in seconds.
      */
-    function setStepDuration(
-        uint256 _stepDuration
-    ) external virtual onlyGovernance {
-        require(
-            _stepDuration != 0 && _stepDuration < AUCTION_LENGTH,
-            "invalid step duration"
-        );
+    function setStepDuration(uint256 _stepDuration) external virtual onlyGovernance {
+        require(_stepDuration != 0 && _stepDuration < AUCTION_LENGTH, "invalid step duration");
 
         require(!isAnActiveAuction(), "active auction");
 
@@ -565,15 +501,11 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      * @return _available The available amount for bidding on in the auction.
      */
-    function kick(
-        address _from
-    ) external virtual nonReentrant returns (uint256 _available) {
+    function kick(address _from) external virtual nonReentrant returns (uint256 _available) {
         return _kick(_from);
     }
 
-    function _kick(
-        address _from
-    ) internal virtual returns (uint256 _available) {
+    function _kick(address _from) internal virtual returns (uint256 _available) {
         if (governanceOnlyKick) _checkGovernance();
 
         require(auctions[_from].scaler != 0, "not enabled");
@@ -608,10 +540,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _maxAmount The maximum amount of fromToken to take in the auction.
      * @return . The amount of fromToken taken in the auction.
      */
-    function take(
-        address _from,
-        uint256 _maxAmount
-    ) external virtual returns (uint256) {
+    function take(address _from, uint256 _maxAmount) external virtual returns (uint256) {
         return _take(_from, _maxAmount, msg.sender, new bytes(0));
     }
 
@@ -622,11 +551,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _takerReceiver The address that will receive the fromToken.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
-    function take(
-        address _from,
-        uint256 _maxAmount,
-        address _takerReceiver
-    ) external virtual returns (uint256) {
+    function take(address _from, uint256 _maxAmount, address _takerReceiver) external virtual returns (uint256) {
         return _take(_from, _maxAmount, _takerReceiver, new bytes(0));
     }
 
@@ -638,37 +563,29 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _data The data signify the callback should be used and sent with it.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
-    function take(
-        address _from,
-        uint256 _maxAmount,
-        address _takerReceiver,
-        bytes calldata _data
-    ) external virtual returns (uint256) {
+    function take(address _from, uint256 _maxAmount, address _takerReceiver, bytes calldata _data)
+        external
+        virtual
+        returns (uint256)
+    {
         return _take(_from, _maxAmount, _takerReceiver, _data);
     }
 
     /// @dev Implements the take of the auction.
-    function _take(
-        address _from,
-        uint256 _maxAmount,
-        address _takerReceiver,
-        bytes memory _data
-    ) internal virtual nonReentrant returns (uint256 _amountTaken) {
+    function _take(address _from, uint256 _maxAmount, address _takerReceiver, bytes memory _data)
+        internal
+        virtual
+        nonReentrant
+        returns (uint256 _amountTaken)
+    {
         AuctionInfo memory auction = auctions[_from];
 
         // Max amount that can be taken.
-        uint256 _available = Maths.min(
-            auction.initialAvailable,
-            ERC20(_from).balanceOf(address(this))
-        );
+        uint256 _available = Maths.min(auction.initialAvailable, ERC20(_from).balanceOf(address(this)));
         _amountTaken = _available > _maxAmount ? _maxAmount : _available;
 
         // Get the amount needed. Returns 0 if auction not active.
-        uint256 needed = _getAmountNeeded(
-            auction,
-            _amountTaken,
-            block.timestamp
-        );
+        uint256 needed = _getAmountNeeded(auction, _amountTaken, block.timestamp);
 
         require(needed != 0, "zero needed");
 
@@ -678,13 +595,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         // If the caller has specified data.
         if (_data.length != 0) {
             // Do the callback.
-            ITaker(_takerReceiver).auctionTakeCallback(
-                _from,
-                msg.sender,
-                _amountTaken,
-                needed,
-                _data
-            );
+            ITaker(_takerReceiver).auctionTakeCallback(_from, msg.sender, _amountTaken, needed, _data);
         }
 
         // Cache the want address.
@@ -702,10 +613,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     }
 
     /// @dev Validates a COW order signature.
-    function isValidSignature(
-        bytes32 _hash,
-        bytes calldata signature
-    ) external view returns (bytes4) {
+    function isValidSignature(bytes32 _hash, bytes calldata signature) external view returns (bytes4) {
         // Make sure `_take` has not already been entered.
         require(!_reentrancyGuardEntered(), "ReentrancyGuard: reentrant call");
 
@@ -715,19 +623,11 @@ contract Auction is Governance2Step, ReentrancyGuard {
         AuctionInfo memory auction = auctions[address(order.sellToken)];
 
         // Get the current amount needed for the auction.
-        uint256 paymentAmount = _getAmountNeeded(
-            auction,
-            order.sellAmount,
-            block.timestamp
-        );
+        uint256 paymentAmount = _getAmountNeeded(auction, order.sellAmount, block.timestamp);
 
         // Verify the order details.
         // Retreive domain seperator each time for chains it is not deployed on yet
-        require(
-            _hash ==
-                order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()),
-            "bad order"
-        );
+        require(_hash == order.hash(ICowSettlement(COW_SETTLEMENT).domainSeparator()), "bad order");
         require(paymentAmount != 0, "zero amount");
         require(available(address(order.sellToken)) != 0, "zero available");
         require(order.feeAmount == 0, "fee");
@@ -738,14 +638,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
         require(address(order.buyToken) == want(), "bad token");
         require(order.receiver == receiver, "bad receiver");
         require(order.sellAmount <= auction.initialAvailable, "bad amount");
-        require(
-            order.sellTokenBalance == keccak256("erc20"),
-            "bad sell token balance"
-        );
-        require(
-            order.buyTokenBalance == keccak256("erc20"),
-            "bad buy token balance"
-        );
+        require(order.sellTokenBalance == keccak256("erc20"), "bad sell token balance");
+        require(order.buyTokenBalance == keccak256("erc20"), "bad buy token balance");
 
         // If all checks pass, return the magic value
         return this.isValidSignature.selector;
@@ -775,10 +669,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     }
 
     function sweep(address _token) external virtual onlyGovernance {
-        ERC20(_token).safeTransfer(
-            msg.sender,
-            ERC20(_token).balanceOf(address(this))
-        );
+        ERC20(_token).safeTransfer(msg.sender, ERC20(_token).balanceOf(address(this)));
 
         emit AuctionSwept(_token, msg.sender);
     }

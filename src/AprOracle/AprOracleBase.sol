@@ -6,10 +6,7 @@ import {Governance} from "../utils/Governance.sol";
 abstract contract AprOracleBase is Governance {
     string public name;
 
-    constructor(
-        string memory _name,
-        address _governance
-    ) Governance(_governance) {
+    constructor(string memory _name, address _governance) Governance(_governance) {
         name = _name;
     }
 
@@ -27,8 +24,5 @@ abstract contract AprOracleBase is Governance {
      * @param _delta The difference in debt.
      * @return . The expected apr for the strategy.
      */
-    function aprAfterDebtChange(
-        address _strategy,
-        int256 _delta
-    ) external view virtual returns (uint256);
+    function aprAfterDebtChange(address _strategy, int256 _delta) external view virtual returns (uint256);
 }

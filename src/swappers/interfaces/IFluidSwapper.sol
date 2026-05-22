@@ -8,8 +8,5 @@ interface IFluidSwapper is IBaseSwapper {
 
     function base() external view returns (address);
 
-    function fluidDexes(
-        address,
-        address
-    ) external view returns (address dex, bool swap0to1);
+    function fluidDexes(address, address) external view returns (address dex, bool swap0to1);
 }

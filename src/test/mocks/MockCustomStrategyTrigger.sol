@@ -6,9 +6,7 @@ import {CustomStrategyTriggerBase} from "../../ReportTrigger/CustomStrategyTrigg
 contract MockCustomStrategyTrigger is CustomStrategyTriggerBase {
     bool public triggerStatus;
 
-    function reportTrigger(
-        address /*_strategy*/
-    ) external view override returns (bool, bytes memory) {
+    function reportTrigger(address /*_strategy*/ ) external view override returns (bool, bytes memory) {
         return (triggerStatus, bytes("Test trigger status"));
     }
 

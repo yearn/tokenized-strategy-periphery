@@ -6,10 +6,7 @@ import {CustomVaultTriggerBase} from "../../ReportTrigger/CustomVaultTriggerBase
 contract MockCustomVaultTrigger is CustomVaultTriggerBase {
     bool public triggerStatus;
 
-    function reportTrigger(
-        address,
-        address
-    ) external view override returns (bool, bytes memory) {
+    function reportTrigger(address, address) external view override returns (bool, bytes memory) {
         return (triggerStatus, bytes("Test trigger status"));
     }
 

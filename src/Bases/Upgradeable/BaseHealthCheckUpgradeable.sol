@@ -99,13 +99,7 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) internal onlyInitializing {
-        __BaseStrategy_init(
-            _asset,
-            _name,
-            _management,
-            _performanceFeeRecipient,
-            _keeper
-        );
+        __BaseStrategy_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
 
         // Initialize health check specific variables
         doHealthCheck = true;
@@ -144,9 +138,7 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
      * @dev Denominated in basis points. I.E. 1_000 == 10%.
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
-    function setProfitLimitRatio(
-        uint256 _newProfitLimitRatio
-    ) external onlyManagement {
+    function setProfitLimitRatio(uint256 _newProfitLimitRatio) external onlyManagement {
         _setProfitLimitRatio(_newProfitLimitRatio);
     }
 
@@ -166,9 +158,7 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
      * @dev Denominated in basis points. I.E. 1_000 == 10%.
      * @param _newLossLimitRatio The new loss limit ratio.
      */
-    function setLossLimitRatio(
-        uint256 _newLossLimitRatio
-    ) external onlyManagement {
+    function setLossLimitRatio(uint256 _newLossLimitRatio) external onlyManagement {
         _setLossLimitRatio(_newLossLimitRatio);
     }
 
@@ -199,12 +189,7 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
      * @notice OVerrides the default {harvestAndReport} to include a healthcheck.
      * @return _totalAssets New totalAssets post report.
      */
-    function harvestAndReport()
-        external
-        override
-        onlySelf
-        returns (uint256 _totalAssets)
-    {
+    function harvestAndReport() external override onlySelf returns (uint256 _totalAssets) {
         // Let the strategy report.
         _totalAssets = _harvestAndReport();
 
@@ -229,16 +214,12 @@ abstract contract BaseHealthCheckUpgradeable is BaseStrategyUpgradeable {
 
         if (_newTotalAssets > currentTotalAssets) {
             require(
-                ((_newTotalAssets - currentTotalAssets) <=
-                    (currentTotalAssets * uint256(_profitLimitRatio)) /
-                        MAX_BPS),
+                ((_newTotalAssets - currentTotalAssets) <= (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
                 "healthCheck"
             );
         } else if (currentTotalAssets > _newTotalAssets) {
             require(
-                (currentTotalAssets - _newTotalAssets <=
-                    ((currentTotalAssets * uint256(_lossLimitRatio)) /
-                        MAX_BPS)),
+                (currentTotalAssets - _newTotalAssets <= ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
                 "healthCheck"
             );
         }

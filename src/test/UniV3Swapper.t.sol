@@ -18,9 +18,7 @@ contract UniswapV3SwapperTest is Setup {
 
         weth = ERC20(tokenAddrs["WETH"]);
 
-        uniV3Swapper = IMockUniswapV3Swapper(
-            address(new MockUniswapV3Swapper(address(asset)))
-        );
+        uniV3Swapper = IMockUniswapV3Swapper(address(new MockUniswapV3Swapper(address(asset))));
 
         uniV3Swapper.setKeeper(keeper);
         uniV3Swapper.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -46,12 +44,7 @@ contract UniswapV3SwapperTest is Setup {
         assertEq(weth.balanceOf(address(uniV3Swapper)), 0);
 
         // Perform swap from asset to WETH
-        uint256 amountOut = uniV3Swapper.swapFrom(
-            address(asset),
-            address(weth),
-            amount,
-            0
-        );
+        uint256 amountOut = uniV3Swapper.swapFrom(address(asset), address(weth), amount, 0);
 
         // Assert asset balance in the contract is 0
         assertEq(asset.balanceOf(address(uniV3Swapper)), 0);
@@ -76,12 +69,7 @@ contract UniswapV3SwapperTest is Setup {
         assertEq(asset.balanceOf(address(uniV3Swapper)), 0);
 
         // Perform swap from WETH to asset
-        uint256 amountOut = uniV3Swapper.swapFrom(
-            address(weth),
-            address(asset),
-            amount,
-            0
-        );
+        uint256 amountOut = uniV3Swapper.swapFrom(address(weth), address(asset), amount, 0);
 
         // Assert WETH balance in the contract is 0
         assertEq(weth.balanceOf(address(uniV3Swapper)), 0);
@@ -108,12 +96,7 @@ contract UniswapV3SwapperTest is Setup {
         uint256 toGet = (amount * 1e12) / 10_000;
 
         // Perform swap from asset to WETH
-        uint256 amountIn = uniV3Swapper.swapTo(
-            address(asset),
-            address(weth),
-            toGet,
-            amount
-        );
+        uint256 amountIn = uniV3Swapper.swapTo(address(asset), address(weth), toGet, amount);
 
         // Assert asset balance in the contract is less than amount
         assertLt(asset.balanceOf(address(uniV3Swapper)), amount);
@@ -139,12 +122,7 @@ contract UniswapV3SwapperTest is Setup {
         uint256 toGet = (amount * 1_000) / 1e12;
 
         // Perform swap from WETH to asset
-        uint256 amountIn = uniV3Swapper.swapTo(
-            address(weth),
-            address(asset),
-            toGet,
-            amount
-        );
+        uint256 amountIn = uniV3Swapper.swapTo(address(weth), address(asset), toGet, amount);
 
         // Assert WETH balance in the contract is less than weth_amount
         assertLt(weth.balanceOf(address(uniV3Swapper)), amount);
@@ -173,12 +151,7 @@ contract UniswapV3SwapperTest is Setup {
         assertEq(swapTo.balanceOf(address(uniV3Swapper)), 0);
 
         // Perform swap from asset to swap_to
-        uint256 amountOut = uniV3Swapper.swapFrom(
-            address(asset),
-            address(swapTo),
-            amount,
-            0
-        );
+        uint256 amountOut = uniV3Swapper.swapFrom(address(asset), address(swapTo), amount, 0);
 
         // Assert asset balance in the contract is 0
         assertEq(asset.balanceOf(address(uniV3Swapper)), 0);
@@ -213,12 +186,7 @@ contract UniswapV3SwapperTest is Setup {
         uint256 toGet = amount / 10;
 
         // Perform swap from asset to swap_to
-        uint256 amountIn = uniV3Swapper.swapTo(
-            address(asset),
-            address(swapTo),
-            toGet,
-            amount
-        );
+        uint256 amountIn = uniV3Swapper.swapTo(address(asset), address(swapTo), toGet, amount);
 
         // Assert asset balance in the contract is less than amount
         assertLt(asset.balanceOf(address(uniV3Swapper)), amount);

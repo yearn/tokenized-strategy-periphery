@@ -28,9 +28,7 @@ contract SolidlySwapperTest is Setup {
         minFuzzAmount = 1e14;
         maxFuzzAmount = 2e21;
 
-        solidlySwapper = IMockSolidlySwapper(
-            address(new MockSolidlySwapper(address(asset)))
-        );
+        solidlySwapper = IMockSolidlySwapper(address(new MockSolidlySwapper(address(asset))));
 
         solidlySwapper.setKeeper(keeper);
         solidlySwapper.setPerformanceFeeRecipient(performanceFeeRecipient);

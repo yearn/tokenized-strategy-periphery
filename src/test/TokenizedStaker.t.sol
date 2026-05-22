@@ -18,11 +18,7 @@ contract TokenizedStakerTest is Setup {
         rewardToken = ERC20(tokenAddrs["YFI"]);
         rewardToken2 = ERC20(tokenAddrs["WETH"]);
 
-        staker = IMockTokenizedStaker(
-            address(
-                new MockTokenizedStaker(address(asset), "MockTokenizedStaker")
-            )
-        );
+        staker = IMockTokenizedStaker(address(new MockTokenizedStaker(address(asset), "MockTokenizedStaker")));
 
         staker.setKeeper(keeper);
         staker.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -42,18 +38,13 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.rewardTokens(0), address(rewardToken));
         assertEq(staker.rewardPerToken(address(rewardToken)), 0);
         assertEq(staker.lastTimeRewardApplicable(address(rewardToken)), 0);
-        assertEq(
-            staker.userRewardPerTokenPaid(address(0), address(rewardToken)),
-            0
-        );
+        assertEq(staker.userRewardPerTokenPaid(address(0), address(rewardToken)), 0);
         assertEq(staker.userRewardPerTokenPaid(user, address(rewardToken)), 0);
         assertEq(staker.rewards(address(0), address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.earned(user, address(rewardToken)), 0);
 
-        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(
-            address(rewardToken)
-        );
+        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.periodFinish, 0);
         assertEq(rewardData.rewardRate, 0);
         assertEq(rewardData.rewardsDuration, duration);
@@ -66,9 +57,7 @@ contract TokenizedStakerTest is Setup {
 
         assertEq(staker.rewardTokens(1), address(rewardToken2));
 
-        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(
-            address(rewardToken2)
-        );
+        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(address(rewardToken2));
         assertEq(rewardData.rewardsDuration, duration);
         assertEq(rewardData.rewardsDistributor, management);
 
@@ -90,9 +79,7 @@ contract TokenizedStakerTest is Setup {
         assertEq(staker.rewardPerToken(address(rewardToken)), 0);
         assertEq(staker.lastTimeRewardApplicable(address(rewardToken)), 0);
 
-        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(
-            address(rewardToken)
-        );
+        IMockTokenizedStaker.Reward memory rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.periodFinish, 0);
         assertEq(rewardData.rewardRate, 0);
         assertEq(rewardData.rewardsDuration, duration);
@@ -120,11 +107,7 @@ contract TokenizedStakerTest is Setup {
 
         skip(duration / 2);
 
-        assertApproxEqRel(
-            staker.earned(user, address(rewardToken)),
-            rewardAmount / 2,
-            0.0001e18
-        );
+        assertApproxEqRel(staker.earned(user, address(rewardToken)), rewardAmount / 2, 0.0001e18);
 
         // Add more rewards mid-period
         airdrop(rewardToken, management, rewardAmount);
@@ -136,11 +119,7 @@ contract TokenizedStakerTest is Setup {
         rewardData = staker.rewardData(address(rewardToken));
         assertEq(rewardData.lastUpdateTime, block.timestamp);
         assertEq(rewardData.periodFinish, block.timestamp + duration);
-        assertApproxEqRel(
-            rewardData.rewardRate,
-            ((rewardAmount + (rewardAmount / 2)) * WAD) / duration,
-            0.0001e18
-        );
+        assertApproxEqRel(rewardData.rewardRate, ((rewardAmount + (rewardAmount / 2)) * WAD) / duration, 0.0001e18);
     }
 
     function test_TokenizedStaker_getReward() public {
@@ -165,16 +144,8 @@ contract TokenizedStakerTest is Setup {
 
         skip(duration / 2);
 
-        assertApproxEqRel(
-            staker.earned(user, address(rewardToken)),
-            rewardAmount / 2,
-            0.0001e18
-        );
-        assertApproxEqRel(
-            staker.earned(user, address(rewardToken2)),
-            rewardAmount / 2,
-            0.0001e18
-        );
+        assertApproxEqRel(staker.earned(user, address(rewardToken)), rewardAmount / 2, 0.0001e18);
+        assertApproxEqRel(staker.earned(user, address(rewardToken2)), rewardAmount / 2, 0.0001e18);
 
         uint256 preBalance = rewardToken.balanceOf(user);
         uint256 preBalance2 = rewardToken2.balanceOf(user);
@@ -182,16 +153,8 @@ contract TokenizedStakerTest is Setup {
         vm.prank(user);
         staker.getReward();
 
-        assertApproxEqRel(
-            rewardToken.balanceOf(user),
-            preBalance + rewardAmount / 2,
-            0.0001e18
-        );
-        assertApproxEqRel(
-            rewardToken2.balanceOf(user),
-            preBalance2 + rewardAmount / 2,
-            0.0001e18
-        );
+        assertApproxEqRel(rewardToken.balanceOf(user), preBalance + rewardAmount / 2, 0.0001e18);
+        assertApproxEqRel(rewardToken2.balanceOf(user), preBalance2 + rewardAmount / 2, 0.0001e18);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
         assertEq(staker.rewards(user, address(rewardToken2)), 0);
     }
@@ -225,18 +188,10 @@ contract TokenizedStakerTest is Setup {
         vm.prank(user);
         staker.getOneReward(address(rewardToken));
 
-        assertApproxEqRel(
-            rewardToken.balanceOf(user),
-            preBalance + rewardAmount / 2,
-            0.0001e18
-        );
+        assertApproxEqRel(rewardToken.balanceOf(user), preBalance + rewardAmount / 2, 0.0001e18);
         assertEq(rewardToken2.balanceOf(user), preBalance2);
         assertEq(staker.rewards(user, address(rewardToken)), 0);
-        assertApproxEqRel(
-            staker.rewards(user, address(rewardToken2)),
-            rewardAmount2 / 2,
-            0.0001e18
-        );
+        assertApproxEqRel(staker.rewards(user, address(rewardToken2)), rewardAmount2 / 2, 0.0001e18);
     }
 
     function test_feesAndRewards() public {
@@ -266,33 +221,18 @@ contract TokenizedStakerTest is Setup {
         staker.report();
 
         // Check reward token accrual for fee recipients
-        uint256 expectedPerformanceFeeShares = (profit * performanceFee) /
-            MAX_BPS;
-        uint256 expectedProtocolFeeShares = (expectedPerformanceFeeShares *
-            protocolFee) / MAX_BPS;
-        expectedPerformanceFeeShares =
-            expectedPerformanceFeeShares -
-            expectedProtocolFeeShares;
+        uint256 expectedPerformanceFeeShares = (profit * performanceFee) / MAX_BPS;
+        uint256 expectedProtocolFeeShares = (expectedPerformanceFeeShares * protocolFee) / MAX_BPS;
+        expectedPerformanceFeeShares = expectedPerformanceFeeShares - expectedProtocolFeeShares;
 
         // Get the effective totalSupply minus locked profit shares
-        uint256 realShares = amount +
-            expectedPerformanceFeeShares +
-            expectedProtocolFeeShares;
+        uint256 realShares = amount + expectedPerformanceFeeShares + expectedProtocolFeeShares;
 
-        assertEq(
-            staker.balanceOf(performanceFeeRecipient),
-            expectedPerformanceFeeShares
-        );
-        assertEq(
-            staker.balanceOf(protocolFeeRecipient),
-            expectedProtocolFeeShares
-        );
+        assertEq(staker.balanceOf(performanceFeeRecipient), expectedPerformanceFeeShares);
+        assertEq(staker.balanceOf(protocolFeeRecipient), expectedProtocolFeeShares);
 
         // Should have no rewards yet
-        assertEq(
-            staker.earned(performanceFeeRecipient, address(rewardToken)),
-            0
-        );
+        assertEq(staker.earned(performanceFeeRecipient, address(rewardToken)), 0);
         assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
         assertApproxEqRel(
             staker.earned(user, address(rewardToken)),
@@ -303,14 +243,9 @@ contract TokenizedStakerTest is Setup {
         // Skip the rest of the reward period
         skip(duration / 2);
 
-        uint256 expectedPerformanceFeeReward = (((rewardAmount * WAD) / 2) *
-            expectedPerformanceFeeShares) /
-            realShares /
-            WAD;
-        uint256 expectedProtocolFeeReward = (((rewardAmount * WAD) / 2) *
-            expectedProtocolFeeShares) /
-            realShares /
-            WAD;
+        uint256 expectedPerformanceFeeReward =
+            (((rewardAmount * WAD) / 2) * expectedPerformanceFeeShares) / realShares / WAD;
+        uint256 expectedProtocolFeeReward = (((rewardAmount * WAD) / 2) * expectedProtocolFeeShares) / realShares / WAD;
 
         assertApproxEqRel(
             staker.earned(performanceFeeRecipient, address(rewardToken)),
@@ -324,12 +259,8 @@ contract TokenizedStakerTest is Setup {
             0.0001e18 // 0.01% tolerance
         );
 
-        uint256 prePerformanceFeeBalance = rewardToken.balanceOf(
-            performanceFeeRecipient
-        );
-        uint256 preProtocolFeeBalance = rewardToken.balanceOf(
-            protocolFeeRecipient
-        );
+        uint256 prePerformanceFeeBalance = rewardToken.balanceOf(performanceFeeRecipient);
+        uint256 preProtocolFeeBalance = rewardToken.balanceOf(protocolFeeRecipient);
         uint256 preUserBalance = rewardToken.balanceOf(user);
 
         // Claim rewards for fee recipients
@@ -350,29 +281,18 @@ contract TokenizedStakerTest is Setup {
         );
 
         assertApproxEqRel(
-            rewardToken.balanceOf(protocolFeeRecipient),
-            preProtocolFeeBalance + expectedProtocolFeeReward,
-            0.0001e18
+            rewardToken.balanceOf(protocolFeeRecipient), preProtocolFeeBalance + expectedProtocolFeeReward, 0.0001e18
         );
 
         assertApproxEqRel(
             rewardToken.balanceOf(user),
-            preUserBalance +
-                rewardAmount -
-                expectedPerformanceFeeReward -
-                expectedProtocolFeeReward,
+            preUserBalance + rewardAmount - expectedPerformanceFeeReward - expectedProtocolFeeReward,
             0.0001e18
         );
 
         // Verify rewards were properly distributed
-        assertEq(
-            staker.rewards(performanceFeeRecipient, address(rewardToken)),
-            0
-        );
-        assertEq(
-            staker.earned(performanceFeeRecipient, address(rewardToken)),
-            0
-        );
+        assertEq(staker.rewards(performanceFeeRecipient, address(rewardToken)), 0);
+        assertEq(staker.earned(performanceFeeRecipient, address(rewardToken)), 0);
         assertEq(staker.rewards(protocolFeeRecipient, address(rewardToken)), 0);
         assertEq(staker.earned(protocolFeeRecipient, address(rewardToken)), 0);
 
@@ -401,11 +321,7 @@ contract TokenizedStakerTestLowerDecimals is TokenizedStakerTest {
         rewardToken = ERC20(tokenAddrs["USDC"]);
         rewardToken2 = ERC20(tokenAddrs["WBTC"]);
 
-        staker = IMockTokenizedStaker(
-            address(
-                new MockTokenizedStaker(address(asset), "MockTokenizedStaker")
-            )
-        );
+        staker = IMockTokenizedStaker(address(new MockTokenizedStaker(address(asset), "MockTokenizedStaker")));
 
         staker.setKeeper(keeper);
         staker.setPerformanceFeeRecipient(performanceFeeRecipient);

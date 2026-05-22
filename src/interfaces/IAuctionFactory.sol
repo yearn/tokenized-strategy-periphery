@@ -61,10 +61,7 @@ interface IAuctionFactory is IClonableCreate2 {
      * @param _receiver Address that will receive the funds in the auction.
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver
-    ) external returns (address);
+    function createNewAuction(address _want, address _receiver) external returns (address);
 
     /**
      * @notice Creates a new auction contract.
@@ -73,11 +70,7 @@ interface IAuctionFactory is IClonableCreate2 {
      * @param _governance Address allowed to enable and disable auctions.
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver,
-        address _governance
-    ) external returns (address);
+    function createNewAuction(address _want, address _receiver, address _governance) external returns (address);
 
     /**
      * @notice Creates a new auction contract.
@@ -88,12 +81,9 @@ interface IAuctionFactory is IClonableCreate2 {
      *  NOTE: The starting price should be without decimals (1k == 1_000).
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver,
-        address _governance,
-        uint256 _startingPrice
-    ) external returns (address);
+    function createNewAuction(address _want, address _receiver, address _governance, uint256 _startingPrice)
+        external
+        returns (address);
 
     /**
      * @notice Creates a new auction contract.

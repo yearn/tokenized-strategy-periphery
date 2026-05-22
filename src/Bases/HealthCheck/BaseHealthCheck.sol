@@ -44,10 +44,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
     // Defaults loss limit to 0.
     uint16 private _lossLimitRatio;
 
-    constructor(
-        address _asset,
-        string memory _name
-    ) BaseStrategy(_asset, _name) {}
+    constructor(address _asset, string memory _name) BaseStrategy(_asset, _name) {}
 
     /**
      * @notice Returns the current profit limit ratio.
@@ -72,9 +69,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Denominated in basis points. I.E. 1_000 == 10%.
      * @param _newProfitLimitRatio The mew profit limit ratio.
      */
-    function setProfitLimitRatio(
-        uint256 _newProfitLimitRatio
-    ) external onlyManagement {
+    function setProfitLimitRatio(uint256 _newProfitLimitRatio) external onlyManagement {
         _setProfitLimitRatio(_newProfitLimitRatio);
     }
 
@@ -94,9 +89,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @dev Denominated in basis points. I.E. 1_000 == 10%.
      * @param _newLossLimitRatio The new loss limit ratio.
      */
-    function setLossLimitRatio(
-        uint256 _newLossLimitRatio
-    ) external onlyManagement {
+    function setLossLimitRatio(uint256 _newLossLimitRatio) external onlyManagement {
         _setLossLimitRatio(_newLossLimitRatio);
     }
 
@@ -131,10 +124,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
     /**
      * @notice Set whitelist status for a single depositor.
      */
-    function setAllowed(
-        address _depositor,
-        bool _allowed
-    ) external onlyManagement {
+    function setAllowed(address _depositor, bool _allowed) external onlyManagement {
         allowed[_depositor] = _allowed;
         emit AllowedSet(_depositor, _allowed);
     }
@@ -143,12 +133,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @notice OVerrides the default {harvestAndReport} to include a healthcheck.
      * @return _totalAssets New totalAssets post report.
      */
-    function harvestAndReport()
-        external
-        override
-        onlySelf
-        returns (uint256 _totalAssets)
-    {
+    function harvestAndReport() external override onlySelf returns (uint256 _totalAssets) {
         // Let the strategy report.
         _totalAssets = _harvestAndReport();
 
@@ -173,16 +158,12 @@ abstract contract BaseHealthCheck is BaseStrategy {
 
         if (_newTotalAssets > currentTotalAssets) {
             require(
-                ((_newTotalAssets - currentTotalAssets) <=
-                    (currentTotalAssets * uint256(_profitLimitRatio)) /
-                        MAX_BPS),
+                ((_newTotalAssets - currentTotalAssets) <= (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
                 "healthCheck"
             );
         } else if (currentTotalAssets > _newTotalAssets) {
             require(
-                (currentTotalAssets - _newTotalAssets <=
-                    ((currentTotalAssets * uint256(_lossLimitRatio)) /
-                        MAX_BPS)),
+                (currentTotalAssets - _newTotalAssets <= ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
                 "healthCheck"
             );
         }
@@ -192,9 +173,7 @@ abstract contract BaseHealthCheck is BaseStrategy {
      * @notice Deposit limit with whitelist gating.
      * @dev Open mode allows all deposits. Closed mode requires `allowed[_owner]`.
      */
-    function availableDepositLimit(
-        address _owner
-    ) public view virtual override returns (uint256) {
+    function availableDepositLimit(address _owner) public view virtual override returns (uint256) {
         if (!open && !allowed[_owner]) return 0;
         return super.availableDepositLimit(_owner);
     }

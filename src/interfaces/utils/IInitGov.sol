@@ -52,10 +52,7 @@ interface IInitGov {
      * @param _contract The contract to transfer governance of
      * @param _newGovernance The new governance address
      */
-    function transferGovernance(
-        address _contract,
-        address _newGovernance
-    ) external;
+    function transferGovernance(address _contract, address _newGovernance) external;
 
     /**
      * @notice Get the transaction ID for a governance transfer
@@ -63,8 +60,5 @@ interface IInitGov {
      * @param _newGovernance The new governance address
      * @return The transaction ID
      */
-    function getTxnId(
-        address _contract,
-        address _newGovernance
-    ) external pure returns (bytes32);
+    function getTxnId(address _contract, address _newGovernance) external pure returns (bytes32);
 }

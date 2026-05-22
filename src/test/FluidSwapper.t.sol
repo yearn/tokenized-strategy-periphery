@@ -14,14 +14,11 @@ contract FluidSwapperTest is Setup {
     ERC20 public swapTo;
 
     // Mainnet Fluid USDC/USDT dex deployment.
-    address internal constant DEX_USDC_USDT =
-        0x667701e51B4D1Ca244F17C78F7aB8744B4C99F9B;
+    address internal constant DEX_USDC_USDT = 0x667701e51B4D1Ca244F17C78F7aB8744B4C99F9B;
     // Mainnet Fluid fxUSD/USDC dex deployment.
-    address internal constant DEX_FXUSD_USDC =
-        0x0C88C9713520E9546252B09E57fAa46e9854743A;
+    address internal constant DEX_FXUSD_USDC = 0x0C88C9713520E9546252B09E57fAa46e9854743A;
     // fxUSD token.
-    address internal constant FXUSD =
-        0x085780639CC2cACd35E474e71f4d000e2405d8f6;
+    address internal constant FXUSD = 0x085780639CC2cACd35E474e71f4d000e2405d8f6;
 
     // USDT (asset) fuzz bounds
     uint256 public minUsdtAmount = 1e6;
@@ -38,9 +35,7 @@ contract FluidSwapperTest is Setup {
         weth = ERC20(tokenAddrs["WETH"]);
         swapTo = ERC20(FXUSD);
 
-        fluidSwapper = IMockFluidSwapper(
-            address(new MockFluidSwapper(address(asset), address(weth)))
-        );
+        fluidSwapper = IMockFluidSwapper(address(new MockFluidSwapper(address(asset), address(weth))));
 
         fluidSwapper.setKeeper(keeper);
         fluidSwapper.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -55,24 +50,16 @@ contract FluidSwapperTest is Setup {
         vm.prank(management);
         fluidSwapper.setFluidDex(address(base), address(asset), DEX_USDC_USDT);
         vm.prank(management);
-        fluidSwapper.setFluidDex(
-            address(base),
-            address(swapTo),
-            DEX_FXUSD_USDC
-        );
+        fluidSwapper.setFluidDex(address(base), address(swapTo), DEX_FXUSD_USDC);
     }
 
     function test_setFluidDex_autoDetectsSwapDirection() public {
-        IFluidDexT1.ConstantViews memory constants = IFluidDexT1(DEX_USDC_USDT)
-            .constantsView();
+        IFluidDexT1.ConstantViews memory constants = IFluidDexT1(DEX_USDC_USDT).constantsView();
 
-        (address baseToAssetDex, bool baseToAssetDirection) = fluidSwapper
-            .fluidDexes(address(base), address(asset));
-        (address assetToBaseDex, bool assetToBaseDirection) = fluidSwapper
-            .fluidDexes(address(asset), address(base));
+        (address baseToAssetDex, bool baseToAssetDirection) = fluidSwapper.fluidDexes(address(base), address(asset));
+        (address assetToBaseDex, bool assetToBaseDirection) = fluidSwapper.fluidDexes(address(asset), address(base));
 
-        bool expectedBaseToAssetDirection = constants.token0 == address(base) &&
-            constants.token1 == address(asset);
+        bool expectedBaseToAssetDirection = constants.token0 == address(base) && constants.token1 == address(asset);
 
         assertEq(baseToAssetDex, DEX_USDC_USDT);
         assertEq(assetToBaseDex, DEX_USDC_USDT);
@@ -83,11 +70,7 @@ contract FluidSwapperTest is Setup {
     function test_setFluidDex_revertsOnDexMismatch() public {
         vm.prank(management);
         vm.expectRevert("dex mismatch");
-        fluidSwapper.setFluidDex(
-            address(asset),
-            tokenAddrs["WETH"],
-            DEX_USDC_USDT
-        );
+        fluidSwapper.setFluidDex(address(asset), tokenAddrs["WETH"], DEX_USDC_USDT);
     }
 
     function test_swapFrom_assetToBase(uint256 amount) public {
@@ -98,12 +81,7 @@ contract FluidSwapperTest is Setup {
         assertEq(asset.balanceOf(address(fluidSwapper)), amount);
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(asset),
-            address(base),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(asset), address(base), amount, 0);
 
         assertEq(asset.balanceOf(address(fluidSwapper)), 0);
         assertGt(base.balanceOf(address(fluidSwapper)), 0);
@@ -118,12 +96,7 @@ contract FluidSwapperTest is Setup {
         assertEq(base.balanceOf(address(fluidSwapper)), amount);
         assertEq(asset.balanceOf(address(fluidSwapper)), 0);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(base),
-            address(asset),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(base), address(asset), amount, 0);
 
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
         assertGt(asset.balanceOf(address(fluidSwapper)), 0);
@@ -139,12 +112,7 @@ contract FluidSwapperTest is Setup {
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
 
         vm.expectRevert();
-        fluidSwapper.swapFrom(
-            address(asset),
-            address(base),
-            amount,
-            type(uint256).max
-        );
+        fluidSwapper.swapFrom(address(asset), address(base), amount, type(uint256).max);
 
         assertEq(asset.balanceOf(address(fluidSwapper)), amount);
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
@@ -167,12 +135,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(asset, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(asset),
-            address(base),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(asset), address(base), amount, 0);
 
         assertEq(amountOut, 0);
         assertEq(asset.balanceOf(address(fluidSwapper)), amount);
@@ -184,12 +147,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(asset, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(asset),
-            address(swapTo),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(asset), address(swapTo), amount, 0);
 
         assertEq(asset.balanceOf(address(fluidSwapper)), 0);
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
@@ -202,12 +160,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(swapTo, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(swapTo),
-            address(asset),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(swapTo), address(asset), amount, 0);
 
         assertEq(swapTo.balanceOf(address(fluidSwapper)), 0);
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
@@ -234,14 +187,11 @@ contract FluidSwapperTest is Setup {
     // -----------------------------------------------------------------------
 
     // Mainnet Fluid USDC/ETH dex (Dex 12). token0=USDC, token1=native ETH
-    address internal constant DEX_USDC_ETH =
-        0x836951EB21F3Df98273517B7249dCEFF270d34bf;
+    address internal constant DEX_USDC_ETH = 0x836951EB21F3Df98273517B7249dCEFF270d34bf;
     // Mainnet Fluid wstETH/ETH dex (Dex 1). token0=wstETH, token1=native ETH
-    address internal constant DEX_WSTETH_ETH =
-        0x0B1a513ee24972DAEf112bC777a5610d4325C9e7;
+    address internal constant DEX_WSTETH_ETH = 0x0B1a513ee24972DAEf112bC777a5610d4325C9e7;
 
-    address internal constant WSTETH =
-        0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address internal constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
     /// @dev Reset base to WETH and register native-ETH dexes on the existing instance.
     function _setupWethBase() internal {
@@ -260,12 +210,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(base, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(base),
-            address(weth),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(base), address(weth), amount, 0);
 
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
         assertGt(weth.balanceOf(address(fluidSwapper)), 0);
@@ -279,12 +224,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(weth, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(weth),
-            address(base),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(weth), address(base), amount, 0);
 
         assertEq(weth.balanceOf(address(fluidSwapper)), 0);
         assertGt(base.balanceOf(address(fluidSwapper)), 0);
@@ -298,12 +238,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(base, address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            address(base),
-            WSTETH,
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(address(base), WSTETH, amount, 0);
 
         assertEq(base.balanceOf(address(fluidSwapper)), 0);
         assertEq(weth.balanceOf(address(fluidSwapper)), 0);
@@ -318,12 +253,7 @@ contract FluidSwapperTest is Setup {
 
         airdrop(ERC20(WSTETH), address(fluidSwapper), amount);
 
-        uint256 amountOut = fluidSwapper.swapFrom(
-            WSTETH,
-            address(base),
-            amount,
-            0
-        );
+        uint256 amountOut = fluidSwapper.swapFrom(WSTETH, address(base), amount, 0);
 
         assertEq(ERC20(WSTETH).balanceOf(address(fluidSwapper)), 0);
         assertEq(weth.balanceOf(address(fluidSwapper)), 0);
@@ -336,7 +266,7 @@ contract FluidSwapperTest is Setup {
         _setupWethBase();
 
         // Verify dex mapping uses WETH (not native ETH) as the key
-        (address dex, ) = fluidSwapper.fluidDexes(address(base), address(weth));
+        (address dex,) = fluidSwapper.fluidDexes(address(base), address(weth));
         assertEq(dex, DEX_USDC_ETH);
     }
 }

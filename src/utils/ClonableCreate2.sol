@@ -19,10 +19,7 @@ contract ClonableCreate2 is Clonable {
      * @param salt The salt to use for deterministic deployment.
      * @return _newContract Address of the new Minimal Proxy clone.
      */
-    function _cloneCreate2(
-        address _original,
-        bytes32 salt
-    ) internal virtual returns (address _newContract) {
+    function _cloneCreate2(address _original, bytes32 salt) internal virtual returns (address _newContract) {
         // Hash the salt with msg.sender to protect deployments for specific callers
         bytes32 finalSalt = getSalt(salt, msg.sender);
         address predicted = computeCreate2Address(_original, salt, msg.sender);
@@ -31,22 +28,13 @@ contract ClonableCreate2 is Clonable {
         assembly {
             // EIP-1167 bytecode
             let clone_code := mload(0x40)
-            mstore(
-                clone_code,
-                0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
-            )
+            mstore(clone_code, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
             mstore(add(clone_code, 0x14), addressBytes)
-            mstore(
-                add(clone_code, 0x28),
-                0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
-            )
+            mstore(add(clone_code, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
             _newContract := create2(0, clone_code, 0x37, finalSalt)
         }
 
-        require(
-            _newContract != address(0) && _newContract == predicted,
-            "ClonableCreate2: create2 failed"
-        );
+        require(_newContract != address(0) && _newContract == predicted, "ClonableCreate2: create2 failed");
     }
 
     /**
@@ -54,9 +42,7 @@ contract ClonableCreate2 is Clonable {
      * @param salt The salt to use for address computation.
      * @return The address where the clone would be deployed.
      */
-    function computeCreate2Address(
-        bytes32 salt
-    ) external view virtual returns (address) {
+    function computeCreate2Address(bytes32 salt) external view virtual returns (address) {
         return computeCreate2Address(original, salt, msg.sender);
     }
 
@@ -66,10 +52,7 @@ contract ClonableCreate2 is Clonable {
      * @param salt The salt to use for address computation.
      * @return predicted address where the clone would be deployed.
      */
-    function computeCreate2Address(
-        address _original,
-        bytes32 salt
-    ) external view virtual returns (address predicted) {
+    function computeCreate2Address(address _original, bytes32 salt) external view virtual returns (address predicted) {
         return computeCreate2Address(_original, salt, msg.sender);
     }
 
@@ -79,11 +62,12 @@ contract ClonableCreate2 is Clonable {
      * @param salt The salt to use for address computation.
      * @return predicted The address where the clone would be deployed.
      */
-    function computeCreate2Address(
-        address _original,
-        bytes32 salt,
-        address deployer
-    ) public view virtual returns (address predicted) {
+    function computeCreate2Address(address _original, bytes32 salt, address deployer)
+        public
+        view
+        virtual
+        returns (address predicted)
+    {
         // Hash the salt with msg.sender to match deployment behavior
         bytes32 finalSalt = getSalt(salt, deployer);
 
@@ -92,17 +76,11 @@ contract ClonableCreate2 is Clonable {
             let ptr := mload(0x40)
 
             // Store the prefix
-            mstore(
-                ptr,
-                0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
-            )
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
             // Store the address
             mstore(add(ptr, 0x14), addressBytes)
             // Store the suffix
-            mstore(
-                add(ptr, 0x28),
-                0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
-            )
+            mstore(add(ptr, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
 
             // Compute init code hash
             let initCodeHash := keccak256(ptr, 0x37)
@@ -126,10 +104,7 @@ contract ClonableCreate2 is Clonable {
      * @param salt The user-provided salt.
      * @return The final salt to use for CREATE2.
      */
-    function getSalt(
-        bytes32 salt,
-        address deployer
-    ) public view virtual returns (bytes32) {
+    function getSalt(bytes32 salt, address deployer) public view virtual returns (bytes32) {
         return keccak256(abi.encodePacked(salt, deployer));
     }
 }

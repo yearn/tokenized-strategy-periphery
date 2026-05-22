@@ -11,9 +11,7 @@ contract MockStrategyWithAuctionTrigger is MockStrategy {
 
     constructor(address _asset) MockStrategy(_asset) {}
 
-    function auctionTrigger(
-        address _from
-    ) external view returns (bool, bytes memory) {
+    function auctionTrigger(address _from) external view returns (bool, bytes memory) {
         if (shouldRevertOnAuctionTrigger) {
             revert("Strategy auction trigger reverted");
         }
@@ -23,10 +21,7 @@ contract MockStrategyWithAuctionTrigger is MockStrategy {
         }
 
         if (returnCalldata) {
-            return (
-                true,
-                abi.encodeWithSignature("kickAuction(address)", _from)
-            );
+            return (true, abi.encodeWithSignature("kickAuction(address)", _from));
         }
 
         return (true, bytes("Ready"));

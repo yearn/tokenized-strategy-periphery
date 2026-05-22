@@ -20,13 +20,7 @@ contract MockUpgradeableStrategy is BaseStrategyUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) public initializer {
-        __BaseStrategy_init(
-            _asset,
-            _name,
-            _management,
-            _performanceFeeRecipient,
-            _keeper
-        );
+        __BaseStrategy_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
     }
 
     function _deployFunds(uint256 _amount) internal override {
@@ -73,13 +67,7 @@ contract MockUpgradeableStrategyV2 is BaseStrategyUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) public initializer {
-        __BaseStrategy_init(
-            _asset,
-            _name,
-            _management,
-            _performanceFeeRecipient,
-            _keeper
-        );
+        __BaseStrategy_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
     }
 
     function _deployFunds(uint256 _amount) internal override {
@@ -105,10 +93,7 @@ contract MockUpgradeableStrategyV2 is BaseStrategyUpgradeable {
     }
 
     // New function to test mapping
-    function setUserBalance(
-        address _user,
-        uint256 _amount
-    ) external onlyManagement {
+    function setUserBalance(address _user, uint256 _amount) external onlyManagement {
         userBalances[_user] = _amount;
     }
 

@@ -15,18 +15,10 @@ contract DeployConvertor is BaseScript {
     function run() external {
         vm.startBroadcast();
 
-        ConvertorFactory convertorFactory = new ConvertorFactory(
-            MANAGEMENT,
-            PERFORMANCE_FEE_RECIPIENT,
-            KEEPER,
-            EMERGENCY_ADMIN
-        );
-        Convertor4626Factory convertor4626Factory = new Convertor4626Factory(
-            MANAGEMENT,
-            PERFORMANCE_FEE_RECIPIENT,
-            KEEPER,
-            EMERGENCY_ADMIN
-        );
+        ConvertorFactory convertorFactory =
+            new ConvertorFactory(MANAGEMENT, PERFORMANCE_FEE_RECIPIENT, KEEPER, EMERGENCY_ADMIN);
+        Convertor4626Factory convertor4626Factory =
+            new Convertor4626Factory(MANAGEMENT, PERFORMANCE_FEE_RECIPIENT, KEEPER, EMERGENCY_ADMIN);
 
         vm.stopBroadcast();
 

@@ -19,9 +19,7 @@ contract UniswapV2SwapperTest is Setup {
 
         base = ERC20(tokenAddrs["WETH"]);
 
-        uniV2Swapper = IMockUniswapV2Swapper(
-            address(new MockUniswapV2Swapper(address(asset)))
-        );
+        uniV2Swapper = IMockUniswapV2Swapper(address(new MockUniswapV2Swapper(address(asset))));
 
         uniV2Swapper.setKeeper(keeper);
         uniV2Swapper.setPerformanceFeeRecipient(performanceFeeRecipient);

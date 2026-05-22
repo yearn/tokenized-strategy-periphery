@@ -22,13 +22,7 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         address _performanceFeeRecipient,
         address _keeper
     ) public initializer {
-        __BaseHealthCheck_init(
-            _asset,
-            _name,
-            _management,
-            _performanceFeeRecipient,
-            _keeper
-        );
+        __BaseHealthCheck_init(_asset, _name, _management, _performanceFeeRecipient, _keeper);
     }
 
     function _deployFunds(uint256 _amount) internal override {
@@ -45,11 +39,7 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         }
     }
 
-    function _harvestAndReport()
-        internal
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
         // Simple mock - just return the balance
         // This matches the non-upgradeable MockHealthCheck behavior
         _totalAssets = asset.balanceOf(address(this));

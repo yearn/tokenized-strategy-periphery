@@ -5,7 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {BaseSwapper} from "./BaseSwapper.sol";
-import {IPendleRouter, IPMarket, IPYieldToken, ApproxParams, TokenInput, TokenOutput, SwapData, SwapType, LimitOrderData, FillOrderParams} from "../interfaces/Pendle/IPendle.sol";
+import {
+    IPendleRouter,
+    IPMarket,
+    IPYieldToken,
+    ApproxParams,
+    TokenInput,
+    TokenOutput,
+    SwapData,
+    SwapType,
+    LimitOrderData,
+    FillOrderParams
+} from "../interfaces/Pendle/IPendle.sol";
 
 /**
  * @title PendleSwapper
@@ -68,12 +79,11 @@ contract PendleSwapper is BaseSwapper {
      * @param _minAmountOut The minimum amount of `_to` to receive.
      * @return _amountOut The actual amount of `_to` received.
      */
-    function _pendleSwapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) internal virtual returns (uint256 _amountOut) {
+    function _pendleSwapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         if (_amountIn == 0 || _amountIn < minAmountToSell) {
             return 0;
         }
@@ -114,15 +124,14 @@ contract PendleSwapper is BaseSwapper {
     ) internal virtual returns (uint256 _amountOut) {
         _checkAllowance(pendleRouter, _tokenIn, _amountIn);
 
-        (uint256 netPtOut, , ) = IPendleRouter(pendleRouter)
-            .swapExactTokenForPt(
-                address(this),
-                _market,
-                _minPtOut,
-                _getDefaultApproxParams(_amountIn),
-                _getSimpleTokenInput(_tokenIn, _amountIn),
-                _getEmptyLimitOrderData()
-            );
+        (uint256 netPtOut,,) = IPendleRouter(pendleRouter).swapExactTokenForPt(
+            address(this),
+            _market,
+            _minPtOut,
+            _getDefaultApproxParams(_amountIn),
+            _getSimpleTokenInput(_tokenIn, _amountIn),
+            _getEmptyLimitOrderData()
+        );
 
         _amountOut = netPtOut;
     }
@@ -136,23 +145,16 @@ contract PendleSwapper is BaseSwapper {
      * @param _minTokenOut Minimum output token to receive.
      * @return _amountOut Amount of output token received.
      */
-    function _sellPt(
-        address _pt,
-        address _market,
-        address _tokenOut,
-        uint256 _amountIn,
-        uint256 _minTokenOut
-    ) internal virtual returns (uint256 _amountOut) {
+    function _sellPt(address _pt, address _market, address _tokenOut, uint256 _amountIn, uint256 _minTokenOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         _checkAllowance(pendleRouter, _pt, _amountIn);
 
-        (uint256 netTokenOut, , ) = IPendleRouter(pendleRouter)
-            .swapExactPtForToken(
-                address(this),
-                _market,
-                _amountIn,
-                _getSimpleTokenOutput(_tokenOut, _minTokenOut),
-                _getEmptyLimitOrderData()
-            );
+        (uint256 netTokenOut,,) = IPendleRouter(pendleRouter).swapExactPtForToken(
+            address(this), _market, _amountIn, _getSimpleTokenOutput(_tokenOut, _minTokenOut), _getEmptyLimitOrderData()
+        );
 
         _amountOut = netTokenOut;
     }
@@ -166,22 +168,17 @@ contract PendleSwapper is BaseSwapper {
      * @param _minTokenOut Minimum output token to receive.
      * @return _amountOut Amount of output token received.
      */
-    function _redeemPt(
-        address _pt,
-        address _market,
-        address _tokenOut,
-        uint256 _amountIn,
-        uint256 _minTokenOut
-    ) internal virtual returns (uint256 _amountOut) {
-        (, , IPYieldToken YT) = IPMarket(_market).readTokens();
+    function _redeemPt(address _pt, address _market, address _tokenOut, uint256 _amountIn, uint256 _minTokenOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
+        (,, IPYieldToken YT) = IPMarket(_market).readTokens();
 
         _checkAllowance(pendleRouter, _pt, _amountIn);
 
-        (uint256 netTokenOut, ) = IPendleRouter(pendleRouter).redeemPyToToken(
-            address(this),
-            address(YT),
-            _amountIn,
-            _getSimpleTokenOutput(_tokenOut, _minTokenOut)
+        (uint256 netTokenOut,) = IPendleRouter(pendleRouter).redeemPyToToken(
+            address(this), address(YT), _amountIn, _getSimpleTokenOutput(_tokenOut, _minTokenOut)
         );
 
         _amountOut = netTokenOut;
@@ -193,41 +190,30 @@ contract PendleSwapper is BaseSwapper {
      *   Uses ~180k gas for the approximation.
      * @param _amountIn The input amount used to calculate guessMax.
      */
-    function _getDefaultApproxParams(
-        uint256 _amountIn
-    ) internal view virtual returns (ApproxParams memory) {
-        uint256 _guessMax = guessMaxMultiplier == 0
-            ? type(uint256).max
-            : _amountIn * guessMaxMultiplier;
+    function _getDefaultApproxParams(uint256 _amountIn) internal view virtual returns (ApproxParams memory) {
+        uint256 _guessMax = guessMaxMultiplier == 0 ? type(uint256).max : _amountIn * guessMaxMultiplier;
 
-        return
-            ApproxParams({
-                guessMin: 0,
-                guessMax: _guessMax,
-                guessOffchain: 0,
-                maxIteration: 256,
-                eps: 1e14 // 0.01%
-            });
+        return ApproxParams({
+            guessMin: 0,
+            guessMax: _guessMax,
+            guessOffchain: 0,
+            maxIteration: 256,
+            eps: 1e14 // 0.01%
+        });
     }
 
     /**
      * @dev Returns an empty LimitOrderData struct.
      *   Limit order integration is not supported in this base swapper.
      */
-    function _getEmptyLimitOrderData()
-        internal
-        pure
-        virtual
-        returns (LimitOrderData memory)
-    {
-        return
-            LimitOrderData({
-                limitRouter: address(0),
-                epsSkipMarket: 0,
-                normalFills: new FillOrderParams[](0),
-                flashFills: new FillOrderParams[](0),
-                optData: ""
-            });
+    function _getEmptyLimitOrderData() internal pure virtual returns (LimitOrderData memory) {
+        return LimitOrderData({
+            limitRouter: address(0),
+            epsSkipMarket: 0,
+            normalFills: new FillOrderParams[](0),
+            flashFills: new FillOrderParams[](0),
+            optData: ""
+        });
     }
 
     /**
@@ -236,23 +222,19 @@ contract PendleSwapper is BaseSwapper {
      * @param _tokenIn The input token address.
      * @param _amount The amount of tokens.
      */
-    function _getSimpleTokenInput(
-        address _tokenIn,
-        uint256 _amount
-    ) internal pure virtual returns (TokenInput memory) {
-        return
-            TokenInput({
-                tokenIn: _tokenIn,
-                netTokenIn: _amount,
-                tokenMintSy: _tokenIn, // Same as tokenIn for direct deposits
-                pendleSwap: address(0), // No external swap needed
-                swapData: SwapData({
-                    swapType: SwapType.NONE,
-                    extRouter: address(0),
-                    extCalldata: "",
-                    needScale: false
-                })
-            });
+    function _getSimpleTokenInput(address _tokenIn, uint256 _amount)
+        internal
+        pure
+        virtual
+        returns (TokenInput memory)
+    {
+        return TokenInput({
+            tokenIn: _tokenIn,
+            netTokenIn: _amount,
+            tokenMintSy: _tokenIn, // Same as tokenIn for direct deposits
+            pendleSwap: address(0), // No external swap needed
+            swapData: SwapData({swapType: SwapType.NONE, extRouter: address(0), extCalldata: "", needScale: false})
+        });
     }
 
     /**
@@ -261,23 +243,19 @@ contract PendleSwapper is BaseSwapper {
      * @param _tokenOut The output token address.
      * @param _minTokenOut Minimum amount of tokens to receive.
      */
-    function _getSimpleTokenOutput(
-        address _tokenOut,
-        uint256 _minTokenOut
-    ) internal pure virtual returns (TokenOutput memory) {
-        return
-            TokenOutput({
-                tokenOut: _tokenOut,
-                minTokenOut: _minTokenOut,
-                tokenRedeemSy: _tokenOut, // Same as tokenOut for direct redemptions
-                pendleSwap: address(0), // No external swap needed
-                swapData: SwapData({
-                    swapType: SwapType.NONE,
-                    extRouter: address(0),
-                    extCalldata: "",
-                    needScale: false
-                })
-            });
+    function _getSimpleTokenOutput(address _tokenOut, uint256 _minTokenOut)
+        internal
+        pure
+        virtual
+        returns (TokenOutput memory)
+    {
+        return TokenOutput({
+            tokenOut: _tokenOut,
+            minTokenOut: _minTokenOut,
+            tokenRedeemSy: _tokenOut, // Same as tokenOut for direct redemptions
+            pendleSwap: address(0), // No external swap needed
+            swapData: SwapData({swapType: SwapType.NONE, extRouter: address(0), extCalldata: "", needScale: false})
+        });
     }
 
     /**
@@ -287,11 +265,7 @@ contract PendleSwapper is BaseSwapper {
      * @param _token The ERC-20 token that will be getting spent.
      * @param _amount The amount of `_token` to be spent.
      */
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal virtual {
+    function _checkAllowance(address _contract, address _token, uint256 _amount) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).forceApprove(_contract, _amount);
         }

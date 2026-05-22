@@ -22,12 +22,10 @@ contract MockCurveSwapper is CurveSwapper {
         _setCurveRoute(_from, _to, _route, _swapParams, _pools);
     }
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256) {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        external
+        returns (uint256)
+    {
         return _curveSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }

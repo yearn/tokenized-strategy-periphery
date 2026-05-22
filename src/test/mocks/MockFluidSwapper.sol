@@ -5,10 +5,7 @@ import {FluidSwapper} from "../../swappers/FluidSwapper.sol";
 import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 
 contract MockFluidSwapper is BaseStrategy, FluidSwapper {
-    constructor(
-        address _asset,
-        address _weth
-    ) BaseStrategy(_asset, "Mock Fluid") FluidSwapper(_weth) {}
+    constructor(address _asset, address _weth) BaseStrategy(_asset, "Mock Fluid") FluidSwapper(_weth) {}
 
     // BaseStrategy's fallback is not payable, so we need an explicit receive.
     receive() external payable override {}
@@ -17,11 +14,7 @@ contract MockFluidSwapper is BaseStrategy, FluidSwapper {
 
     function _freeFunds(uint256) internal override {}
 
-    function _harvestAndReport()
-        internal
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
         _totalAssets = asset.balanceOf(address(this));
     }
 
@@ -33,38 +26,25 @@ contract MockFluidSwapper is BaseStrategy, FluidSwapper {
         base = _base;
     }
 
-    function setFluidDex(
-        address _token0,
-        address _token1,
-        address _dex
-    ) external {
+    function setFluidDex(address _token0, address _token1, address _dex) external {
         _setFluidDex(_token0, _token1, _dex);
     }
 
-    function setFluidDex(
-        address _from,
-        address _to,
-        address _dex,
-        bool _swap0to1
-    ) external {
+    function setFluidDex(address _from, address _to, address _dex, bool _swap0to1) external {
         _setFluidDex(_from, _to, _dex, _swap0to1);
     }
 
-    function fluidSwapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256) {
+    function fluidSwapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        external
+        returns (uint256)
+    {
         return _fluidSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256) {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        external
+        returns (uint256)
+    {
         return _fluidSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }
@@ -77,30 +57,15 @@ interface IMockFluidSwapper is IStrategy, IFluidSwapper {
 
     function setBase(address _base) external;
 
-    function setFluidDex(
-        address _token0,
-        address _token1,
-        address _dex
-    ) external;
+    function setFluidDex(address _token0, address _token1, address _dex) external;
 
-    function setFluidDex(
-        address _from,
-        address _to,
-        address _dex,
-        bool _swap0to1
-    ) external;
+    function setFluidDex(address _from, address _to, address _dex, bool _swap0to1) external;
 
-    function fluidSwapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256);
+    function fluidSwapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        external
+        returns (uint256);
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256);
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        external
+        returns (uint256);
 }

@@ -80,21 +80,12 @@ contract Setup is Test, Clonable {
 
     function setUpVault() public returns (IVault) {
         if (original == address(0)) {
-            original = vyperDeployer.deployContract(
-                "lib/yearn-vaults-v3/contracts/",
-                "VaultV3"
-            );
+            original = vyperDeployer.deployContract("lib/yearn-vaults-v3/contracts/", "VaultV3");
         }
 
         IVault _vault = IVault(_clone());
 
-        _vault.initialize(
-            address(asset),
-            "Test vault",
-            "tsVault",
-            management,
-            10 days
-        );
+        _vault.initialize(address(asset), "Test vault", "tsVault", management, 10 days);
 
         vm.prank(management);
         // Give the vault manager all the roles
@@ -108,9 +99,7 @@ contract Setup is Test, Clonable {
 
     function setUpStrategy() public returns (IStrategy) {
         // we save the strategy as a IStrategyInterface to give it the needed interface
-        IStrategy _strategy = IStrategy(
-            address(new MockStrategy(address(asset)))
-        );
+        IStrategy _strategy = IStrategy(address(new MockStrategy(address(asset))));
 
         // set keeper
         _strategy.setKeeper(keeper);
@@ -125,11 +114,7 @@ contract Setup is Test, Clonable {
         return _strategy;
     }
 
-    function depositIntoStrategy(
-        IStrategy _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function depositIntoStrategy(IStrategy _strategy, address _user, uint256 _amount) public {
         vm.startPrank(_user);
         asset.forceApprove(address(_strategy), _amount);
 
@@ -137,11 +122,7 @@ contract Setup is Test, Clonable {
         vm.stopPrank();
     }
 
-    function mintAndDepositIntoStrategy(
-        IStrategy _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function mintAndDepositIntoStrategy(IStrategy _strategy, address _user, uint256 _amount) public {
         airdrop(asset, _user, _amount);
         depositIntoStrategy(_strategy, _user, _amount);
     }
@@ -151,43 +132,26 @@ contract Setup is Test, Clonable {
         _vault.add_strategy(address(_strategy));
 
         vm.prank(vaultManagement);
-        _vault.update_max_debt_for_strategy(
-            address(_strategy),
-            type(uint256).max
-        );
+        _vault.update_max_debt_for_strategy(address(_strategy), type(uint256).max);
     }
 
-    function addDebtToStrategy(
-        IVault _vault,
-        IStrategy _strategy,
-        uint256 _amount
-    ) public {
+    function addDebtToStrategy(IVault _vault, IStrategy _strategy, uint256 _amount) public {
         vm.prank(vaultManagement);
         _vault.update_debt(address(_strategy), _amount);
     }
 
-    function addStrategyAndDebt(
-        IVault _vault,
-        IStrategy _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function addStrategyAndDebt(IVault _vault, IStrategy _strategy, address _user, uint256 _amount) public {
         addStrategyToVault(_vault, _strategy);
         mintAndDepositIntoStrategy(IStrategy(address(_vault)), _user, _amount);
         addDebtToStrategy(_vault, _strategy, _amount);
     }
 
     // For checking the amounts in the strategy
-    function checkStrategyTotals(
-        IStrategy _strategy,
-        uint256 _totalAssets,
-        uint256 _totalDebt,
-        uint256 _totalIdle
-    ) public {
+    function checkStrategyTotals(IStrategy _strategy, uint256 _totalAssets, uint256 _totalDebt, uint256 _totalIdle)
+        public
+    {
         uint256 _assets = _strategy.totalAssets();
-        uint256 _balance = ERC20(_strategy.asset()).balanceOf(
-            address(_strategy)
-        );
+        uint256 _balance = ERC20(_strategy.asset()).balanceOf(address(_strategy));
         uint256 _idle = _balance > _assets ? _assets : _balance;
         uint256 _debt = _assets - _idle;
         assertEq(_assets, _totalAssets, "!totalAssets");

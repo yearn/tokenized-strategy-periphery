@@ -30,10 +30,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function setMinAmountToSell(uint256 _minAmountToSell) external;
 
-    function setMaxAmountToSwap(
-        address _from,
-        uint256 _maxAmountToSwap
-    ) external;
+    function setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) external;
 
     function setMaxSlippageBps(uint16 _maxSlippageBps) external;
 
@@ -45,10 +42,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function setMaxGasPriceToTend(uint256 _maxGasPriceToTend) external;
 
-    function setAuctionStepDuration(
-        address _from,
-        uint256 _stepDuration
-    ) external;
+    function setAuctionStepDuration(address _from, uint256 _stepDuration) external;
 
     function enableAuctionToken(address _from) external;
 
@@ -60,9 +54,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function kickable(address _from) external view returns (uint256);
 
-    function auctionTrigger(
-        address _from
-    ) external view returns (bool shouldKick, bytes memory data);
+    function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data);
 
     function balanceOfAsset() external view returns (uint256);
 

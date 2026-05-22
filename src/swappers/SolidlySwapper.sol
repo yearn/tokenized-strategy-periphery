@@ -24,6 +24,7 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 contract SolidlySwapper is BaseSwapper {
     using SafeERC20 for ERC20;
     // Defaults to WETH on mainnet.
+
     address public base = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     // Will need to set the router to use.
@@ -40,11 +41,7 @@ contract SolidlySwapper is BaseSwapper {
      * This function is to help set the mapping. It can be called
      * internally during initialization, through permissioned functions etc.
      */
-    function _setStable(
-        address _token0,
-        address _token1,
-        bool _stable
-    ) internal virtual {
+    function _setStable(address _token0, address _token1, bool _stable) internal virtual {
         stable[_token0][_token1] = _stable;
         stable[_token1][_token0] = _stable;
     }
@@ -62,26 +59,18 @@ contract SolidlySwapper is BaseSwapper {
      * @param _amountIn The amount of `_from` we will swap.
      * @param _minAmountOut The min of `_to` to get out.
      */
-    function _swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) internal virtual {
+    function _swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) internal virtual {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
 
             ISolidly(router).swapExactTokensForTokens(
-                _amountIn,
-                _minAmountOut,
-                _getTokenOutPath(_from, _to),
-                address(this),
-                block.timestamp
+                _amountIn, _minAmountOut, _getTokenOutPath(_from, _to), address(this), block.timestamp
             );
         }
     }
 
-    /**\
+    /**
+     * \
      * @dev Internal function to get a quoted amount out of token sale.
      *
      * NOTE: This can be easily manipulated and should not be relied on
@@ -92,15 +81,8 @@ contract SolidlySwapper is BaseSwapper {
      * @param _amountIn The amount of `_from` to sell.
      * @return . The expected amount of `_to` to buy.
      */
-    function _getAmountOut(
-        address _from,
-        address _to,
-        uint256 _amountIn
-    ) internal view virtual returns (uint256) {
-        uint256[] memory amounts = ISolidly(router).getAmountsOut(
-            _amountIn,
-            _getTokenOutPath(_from, _to)
-        );
+    function _getAmountOut(address _from, address _to, uint256 _amountIn) internal view virtual returns (uint256) {
+        uint256[] memory amounts = ISolidly(router).getAmountsOut(_amountIn, _getTokenOutPath(_from, _to));
 
         return amounts[amounts.length - 1];
     }
@@ -113,19 +95,17 @@ contract SolidlySwapper is BaseSwapper {
      * @param _tokenOut The token to swap to.
      * @return _path Ordered array of the path to swap through.
      */
-    function _getTokenOutPath(
-        address _tokenIn,
-        address _tokenOut
-    ) internal view virtual returns (ISolidly.route[] memory _path) {
+    function _getTokenOutPath(address _tokenIn, address _tokenOut)
+        internal
+        view
+        virtual
+        returns (ISolidly.route[] memory _path)
+    {
         bool isBase = _tokenIn == base || _tokenOut == base;
         _path = new ISolidly.route[](isBase ? 1 : 2);
 
         if (isBase) {
-            _path[0] = ISolidly.route(
-                _tokenIn,
-                _tokenOut,
-                stable[_tokenIn][_tokenOut]
-            );
+            _path[0] = ISolidly.route(_tokenIn, _tokenOut, stable[_tokenIn][_tokenOut]);
         } else {
             _path[0] = ISolidly.route(_tokenIn, base, stable[_tokenIn][base]);
             _path[1] = ISolidly.route(base, _tokenOut, stable[base][_tokenOut]);
@@ -140,11 +120,7 @@ contract SolidlySwapper is BaseSwapper {
      * @param _token The ERC-20 token that will be getting spent.
      * @param _amount The amount of `_token` to be spent.
      */
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal virtual {
+    function _checkAllowance(address _contract, address _token, uint256 _amount) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).forceApprove(_contract, 0);
             ERC20(_token).forceApprove(_contract, _amount);

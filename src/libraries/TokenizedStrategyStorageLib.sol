@@ -18,8 +18,7 @@ library TokenizedStrategyStorageLib {
      * @dev The main storage slot for the StrategyData struct.
      * This matches the BASE_STRATEGY_STORAGE constant in TokenizedStrategy.sol
      */
-    bytes32 internal constant BASE_STRATEGY_STORAGE =
-        bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
+    bytes32 internal constant BASE_STRATEGY_STORAGE = bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
 
     /**
      * @dev The StrategyData struct that holds all storage for TokenizedStrategy v3.0.4.
@@ -114,11 +113,7 @@ library TokenizedStrategyStorageLib {
      * @notice Get the storage slot for fullProfitUnlockDate and keeper (packed)
      * @return slot The storage slot containing fullProfitUnlockDate (uint96) and keeper (address)
      */
-    function fullProfitUnlockDateAndKeeperSlot()
-        internal
-        pure
-        returns (bytes32 slot)
-    {
+    function fullProfitUnlockDateAndKeeperSlot() internal pure returns (bytes32 slot) {
         return bytes32(uint256(BASE_STRATEGY_STORAGE) + 8);
     }
 
@@ -134,11 +129,7 @@ library TokenizedStrategyStorageLib {
      * @notice Get the storage slot for lastReport and management (packed)
      * @return slot The storage slot containing lastReport (uint96) and management (address)
      */
-    function lastReportAndManagementSlot()
-        internal
-        pure
-        returns (bytes32 slot)
-    {
+    function lastReportAndManagementSlot() internal pure returns (bytes32 slot) {
         return bytes32(uint256(BASE_STRATEGY_STORAGE) + 10);
     }
 
@@ -182,9 +173,7 @@ library TokenizedStrategyStorageLib {
      * @param account The address to get the balance slot for
      * @return slot The storage slot for the account's balance
      */
-    function balancesSlot(
-        address account
-    ) internal pure returns (bytes32 slot) {
+    function balancesSlot(address account) internal pure returns (bytes32 slot) {
         // balances mapping is at slot position 4 from BASE_STRATEGY_STORAGE
         bytes32 balancesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 4);
         return keccak256(abi.encode(account, balancesPosition));
@@ -196,14 +185,9 @@ library TokenizedStrategyStorageLib {
      * @param spender The address that can spend the tokens
      * @return slot The storage slot for the allowance
      */
-    function allowancesSlot(
-        address owner,
-        address spender
-    ) internal pure returns (bytes32 slot) {
+    function allowancesSlot(address owner, address spender) internal pure returns (bytes32 slot) {
         // allowances mapping is at slot position 5 from BASE_STRATEGY_STORAGE
-        bytes32 allowancesPosition = bytes32(
-            uint256(BASE_STRATEGY_STORAGE) + 5
-        );
+        bytes32 allowancesPosition = bytes32(uint256(BASE_STRATEGY_STORAGE) + 5);
         // For nested mappings: keccak256(spender . keccak256(owner . slot))
         bytes32 ownerSlot = keccak256(abi.encode(owner, allowancesPosition));
         return keccak256(abi.encode(spender, ownerSlot));
@@ -214,11 +198,7 @@ library TokenizedStrategyStorageLib {
      * @dev This can be used in external contracts to load the full struct
      * @return S The StrategyData struct from storage
      */
-    function getStrategyStorage()
-        internal
-        pure
-        returns (StrategyData storage S)
-    {
+    function getStrategyStorage() internal pure returns (StrategyData storage S) {
         bytes32 slot = BASE_STRATEGY_STORAGE;
         assembly {
             S.slot := slot

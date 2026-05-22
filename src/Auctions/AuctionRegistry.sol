@@ -24,11 +24,7 @@ contract AuctionRegistry is Governance2Step {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event FactoryRegistered(
-        address indexed factory,
-        string version,
-        uint256 index
-    );
+    event FactoryRegistered(address indexed factory, string version, uint256 index);
 
     event FactoryRetired(address indexed factory);
 
@@ -55,15 +51,10 @@ contract AuctionRegistry is Governance2Step {
      * @param _knownFactories Array of known factory addresses to register
      * @param _versions Array of version strings corresponding to the factories
      */
-    constructor(
-        address _governance,
-        address[] memory _knownFactories,
-        string[] memory _versions
-    ) Governance2Step(_governance) {
-        require(
-            _knownFactories.length == _versions.length,
-            "Array length mismatch"
-        );
+    constructor(address _governance, address[] memory _knownFactories, string[] memory _versions)
+        Governance2Step(_governance)
+    {
+        require(_knownFactories.length == _versions.length, "Array length mismatch");
 
         for (uint256 i = 0; i < _knownFactories.length; i++) {
             address factory = _knownFactories[i];
@@ -90,9 +81,7 @@ contract AuctionRegistry is Governance2Step {
      * @param _version The version string of the factory
      * @return factory The address of the factory
      */
-    function getFactory(
-        string memory _version
-    ) external view returns (address factory) {
+    function getFactory(string memory _version) external view returns (address factory) {
         return versionToFactory[_version];
     }
 
@@ -101,9 +90,7 @@ contract AuctionRegistry is Governance2Step {
      * @param _factory The address of the factory
      * @return info The factory information struct
      */
-    function getFactoryInfo(
-        address _factory
-    ) external view returns (FactoryInfo memory info) {
+    function getFactoryInfo(address _factory) external view returns (FactoryInfo memory info) {
         return factoryInfo[_factory];
     }
 
@@ -141,10 +128,7 @@ contract AuctionRegistry is Governance2Step {
      * @param _factory The address of the factory
      * @param _version The version string of the factory
      */
-    function registerNewFactory(
-        address _factory,
-        string memory _version
-    ) external onlyGovernance {
+    function registerNewFactory(address _factory, string memory _version) external onlyGovernance {
         _registerFactory(_factory, _version);
     }
 
@@ -171,35 +155,19 @@ contract AuctionRegistry is Governance2Step {
     /**
      * @dev Internal function to register a factory
      */
-    function _registerFactory(
-        address _factory,
-        string memory _version
-    ) internal {
+    function _registerFactory(address _factory, string memory _version) internal {
         require(_factory != address(0), "Invalid factory address");
         require(_factory.code.length > 0, "No code at address");
         require(!isRegisteredFactory(_factory), "Factory already registered");
-        require(
-            versionToFactory[_version] == address(0),
-            "Version already registered"
-        );
+        require(versionToFactory[_version] == address(0), "Version already registered");
         require(bytes(_version).length > 0, "Invalid version");
 
         // Verify it's a valid auction factory by checking it has the expected interface
-        try IAuctionFactory(_factory).version() returns (
-            string memory version_
-        ) {
-            require(
-                keccak256(abi.encodePacked(_version)) ==
-                    keccak256(abi.encodePacked(version_)),
-                "Version mismatch"
-            );
+        try IAuctionFactory(_factory).version() returns (string memory version_) {
+            require(keccak256(abi.encodePacked(_version)) == keccak256(abi.encodePacked(version_)), "Version mismatch");
         } catch {}
 
-        FactoryInfo memory info = FactoryInfo({
-            version: _version,
-            index: factories.length,
-            isRetired: false
-        });
+        FactoryInfo memory info = FactoryInfo({version: _version, index: factories.length, isRetired: false});
 
         factories.push(_factory);
         factoryInfo[_factory] = info;

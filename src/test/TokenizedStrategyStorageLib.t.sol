@@ -39,16 +39,10 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.totalAssetsSlot();
 
         // Read raw storage at that slot
-        uint256 storedTotalAssets = uint256(
-            vm.load(address(mockStrategy), slot)
-        );
+        uint256 storedTotalAssets = uint256(vm.load(address(mockStrategy), slot));
 
         // Compare with public getter
-        assertEq(
-            storedTotalAssets,
-            mockStrategy.totalAssets(),
-            "TotalAssets slot mismatch"
-        );
+        assertEq(storedTotalAssets, mockStrategy.totalAssets(), "TotalAssets slot mismatch");
     }
 
     function test_totalSupplySlot() public {
@@ -60,16 +54,10 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.totalSupplySlot();
 
         // Read raw storage at that slot
-        uint256 storedTotalSupply = uint256(
-            vm.load(address(mockStrategy), slot)
-        );
+        uint256 storedTotalSupply = uint256(vm.load(address(mockStrategy), slot));
 
         // Compare with public getter
-        assertEq(
-            storedTotalSupply,
-            mockStrategy.totalSupply(),
-            "TotalSupply slot mismatch"
-        );
+        assertEq(storedTotalSupply, mockStrategy.totalSupply(), "TotalSupply slot mismatch");
     }
 
     function test_nameSlot() public {
@@ -112,25 +100,13 @@ contract TokenizedStrategyStorageLibTest is Setup {
         uint16 storedPerformanceFee = uint16(uint256(rawValue) >> 32);
 
         // Extract performanceFeeRecipient (address - 160 bits)
-        address storedPerformanceFeeRecipient = address(
-            uint160(uint256(rawValue) >> 48)
-        );
+        address storedPerformanceFeeRecipient = address(uint160(uint256(rawValue) >> 48));
 
         // Compare with public getters
+        assertEq(storedProfitMaxUnlockTime, mockStrategy.profitMaxUnlockTime(), "ProfitMaxUnlockTime mismatch");
+        assertEq(storedPerformanceFee, mockStrategy.performanceFee(), "PerformanceFee mismatch");
         assertEq(
-            storedProfitMaxUnlockTime,
-            mockStrategy.profitMaxUnlockTime(),
-            "ProfitMaxUnlockTime mismatch"
-        );
-        assertEq(
-            storedPerformanceFee,
-            mockStrategy.performanceFee(),
-            "PerformanceFee mismatch"
-        );
-        assertEq(
-            storedPerformanceFeeRecipient,
-            mockStrategy.performanceFeeRecipient(),
-            "PerformanceFeeRecipient mismatch"
+            storedPerformanceFeeRecipient, mockStrategy.performanceFeeRecipient(), "PerformanceFeeRecipient mismatch"
         );
     }
 
@@ -146,11 +122,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         uint256 storedBalance = uint256(vm.load(address(mockStrategy), slot));
 
         // Compare with public getter
-        assertEq(
-            storedBalance,
-            mockStrategy.balanceOf(user),
-            "Balance slot mismatch"
-        );
+        assertEq(storedBalance, mockStrategy.balanceOf(user), "Balance slot mismatch");
     }
 
     function test_allowancesSlot() public {
@@ -165,11 +137,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         uint256 storedAllowance = uint256(vm.load(address(mockStrategy), slot));
 
         // Compare with public getter
-        assertEq(
-            storedAllowance,
-            mockStrategy.allowance(user, daddy),
-            "Allowance slot mismatch"
-        );
+        assertEq(storedAllowance, mockStrategy.allowance(user, daddy), "Allowance slot mismatch");
     }
 
     function test_noncesSlot() public {
@@ -200,11 +168,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         // When it's first used, it will be set to NOT_ENTERED (1)
         // We're checking the raw storage, so it should be 0 initially
         assertEq(storedEntered, 0, "Entered status mismatch"); // Uninitialized in storage
-        assertEq(
-            storedShutdown,
-            mockStrategy.isShutdown(),
-            "Shutdown status mismatch"
-        );
+        assertEq(storedShutdown, mockStrategy.isShutdown(), "Shutdown status mismatch");
     }
 
     function test_emergencyAdminSlot() public {
@@ -212,16 +176,10 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.emergencyAdminSlot();
 
         // Read raw storage at that slot
-        address storedEmergencyAdmin = address(
-            uint160(uint256(vm.load(address(mockStrategy), slot)))
-        );
+        address storedEmergencyAdmin = address(uint160(uint256(vm.load(address(mockStrategy), slot))));
 
         // Compare with public getter
-        assertEq(
-            storedEmergencyAdmin,
-            mockStrategy.emergencyAdmin(),
-            "EmergencyAdmin slot mismatch"
-        );
+        assertEq(storedEmergencyAdmin, mockStrategy.emergencyAdmin(), "EmergencyAdmin slot mismatch");
     }
 
     function test_pendingManagementSlot() public {
@@ -233,22 +191,15 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.pendingManagementSlot();
 
         // Read raw storage at that slot
-        address storedPendingManagement = address(
-            uint160(uint256(vm.load(address(mockStrategy), slot)))
-        );
+        address storedPendingManagement = address(uint160(uint256(vm.load(address(mockStrategy), slot))));
 
         // Compare with public getter
-        assertEq(
-            storedPendingManagement,
-            mockStrategy.pendingManagement(),
-            "PendingManagement slot mismatch"
-        );
+        assertEq(storedPendingManagement, mockStrategy.pendingManagement(), "PendingManagement slot mismatch");
     }
 
     function test_keeperSlot() public {
         // Get the slot containing keeper (packed with fullProfitUnlockDate)
-        bytes32 slot = TokenizedStrategyStorageLib
-            .fullProfitUnlockDateAndKeeperSlot();
+        bytes32 slot = TokenizedStrategyStorageLib.fullProfitUnlockDateAndKeeperSlot();
 
         // Read raw storage at that slot
         bytes32 rawValue = vm.load(address(mockStrategy), slot);
@@ -260,11 +211,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         address storedKeeper = address(uint160(uint256(rawValue) >> 96));
 
         // Compare with public getters
-        assertEq(
-            storedFullProfitUnlockDate,
-            mockStrategy.fullProfitUnlockDate(),
-            "FullProfitUnlockDate mismatch"
-        );
+        assertEq(storedFullProfitUnlockDate, mockStrategy.fullProfitUnlockDate(), "FullProfitUnlockDate mismatch");
         assertEq(storedKeeper, mockStrategy.keeper(), "Keeper slot mismatch");
     }
 
@@ -275,8 +222,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         mockStrategy.report();
 
         // Get the slot for lastReport and management (packed)
-        bytes32 slot = TokenizedStrategyStorageLib
-            .lastReportAndManagementSlot();
+        bytes32 slot = TokenizedStrategyStorageLib.lastReportAndManagementSlot();
 
         // Read raw storage at that slot
         bytes32 rawValue = vm.load(address(mockStrategy), slot);
@@ -288,16 +234,8 @@ contract TokenizedStrategyStorageLibTest is Setup {
         address storedManagement = address(uint160(uint256(rawValue) >> 96));
 
         // Compare with public getters
-        assertEq(
-            storedLastReport,
-            mockStrategy.lastReport(),
-            "LastReport slot mismatch"
-        );
-        assertEq(
-            storedManagement,
-            mockStrategy.management(),
-            "Management slot mismatch"
-        );
+        assertEq(storedLastReport, mockStrategy.lastReport(), "LastReport slot mismatch");
+        assertEq(storedManagement, mockStrategy.management(), "Management slot mismatch");
     }
 
     function test_profitUnlockingRateSlot() public {
@@ -305,34 +243,22 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.profitUnlockingRateSlot();
 
         // Read raw storage at that slot
-        uint256 storedProfitUnlockingRate = uint256(
-            vm.load(address(mockStrategy), slot)
-        );
+        uint256 storedProfitUnlockingRate = uint256(vm.load(address(mockStrategy), slot));
 
         // Compare with public getter
-        assertEq(
-            storedProfitUnlockingRate,
-            mockStrategy.profitUnlockingRate(),
-            "ProfitUnlockingRate slot mismatch"
-        );
+        assertEq(storedProfitUnlockingRate, mockStrategy.profitUnlockingRate(), "ProfitUnlockingRate slot mismatch");
     }
 
     // ============ Priority 1: Critical Missing Tests ============
 
     function test_strategyStorageSlot() public {
         // Test that strategyStorageSlot returns the correct base slot
-        bytes32 expectedSlot = bytes32(
-            uint256(keccak256("yearn.base.strategy.storage")) - 1
-        );
+        bytes32 expectedSlot = bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
         bytes32 actualSlot = TokenizedStrategyStorageLib.strategyStorageSlot();
 
         assertEq(actualSlot, expectedSlot, "Strategy storage slot mismatch");
         // Also verify it matches the assetSlot (they should be the same)
-        assertEq(
-            actualSlot,
-            TokenizedStrategyStorageLib.assetSlot(),
-            "Base slot should match asset slot"
-        );
+        assertEq(actualSlot, TokenizedStrategyStorageLib.assetSlot(), "Base slot should match asset slot");
     }
 
     function test_getStrategyStorage() public {
@@ -342,9 +268,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 slot = TokenizedStrategyStorageLib.strategyStorageSlot();
 
         // Verify the slot matches our expected base storage slot
-        bytes32 expectedSlot = bytes32(
-            uint256(keccak256("yearn.base.strategy.storage")) - 1
-        );
+        bytes32 expectedSlot = bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
         assertEq(slot, expectedSlot, "getStrategyStorage base slot incorrect");
     }
 
@@ -360,30 +284,19 @@ contract TokenizedStrategyStorageLibTest is Setup {
         uint8 decimals = uint8(uint256(rawValue0) >> 160);
 
         assertEq(asset, mockStrategy.asset(), "Packed field: asset corrupted");
-        assertEq(
-            decimals,
-            mockStrategy.decimals(),
-            "Packed field: decimals corrupted"
-        );
+        assertEq(decimals, mockStrategy.decimals(), "Packed field: decimals corrupted");
 
         // Test slot 8: fullProfitUnlockDate + keeper
-        bytes32 slot8 = TokenizedStrategyStorageLib
-            .fullProfitUnlockDateAndKeeperSlot();
+        bytes32 slot8 = TokenizedStrategyStorageLib.fullProfitUnlockDateAndKeeperSlot();
         bytes32 rawValue8 = vm.load(address(mockStrategy), slot8);
 
         uint96 fullProfitUnlockDate = uint96(uint256(rawValue8));
         address keeper = address(uint160(uint256(rawValue8) >> 96));
 
         assertEq(
-            fullProfitUnlockDate,
-            mockStrategy.fullProfitUnlockDate(),
-            "Packed field: fullProfitUnlockDate corrupted"
+            fullProfitUnlockDate, mockStrategy.fullProfitUnlockDate(), "Packed field: fullProfitUnlockDate corrupted"
         );
-        assertEq(
-            keeper,
-            mockStrategy.keeper(),
-            "Packed field: keeper corrupted"
-        );
+        assertEq(keeper, mockStrategy.keeper(), "Packed field: keeper corrupted");
 
         // Test slot 9: profitMaxUnlockTime + performanceFee + performanceFeeRecipient
         bytes32 slot9 = TokenizedStrategyStorageLib.profitConfigSlot();
@@ -391,20 +304,10 @@ contract TokenizedStrategyStorageLibTest is Setup {
 
         uint32 profitMaxUnlockTime = uint32(uint256(rawValue9));
         uint16 performanceFee = uint16(uint256(rawValue9) >> 32);
-        address performanceFeeRecipient = address(
-            uint160(uint256(rawValue9) >> 48)
-        );
+        address performanceFeeRecipient = address(uint160(uint256(rawValue9) >> 48));
 
-        assertEq(
-            profitMaxUnlockTime,
-            mockStrategy.profitMaxUnlockTime(),
-            "Packed field: profitMaxUnlockTime corrupted"
-        );
-        assertEq(
-            performanceFee,
-            mockStrategy.performanceFee(),
-            "Packed field: performanceFee corrupted"
-        );
+        assertEq(profitMaxUnlockTime, mockStrategy.profitMaxUnlockTime(), "Packed field: profitMaxUnlockTime corrupted");
+        assertEq(performanceFee, mockStrategy.performanceFee(), "Packed field: performanceFee corrupted");
         assertEq(
             performanceFeeRecipient,
             mockStrategy.performanceFeeRecipient(),
@@ -424,8 +327,7 @@ contract TokenizedStrategyStorageLibTest is Setup {
         // slots 3-5 are mappings, calculated differently
         slots[6] = TokenizedStrategyStorageLib.totalAssetsSlot(); // slot 6
         slots[7] = TokenizedStrategyStorageLib.profitUnlockingRateSlot(); // slot 7
-        slots[8] = TokenizedStrategyStorageLib
-            .fullProfitUnlockDateAndKeeperSlot(); // slot 8
+        slots[8] = TokenizedStrategyStorageLib.fullProfitUnlockDateAndKeeperSlot(); // slot 8
         slots[9] = TokenizedStrategyStorageLib.profitConfigSlot(); // slot 9
         slots[10] = TokenizedStrategyStorageLib.lastReportAndManagementSlot(); // slot 10
         slots[11] = TokenizedStrategyStorageLib.pendingManagementSlot(); // slot 11
@@ -440,26 +342,10 @@ contract TokenizedStrategyStorageLibTest is Setup {
         assertEq(uint256(slots[7]), uint256(baseSlot) + 7, "Slot 7 incorrect");
         assertEq(uint256(slots[8]), uint256(baseSlot) + 8, "Slot 8 incorrect");
         assertEq(uint256(slots[9]), uint256(baseSlot) + 9, "Slot 9 incorrect");
-        assertEq(
-            uint256(slots[10]),
-            uint256(baseSlot) + 10,
-            "Slot 10 incorrect"
-        );
-        assertEq(
-            uint256(slots[11]),
-            uint256(baseSlot) + 11,
-            "Slot 11 incorrect"
-        );
-        assertEq(
-            uint256(slots[12]),
-            uint256(baseSlot) + 12,
-            "Slot 12 incorrect"
-        );
-        assertEq(
-            uint256(slots[13]),
-            uint256(baseSlot) + 13,
-            "Slot 13 incorrect"
-        );
+        assertEq(uint256(slots[10]), uint256(baseSlot) + 10, "Slot 10 incorrect");
+        assertEq(uint256(slots[11]), uint256(baseSlot) + 11, "Slot 11 incorrect");
+        assertEq(uint256(slots[12]), uint256(baseSlot) + 12, "Slot 12 incorrect");
+        assertEq(uint256(slots[13]), uint256(baseSlot) + 13, "Slot 13 incorrect");
     }
 
     // ============ Priority 2: Edge Cases ============
@@ -469,63 +355,33 @@ contract TokenizedStrategyStorageLibTest is Setup {
         address zeroAddr = address(0);
 
         // Test balance slot with zero address
-        bytes32 zeroBalanceSlot = TokenizedStrategyStorageLib.balancesSlot(
-            zeroAddr
-        );
-        uint256 zeroBalance = uint256(
-            vm.load(address(mockStrategy), zeroBalanceSlot)
-        );
+        bytes32 zeroBalanceSlot = TokenizedStrategyStorageLib.balancesSlot(zeroAddr);
+        uint256 zeroBalance = uint256(vm.load(address(mockStrategy), zeroBalanceSlot));
         assertEq(zeroBalance, 0, "Zero address should have zero balance");
 
         // Test allowance slot with zero addresses
-        bytes32 zeroAllowanceSlot = TokenizedStrategyStorageLib.allowancesSlot(
-            zeroAddr,
-            daddy
-        );
-        uint256 zeroAllowance = uint256(
-            vm.load(address(mockStrategy), zeroAllowanceSlot)
-        );
+        bytes32 zeroAllowanceSlot = TokenizedStrategyStorageLib.allowancesSlot(zeroAddr, daddy);
+        uint256 zeroAllowance = uint256(vm.load(address(mockStrategy), zeroAllowanceSlot));
         assertEq(zeroAllowance, 0, "Zero address should have zero allowance");
 
         // Test nonce slot with zero address
-        bytes32 zeroNonceSlot = TokenizedStrategyStorageLib.noncesSlot(
-            zeroAddr
-        );
-        uint256 zeroNonce = uint256(
-            vm.load(address(mockStrategy), zeroNonceSlot)
-        );
+        bytes32 zeroNonceSlot = TokenizedStrategyStorageLib.noncesSlot(zeroAddr);
+        uint256 zeroNonce = uint256(vm.load(address(mockStrategy), zeroNonceSlot));
         assertEq(zeroNonce, 0, "Zero address should have zero nonce");
 
         // Test with contract address (using mockStrategy itself)
-        bytes32 contractBalanceSlot = TokenizedStrategyStorageLib.balancesSlot(
-            address(mockStrategy)
-        );
-        uint256 contractBalance = uint256(
-            vm.load(address(mockStrategy), contractBalanceSlot)
-        );
-        assertEq(
-            contractBalance,
-            mockStrategy.balanceOf(address(mockStrategy)),
-            "Contract balance slot correct"
-        );
+        bytes32 contractBalanceSlot = TokenizedStrategyStorageLib.balancesSlot(address(mockStrategy));
+        uint256 contractBalance = uint256(vm.load(address(mockStrategy), contractBalanceSlot));
+        assertEq(contractBalance, mockStrategy.balanceOf(address(mockStrategy)), "Contract balance slot correct");
 
         // Verify no slot collisions between different addresses
         bytes32 slot1 = TokenizedStrategyStorageLib.balancesSlot(user);
         bytes32 slot2 = TokenizedStrategyStorageLib.balancesSlot(daddy);
         bytes32 slot3 = TokenizedStrategyStorageLib.balancesSlot(management);
 
-        assertTrue(
-            slot1 != slot2,
-            "Balance slots should be different for different addresses"
-        );
-        assertTrue(
-            slot2 != slot3,
-            "Balance slots should be different for different addresses"
-        );
-        assertTrue(
-            slot1 != slot3,
-            "Balance slots should be different for different addresses"
-        );
+        assertTrue(slot1 != slot2, "Balance slots should be different for different addresses");
+        assertTrue(slot2 != slot3, "Balance slots should be different for different addresses");
+        assertTrue(slot1 != slot3, "Balance slots should be different for different addresses");
     }
 
     function test_maximumValues() public {
@@ -583,44 +439,26 @@ contract TokenizedStrategyStorageLibTest is Setup {
 
         // Verify different addresses produce different slots
         if (account != address(0)) {
-            address differentAddr = address(
-                uint160(uint256(keccak256(abi.encode(account))))
-            );
+            address differentAddr = address(uint160(uint256(keccak256(abi.encode(account)))));
             if (differentAddr != account) {
-                bytes32 differentSlot = TokenizedStrategyStorageLib
-                    .balancesSlot(differentAddr);
-                assertTrue(
-                    slot != differentSlot,
-                    "Different addresses should have different slots"
-                );
+                bytes32 differentSlot = TokenizedStrategyStorageLib.balancesSlot(differentAddr);
+                assertTrue(slot != differentSlot, "Different addresses should have different slots");
             }
         }
     }
 
     function testFuzz_allowancesSlot(address owner, address spender) public {
         // Fuzz test for allowance slot calculation
-        bytes32 slot = TokenizedStrategyStorageLib.allowancesSlot(
-            owner,
-            spender
-        );
+        bytes32 slot = TokenizedStrategyStorageLib.allowancesSlot(owner, spender);
 
         // Verify the slot is deterministic
-        bytes32 slot2 = TokenizedStrategyStorageLib.allowancesSlot(
-            owner,
-            spender
-        );
+        bytes32 slot2 = TokenizedStrategyStorageLib.allowancesSlot(owner, spender);
         assertEq(slot, slot2, "Allowance slot should be deterministic");
 
         // Verify different combinations produce different slots
         if (owner != spender) {
-            bytes32 reversedSlot = TokenizedStrategyStorageLib.allowancesSlot(
-                spender,
-                owner
-            );
-            assertTrue(
-                slot != reversedSlot,
-                "Order of addresses should matter for allowance slots"
-            );
+            bytes32 reversedSlot = TokenizedStrategyStorageLib.allowancesSlot(spender, owner);
+            assertTrue(slot != reversedSlot, "Order of addresses should matter for allowance slots");
         }
     }
 
@@ -644,17 +482,9 @@ contract TokenizedStrategyStorageLibTest is Setup {
         bytes32 baseSlot = TokenizedStrategyStorageLib.strategyStorageSlot();
 
         // Test that slot calculations are deterministic and correct
-        assertEq(
-            TokenizedStrategyStorageLib.assetSlot(),
-            baseSlot,
-            "Asset slot should equal base slot"
-        );
+        assertEq(TokenizedStrategyStorageLib.assetSlot(), baseSlot, "Asset slot should equal base slot");
 
-        assertEq(
-            TokenizedStrategyStorageLib.nameSlot(),
-            bytes32(uint256(baseSlot) + 1),
-            "Name slot should be base + 1"
-        );
+        assertEq(TokenizedStrategyStorageLib.nameSlot(), bytes32(uint256(baseSlot) + 1), "Name slot should be base + 1");
 
         assertEq(
             TokenizedStrategyStorageLib.totalSupplySlot(),
@@ -676,41 +506,18 @@ contract TokenizedStrategyStorageLibTest is Setup {
         // Test that mapping slots are calculated consistently
         bytes32 balance1 = TokenizedStrategyStorageLib.balancesSlot(testAddr1);
         bytes32 balance2 = TokenizedStrategyStorageLib.balancesSlot(testAddr1);
-        assertEq(
-            balance1,
-            balance2,
-            "Balance slot calculation should be deterministic"
-        );
+        assertEq(balance1, balance2, "Balance slot calculation should be deterministic");
 
         bytes32 balance3 = TokenizedStrategyStorageLib.balancesSlot(testAddr2);
-        assertTrue(
-            balance1 != balance3,
-            "Different addresses should have different balance slots"
-        );
+        assertTrue(balance1 != balance3, "Different addresses should have different balance slots");
 
         // Test allowance slots
-        bytes32 allowance1 = TokenizedStrategyStorageLib.allowancesSlot(
-            testAddr1,
-            testAddr2
-        );
-        bytes32 allowance2 = TokenizedStrategyStorageLib.allowancesSlot(
-            testAddr1,
-            testAddr2
-        );
-        assertEq(
-            allowance1,
-            allowance2,
-            "Allowance slot calculation should be deterministic"
-        );
+        bytes32 allowance1 = TokenizedStrategyStorageLib.allowancesSlot(testAddr1, testAddr2);
+        bytes32 allowance2 = TokenizedStrategyStorageLib.allowancesSlot(testAddr1, testAddr2);
+        assertEq(allowance1, allowance2, "Allowance slot calculation should be deterministic");
 
-        bytes32 allowance3 = TokenizedStrategyStorageLib.allowancesSlot(
-            testAddr2,
-            testAddr1
-        );
-        assertTrue(
-            allowance1 != allowance3,
-            "Order should matter for allowance slots"
-        );
+        bytes32 allowance3 = TokenizedStrategyStorageLib.allowancesSlot(testAddr2, testAddr1);
+        assertTrue(allowance1 != allowance3, "Order should matter for allowance slots");
     }
 
     // ============ Cross-Validation Test ============
@@ -729,79 +536,37 @@ contract TokenizedStrategyStorageLibTest is Setup {
 
         // 1. Asset slot
         bytes32 assetSlot = TokenizedStrategyStorageLib.assetSlot();
-        address storedAsset = address(
-            uint160(uint256(vm.load(address(mockStrategy), assetSlot)))
-        );
+        address storedAsset = address(uint160(uint256(vm.load(address(mockStrategy), assetSlot))));
         assertEq(storedAsset, mockStrategy.asset(), "Cross-validation: asset");
 
         // 2. Total supply
         bytes32 supplySlot = TokenizedStrategyStorageLib.totalSupplySlot();
-        uint256 storedSupply = uint256(
-            vm.load(address(mockStrategy), supplySlot)
-        );
-        assertEq(
-            storedSupply,
-            mockStrategy.totalSupply(),
-            "Cross-validation: totalSupply"
-        );
+        uint256 storedSupply = uint256(vm.load(address(mockStrategy), supplySlot));
+        assertEq(storedSupply, mockStrategy.totalSupply(), "Cross-validation: totalSupply");
 
         // 3. Total assets
         bytes32 assetsSlot = TokenizedStrategyStorageLib.totalAssetsSlot();
-        uint256 storedAssets = uint256(
-            vm.load(address(mockStrategy), assetsSlot)
-        );
-        assertEq(
-            storedAssets,
-            mockStrategy.totalAssets(),
-            "Cross-validation: totalAssets"
-        );
+        uint256 storedAssets = uint256(vm.load(address(mockStrategy), assetsSlot));
+        assertEq(storedAssets, mockStrategy.totalAssets(), "Cross-validation: totalAssets");
 
         // 4. User balance
         bytes32 balanceSlot = TokenizedStrategyStorageLib.balancesSlot(user);
-        uint256 storedBalance = uint256(
-            vm.load(address(mockStrategy), balanceSlot)
-        );
-        assertEq(
-            storedBalance,
-            mockStrategy.balanceOf(user),
-            "Cross-validation: balance"
-        );
+        uint256 storedBalance = uint256(vm.load(address(mockStrategy), balanceSlot));
+        assertEq(storedBalance, mockStrategy.balanceOf(user), "Cross-validation: balance");
 
         // 5. Allowance
-        bytes32 allowanceSlot = TokenizedStrategyStorageLib.allowancesSlot(
-            user,
-            daddy
-        );
-        uint256 storedAllowance = uint256(
-            vm.load(address(mockStrategy), allowanceSlot)
-        );
-        assertEq(
-            storedAllowance,
-            mockStrategy.allowance(user, daddy),
-            "Cross-validation: allowance"
-        );
+        bytes32 allowanceSlot = TokenizedStrategyStorageLib.allowancesSlot(user, daddy);
+        uint256 storedAllowance = uint256(vm.load(address(mockStrategy), allowanceSlot));
+        assertEq(storedAllowance, mockStrategy.allowance(user, daddy), "Cross-validation: allowance");
 
         // 6. Management
-        bytes32 mgmtSlot = TokenizedStrategyStorageLib
-            .lastReportAndManagementSlot();
-        address storedMgmt = address(
-            uint160(uint256(vm.load(address(mockStrategy), mgmtSlot)) >> 96)
-        );
-        assertEq(
-            storedMgmt,
-            mockStrategy.management(),
-            "Cross-validation: management"
-        );
+        bytes32 mgmtSlot = TokenizedStrategyStorageLib.lastReportAndManagementSlot();
+        address storedMgmt = address(uint160(uint256(vm.load(address(mockStrategy), mgmtSlot)) >> 96));
+        assertEq(storedMgmt, mockStrategy.management(), "Cross-validation: management");
 
         // 7. Performance fee
         bytes32 feeSlot = TokenizedStrategyStorageLib.profitConfigSlot();
-        uint16 storedFee = uint16(
-            uint256(vm.load(address(mockStrategy), feeSlot)) >> 32
-        );
-        assertEq(
-            storedFee,
-            mockStrategy.performanceFee(),
-            "Cross-validation: performanceFee"
-        );
+        uint16 storedFee = uint16(uint256(vm.load(address(mockStrategy), feeSlot)) >> 32);
+        assertEq(storedFee, mockStrategy.performanceFee(), "Cross-validation: performanceFee");
     }
 }

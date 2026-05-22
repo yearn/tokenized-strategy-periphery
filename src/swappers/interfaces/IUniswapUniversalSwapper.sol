@@ -14,8 +14,5 @@ interface IUniswapUniversalSwapper is IBaseSwapper {
 
     function uniFees(address, address) external view returns (uint24);
 
-    function v4Pools(
-        address,
-        address
-    ) external view returns (uint24 fee, int24 tickSpacing, address hooks);
+    function v4Pools(address, address) external view returns (uint24 fee, int24 tickSpacing, address hooks);
 }

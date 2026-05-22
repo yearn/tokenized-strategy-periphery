@@ -30,11 +30,7 @@ contract BaseConvertor4626Test is Setup {
         oracle.setPrice(1e36); // 1 asset per 1 want
 
         convertor = new BaseConvertor4626(
-            address(asset),
-            "Base Convertor 4626",
-            address(want),
-            address(oracle),
-            address(targetVault)
+            address(asset), "Base Convertor 4626", address(want), address(oracle), address(targetVault)
         );
         convertorInterface = IBaseConvertor4626(address(convertor));
         convertorStrategy = IStrategy(address(convertor));
@@ -86,12 +82,12 @@ contract BaseConvertor4626Test is Setup {
     function test_tendTrigger_depositsLooseWant(uint256 _amount) public {
         vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
 
-        (bool shouldTend, ) = convertorStrategy.tendTrigger();
+        (bool shouldTend,) = convertorStrategy.tendTrigger();
         assertFalse(shouldTend);
 
         airdrop(want, address(convertor), _amount);
 
-        (shouldTend, ) = convertorStrategy.tendTrigger();
+        (shouldTend,) = convertorStrategy.tendTrigger();
         assertTrue(shouldTend);
 
         vm.prank(keeper);
@@ -100,7 +96,7 @@ contract BaseConvertor4626Test is Setup {
         assertEq(convertor.balanceOfWant(), 0);
         assertGt(convertor.balanceOfVault(), 0);
 
-        (shouldTend, ) = convertorStrategy.tendTrigger();
+        (shouldTend,) = convertorStrategy.tendTrigger();
         assertFalse(shouldTend);
     }
 
@@ -124,9 +120,7 @@ contract BaseConvertor4626Test is Setup {
         assertFalse(convertor.BUY_ASSET_AUCTION().isActive(address(want)));
     }
 
-    function test_kickWantAuction_afterFreeWantFromVault(
-        uint256 _amount
-    ) public {
+    function test_kickWantAuction_afterFreeWantFromVault(uint256 _amount) public {
         vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
 
         airdrop(want, address(convertor), _amount);
@@ -183,10 +177,7 @@ contract BaseConvertor4626Test is Setup {
         convertorInterface.freeWant(toKick);
 
         assertEq(convertor.balanceOfVault(), vaultBalanceBefore);
-        assertEq(
-            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
-            toKick
-        );
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), toKick);
         assertEq(convertor.balanceOfWant(), looseWant - toKick);
     }
 
@@ -208,10 +199,7 @@ contract BaseConvertor4626Test is Setup {
         convertorInterface.freeWant(toKick);
 
         assertLt(convertor.balanceOfVault(), vaultBalanceBefore);
-        assertEq(
-            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
-            toKick
-        );
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), toKick);
         assertEq(convertor.balanceOfWant(), 0);
     }
 
@@ -228,10 +216,7 @@ contract BaseConvertor4626Test is Setup {
         convertorInterface.freeWant(toKick);
 
         assertEq(convertor.balanceOfVault(), 0);
-        assertEq(
-            want.balanceOf(address(convertor.BUY_ASSET_AUCTION())),
-            vaultAmount
-        );
+        assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), vaultAmount);
         assertEq(convertor.balanceOfWant(), 0);
     }
 
@@ -272,9 +257,7 @@ contract BaseConvertor4626Test is Setup {
         assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
     }
 
-    function test_report_accountsVaultAndAuctionBalances(
-        uint256 _amount
-    ) public {
+    function test_report_accountsVaultAndAuctionBalances(uint256 _amount) public {
         vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
 
         uint256 vaultWant = _amount / 3;
@@ -291,18 +274,13 @@ contract BaseConvertor4626Test is Setup {
         vm.prank(keeper);
         convertorStrategy.report();
 
-        uint256 expected = convertor.balanceOfAsset() +
-            convertor.balanceOfAssetInAuction() +
-            convertor.balanceOfWantInAuction() +
-            convertor.balanceOfWant() +
-            convertor.valueOfVault();
+        uint256 expected = convertor.balanceOfAsset() + convertor.balanceOfAssetInAuction()
+            + convertor.balanceOfWantInAuction() + convertor.balanceOfWant() + convertor.valueOfVault();
 
         assertEq(convertorStrategy.totalAssets(), expected);
     }
 
-    function test_reportBuffer_discountsWantValueInEstimatedTotalAssets(
-        uint256 _amount
-    ) public {
+    function test_reportBuffer_discountsWantValueInEstimatedTotalAssets(uint256 _amount) public {
         vm.assume(_amount > 4e8 && _amount < maxFuzzAmount);
 
         uint256 vaultWant = _amount / 2;
@@ -320,18 +298,11 @@ contract BaseConvertor4626Test is Setup {
         vm.prank(management);
         convertor.setReportBuffer(bugger);
 
-        uint256 totalWant = convertor.balanceOfWant() +
-            convertor.balanceOfWantInAuction() +
-            targetVault.convertToAssets(convertor.balanceOfVault());
-        uint256 discountedWant = Math.mulDiv(
-            totalWant,
-            MAX_BPS - bugger,
-            MAX_BPS
-        );
+        uint256 totalWant = convertor.balanceOfWant() + convertor.balanceOfWantInAuction()
+            + targetVault.convertToAssets(convertor.balanceOfVault());
+        uint256 discountedWant = Math.mulDiv(totalWant, MAX_BPS - bugger, MAX_BPS);
 
-        uint256 expected = convertor.balanceOfAsset() +
-            convertor.balanceOfAssetInAuction() +
-            discountedWant;
+        uint256 expected = convertor.balanceOfAsset() + convertor.balanceOfAssetInAuction() + discountedWant;
 
         assertEq(convertor.estimatedTotalAssets(), expected);
     }

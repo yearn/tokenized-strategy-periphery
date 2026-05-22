@@ -16,13 +16,7 @@ contract Base4626CompounderTest is Setup {
         // we save the compounder as a IStrategyInterface to give it the needed interface
         // Use the compounder as the vault to use.
         IBase4626Compounder _compounder = IBase4626Compounder(
-            address(
-                new Base4626Compounder(
-                    address(asset),
-                    "Tokenized Strategy",
-                    address(mockStrategy)
-                )
-            )
+            address(new Base4626Compounder(address(asset), "Tokenized Strategy", address(mockStrategy)))
         );
 
         // set keeper
@@ -77,21 +71,12 @@ contract Base4626CompounderTest is Setup {
         vm.prank(user);
         compounder.redeem(_amount, user, user);
 
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
+        assertGe(asset.balanceOf(user), balanceBefore + _amount, "!final balance");
     }
 
-    function test_profitableReport(
-        uint256 _amount,
-        uint16 _profitFactor
-    ) public {
+    function test_profitableReport(uint256 _amount, uint16 _profitFactor) public {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(
-            bound(uint256(_profitFactor), 10, MAX_BPS - 100)
-        );
+        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS - 100));
 
         // Deposit into compounder
         mintAndDepositIntoStrategy(compounder, user, _amount);
@@ -121,21 +106,12 @@ contract Base4626CompounderTest is Setup {
         vm.prank(user);
         compounder.redeem(_amount, user, user);
 
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
+        assertGe(asset.balanceOf(user), balanceBefore + _amount, "!final balance");
     }
 
-    function test_profitableReport_withFees(
-        uint256 _amount,
-        uint16 _profitFactor
-    ) public virtual {
+    function test_profitableReport_withFees(uint256 _amount, uint16 _profitFactor) public virtual {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(
-            bound(uint256(_profitFactor), 10, MAX_BPS - 100)
-        );
+        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS - 100));
 
         // Set protocol fee to 0 and perf fee to 10%
         setFees(0, 1_000);
@@ -173,62 +149,50 @@ contract Base4626CompounderTest is Setup {
         vm.prank(user);
         compounder.redeem(_amount, user, user);
 
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
+        assertGe(asset.balanceOf(user), balanceBefore + _amount, "!final balance");
 
         vm.prank(performanceFeeRecipient);
-        compounder.redeem(
-            expectedShares,
-            performanceFeeRecipient,
-            performanceFeeRecipient
-        );
+        compounder.redeem(expectedShares, performanceFeeRecipient, performanceFeeRecipient);
 
         checkStrategyTotals(compounder, 0, 0, 0);
 
-        assertGe(
-            asset.balanceOf(performanceFeeRecipient),
-            expectedShares,
-            "!perf fee out"
-        );
+        assertGe(asset.balanceOf(performanceFeeRecipient), expectedShares, "!perf fee out");
     }
 
     function test_tendTrigger(uint256 _amount) public {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
 
-        (bool trigger, ) = compounder.tendTrigger();
+        (bool trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
 
         // Deposit into compounder
         mintAndDepositIntoStrategy(compounder, user, _amount);
 
-        (trigger, ) = compounder.tendTrigger();
+        (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
 
         // Skip some time
         skip(1 days);
 
-        (trigger, ) = compounder.tendTrigger();
+        (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
 
         vm.prank(keeper);
         compounder.report();
 
-        (trigger, ) = compounder.tendTrigger();
+        (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
 
         // Unlock Profits
         skip(compounder.profitMaxUnlockTime());
 
-        (trigger, ) = compounder.tendTrigger();
+        (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
 
         vm.prank(user);
         compounder.redeem(_amount, user, user);
 
-        (trigger, ) = compounder.tendTrigger();
+        (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
     }
 }
