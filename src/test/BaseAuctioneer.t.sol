@@ -28,9 +28,7 @@ contract BaseAuctioneerTest is Setup {
     function setUp() public override {
         super.setUp();
 
-        auctioneer = IMockAuctioneer(
-            address(new MockAuctioneer(address(asset)))
-        );
+        auctioneer = IMockAuctioneer(address(new MockAuctioneer(address(asset))));
 
         vm.label(address(auctioneer), "Auctioneer");
     }
@@ -44,8 +42,7 @@ contract BaseAuctioneerTest is Setup {
         assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
         assertEq(auctioneer.price(from), 0);
 
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
@@ -69,8 +66,7 @@ contract BaseAuctioneerTest is Setup {
         assertEq(auctioneer.kickable(from), 0);
         assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
         assertEq(auctioneer.price(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
@@ -102,8 +98,7 @@ contract BaseAuctioneerTest is Setup {
         assertEq(auctioneer.kickable(from), 0);
         assertEq(auctioneer.getAmountNeeded(from, 1e18), 0);
         assertEq(auctioneer.price(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
@@ -133,8 +128,7 @@ contract BaseAuctioneerTest is Setup {
         auctioneer.enable(from);
 
         assertEq(auctioneer.kickable(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e10);
@@ -144,7 +138,7 @@ contract BaseAuctioneerTest is Setup {
         airdrop(ERC20(from), address(auctioneer), _amount);
 
         assertEq(auctioneer.kickable(from), _amount);
-        (_kicked, , _initialAvailable) = auctioneer.auctions(from);
+        (_kicked,, _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, 0);
         assertEq(_initialAvailable, 0);
 
@@ -156,35 +150,21 @@ contract BaseAuctioneerTest is Setup {
         assertEq(ERC20(from).balanceOf(address(auctioneer)), available);
 
         assertEq(auctioneer.kickable(from), 0);
-        (_kicked, , _initialAvailable) = auctioneer.auctions(from);
+        (_kicked,, _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
-        uint256 startingPrice = ((auctioneer.startingPrice() *
-            (WAD / wantScaler)) * 1e18) /
-            _amount /
-            fromScaler;
+        uint256 startingPrice = ((auctioneer.startingPrice() * (WAD / wantScaler)) * 1e18) / _amount / fromScaler;
         assertEq(auctioneer.price(from), startingPrice);
         assertApproxEqRel(
             auctioneer.getAmountNeeded(from, _amount),
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler,
+            (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler,
             0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auctioneer.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
-        uint256 expectedAmount = auctioneer.getAmountNeeded(
-            from,
-            _amount,
-            block.timestamp + 100
-        );
-        assertLt(
-            expectedAmount,
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler
-        );
+        uint256 expectedAmount = auctioneer.getAmountNeeded(from, _amount, block.timestamp + 100);
+        assertLt(expectedAmount, (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler);
 
         skip(100);
 
@@ -214,8 +194,7 @@ contract BaseAuctioneerTest is Setup {
         auctioneer.kick(from);
 
         assertEq(auctioneer.kickable(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
         assertEq(_initialAvailable, _amount);
@@ -238,7 +217,7 @@ contract BaseAuctioneerTest is Setup {
 
         assertEq(amountTaken, toTake);
 
-        (, , _initialAvailable) = auctioneer.auctions(from);
+        (,, _initialAvailable) = auctioneer.auctions(from);
         assertEq(_initialAvailable, _amount);
         assertEq(auctioneer.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);

@@ -24,8 +24,7 @@ interface IWETH {
 contract FluidSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
-    address internal constant NATIVE_ETH =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant NATIVE_ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address public immutable WETH;
 
@@ -57,22 +56,15 @@ contract FluidSwapper is BaseSwapper {
      * @param _token1 Second token in pair.
      * @param _dex Fluid DEX pool contract.
      */
-    function _setFluidDex(
-        address _token0,
-        address _token1,
-        address _dex
-    ) internal virtual {
-        IFluidDexT1.ConstantViews memory _constants = IFluidDexT1(_dex)
-            .constantsView();
+    function _setFluidDex(address _token0, address _token1, address _dex) internal virtual {
+        IFluidDexT1.ConstantViews memory _constants = IFluidDexT1(_dex).constantsView();
 
         if (_constants.token0 == NATIVE_ETH) _constants.token0 = WETH;
         if (_constants.token1 == NATIVE_ETH) _constants.token1 = WETH;
 
         if (_constants.token0 == _token0 && _constants.token1 == _token1) {
             _setFluidDex(_token0, _token1, _dex, true);
-        } else if (
-            _constants.token0 == _token1 && _constants.token1 == _token0
-        ) {
+        } else if (_constants.token0 == _token1 && _constants.token1 == _token0) {
             _setFluidDex(_token0, _token1, _dex, false);
         } else {
             revert("dex mismatch");
@@ -86,26 +78,12 @@ contract FluidSwapper is BaseSwapper {
      * @param _dex Fluid DEX pool contract.
      * @param _swap0to1 Value to pass as `swap0to1` for `_from` -> `_to`.
      */
-    function _setFluidDex(
-        address _from,
-        address _to,
-        address _dex,
-        bool _swap0to1
-    ) internal virtual {
-        require(
-            _from != address(0) && _to != address(0) && _dex != address(0),
-            "bad token"
-        );
+    function _setFluidDex(address _from, address _to, address _dex, bool _swap0to1) internal virtual {
+        require(_from != address(0) && _to != address(0) && _dex != address(0), "bad token");
         require(_from != _to, "same token");
 
-        fluidDexes[_from][_to] = FluidDexConfig({
-            dex: _dex,
-            swap0to1: _swap0to1
-        });
-        fluidDexes[_to][_from] = FluidDexConfig({
-            dex: _dex,
-            swap0to1: !_swap0to1
-        });
+        fluidDexes[_from][_to] = FluidDexConfig({dex: _dex, swap0to1: _swap0to1});
+        fluidDexes[_to][_from] = FluidDexConfig({dex: _dex, swap0to1: !_swap0to1});
     }
 
     /**
@@ -116,32 +94,21 @@ contract FluidSwapper is BaseSwapper {
      * If one of the tokens matches with the `base` token it will do only
      * one hop, otherwise will do two hops through `base`.
      */
-    function _fluidSwapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) internal virtual returns (uint256 _amountOut) {
+    function _fluidSwapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         if (_amountIn != 0 && _amountIn >= minAmountToSell) {
             if (_from == WETH) {
                 IWETH(WETH).withdraw(_amountIn);
             }
 
             if (_from == base || _to == base) {
-                _amountOut = _fluidSwapInStep(
-                    _from,
-                    _to,
-                    _amountIn,
-                    _minAmountOut
-                );
+                _amountOut = _fluidSwapInStep(_from, _to, _amountIn, _minAmountOut);
             } else {
                 _amountOut = _fluidSwapInStep(_from, base, _amountIn, 0);
-                _amountOut = _fluidSwapInStep(
-                    base,
-                    _to,
-                    _amountOut,
-                    _minAmountOut
-                );
+                _amountOut = _fluidSwapInStep(base, _to, _amountOut, _minAmountOut);
             }
 
             if (_to == WETH) {
@@ -156,12 +123,11 @@ contract FluidSwapper is BaseSwapper {
     /**
      * @dev Execute a single Fluid DEX exact-input hop.
      */
-    function _fluidSwapInStep(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) internal virtual returns (uint256 _amountOut) {
+    function _fluidSwapInStep(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         FluidDexConfig memory _config = fluidDexes[_from][_to];
         require(_config.dex != address(0), "dex not set");
 
@@ -174,10 +140,7 @@ contract FluidSwapper is BaseSwapper {
         }
 
         _amountOut = IFluidDexT1(_config.dex).swapIn{value: _msgValue}(
-            _config.swap0to1,
-            _amountIn,
-            _minAmountOut,
-            address(this)
+            _config.swap0to1, _amountIn, _minAmountOut, address(this)
         );
     }
 }

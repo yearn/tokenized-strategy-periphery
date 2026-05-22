@@ -18,11 +18,7 @@ contract Base4626Compounder is BaseHealthCheck {
 
     IStrategy public immutable vault;
 
-    constructor(
-        address _asset,
-        string memory _name,
-        address _vault
-    ) BaseHealthCheck(_asset, _name) {
+    constructor(address _asset, string memory _name, address _vault) BaseHealthCheck(_asset, _name) {
         require(IStrategy(_vault).asset() == _asset, "wrong vault");
         vault = IStrategy(_vault);
 
@@ -107,12 +103,7 @@ contract Base4626Compounder is BaseHealthCheck {
      * @return _totalAssets A trusted and accurate account for the total
      * amount of 'asset' the strategy currently holds including idle funds.
      */
-    function _harvestAndReport()
-        internal
-        virtual
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal virtual override returns (uint256 _totalAssets) {
         // Claim and sell any rewards.
         _claimAndSellRewards();
 
@@ -199,9 +190,7 @@ contract Base4626Compounder is BaseHealthCheck {
      * @param . The address that is depositing into the strategy.
      * @return . The available amount the `_owner` can deposit in terms of `asset`
      */
-    function availableDepositLimit(
-        address _owner
-    ) public view virtual override returns (uint256) {
+    function availableDepositLimit(address _owner) public view virtual override returns (uint256) {
         uint256 depositLimit = super.availableDepositLimit(_owner);
         if (depositLimit == 0) return 0;
 
@@ -227,9 +216,7 @@ contract Base4626Compounder is BaseHealthCheck {
      * @param . The address that is withdrawing from the strategy.
      * @return . The available amount that can be withdrawn in terms of `asset`
      */
-    function availableWithdrawLimit(
-        address
-    ) public view virtual override returns (uint256) {
+    function availableWithdrawLimit(address) public view virtual override returns (uint256) {
         // Return the loose balance of asset and the max we can withdraw from the vault
         return balanceOfAsset() + vaultsMaxWithdraw();
     }

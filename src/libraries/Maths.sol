@@ -4,8 +4,8 @@ pragma solidity >=0.8.18;
 // Math library from https://github.com/ajna-finance/ajna-core/blob/master/src/libraries/internal/Maths.sol
 
 /**
-    @title  Maths library
-    @notice Internal library containing common maths.
+ * @title  Maths library
+ *     @notice Internal library containing common maths.
  */
 library Maths {
     uint256 internal constant WAD = 1e18;
@@ -67,10 +67,15 @@ library Maths {
         }
     }
 
-    /*************************/
-    /*** Integer Functions ***/
-    /*************************/
-
+    /**
+     *
+     */
+    /**
+     * Integer Functions **
+     */
+    /**
+     *
+     */
     function maxInt(int256 x, int256 y) internal pure returns (int256) {
         return x >= y ? x : y;
     }

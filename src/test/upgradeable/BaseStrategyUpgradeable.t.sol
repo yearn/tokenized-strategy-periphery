@@ -20,13 +20,8 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
         address proxy = deployProxy(strategyImpl);
 
         // Initialize the strategy
-        MockUpgradeableStrategy(proxy).initialize(
-            address(asset),
-            "Test Strategy",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        MockUpgradeableStrategy(proxy)
+            .initialize(address(asset), "Test Strategy", management, performanceFeeRecipient, keeper);
 
         strategy = IStrategy(proxy);
     }
@@ -46,13 +41,8 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
     function test_preventDoubleInit() public {
         // Try to initialize again - should revert
         vm.expectRevert("Initializable: contract is already initialized");
-        MockUpgradeableStrategy(address(strategy)).initialize(
-            address(asset),
-            "Another Name",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        MockUpgradeableStrategy(address(strategy))
+            .initialize(address(asset), "Another Name", management, performanceFeeRecipient, keeper);
     }
 
     function test_implementationCannotBeInitialized() public {
@@ -61,13 +51,7 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
 
         // Try to initialize the implementation directly - should revert
         vm.expectRevert("Initializable: contract is already initialized");
-        impl.initialize(
-            address(asset),
-            "Direct Init",
-            management,
-            performanceFeeRecipient,
-            keeper
-        );
+        impl.initialize(address(asset), "Direct Init", management, performanceFeeRecipient, keeper);
     }
 
     function test_delegationToTokenizedStrategy(uint256 _amount) public {
@@ -119,9 +103,7 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
     function test_hookCallbacks(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(
-            address(strategy)
-        );
+        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(address(strategy));
 
         // Test deployFunds callback
         mintAndDepositIntoStrategy(strategy, user, _amount);
@@ -191,9 +173,7 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
         assertEq(strategy.balanceOf(user), testAmount);
 
         // Verify deployedFunds storage in the mock
-        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(
-            address(strategy)
-        );
+        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(address(strategy));
         assertEq(mockStrategy.deployedFunds(), testAmount);
     }
 
@@ -224,9 +204,7 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
         strategy.emergencyWithdraw(_amount);
 
         // Verify deployedFunds was updated
-        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(
-            address(strategy)
-        );
+        MockUpgradeableStrategy mockStrategy = MockUpgradeableStrategy(address(strategy));
         assertEq(mockStrategy.deployedFunds(), 0);
 
         // User should still have shares but totalAssets should be reduced

@@ -17,9 +17,7 @@ interface IClonableCreate2 is IClonable {
      * @param salt The salt to use for address computation
      * @return The address where the clone would be deployed
      */
-    function computeCreate2Address(
-        bytes32 salt
-    ) external view returns (address);
+    function computeCreate2Address(bytes32 salt) external view returns (address);
 
     /**
      * @notice Compute the address where a clone would be deployed using CREATE2
@@ -27,10 +25,7 @@ interface IClonableCreate2 is IClonable {
      * @param salt The salt to use for address computation
      * @return predicted The address where the clone would be deployed
      */
-    function computeCreate2Address(
-        address _original,
-        bytes32 salt
-    ) external view returns (address predicted);
+    function computeCreate2Address(address _original, bytes32 salt) external view returns (address predicted);
 
     /**
      * @notice Compute the address where a clone would be deployed using CREATE2
@@ -39,11 +34,10 @@ interface IClonableCreate2 is IClonable {
      * @param deployer The address that will deploy the clone
      * @return predicted The address where the clone would be deployed
      */
-    function computeCreate2Address(
-        address _original,
-        bytes32 salt,
-        address deployer
-    ) external view returns (address predicted);
+    function computeCreate2Address(address _original, bytes32 salt, address deployer)
+        external
+        view
+        returns (address predicted);
 
     /**
      * @notice Compute the final salt by hashing with deployer
@@ -53,8 +47,5 @@ interface IClonableCreate2 is IClonable {
      * @param deployer The address that will deploy the clone
      * @return The final salt to use for CREATE2
      */
-    function getSalt(
-        bytes32 salt,
-        address deployer
-    ) external view returns (bytes32);
+    function getSalt(bytes32 salt, address deployer) external view returns (bytes32);
 }

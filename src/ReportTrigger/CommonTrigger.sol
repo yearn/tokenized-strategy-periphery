@@ -9,23 +9,15 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAuctionSwapper} from "../swappers/interfaces/IAuctionSwapper.sol";
 
 interface ICustomStrategyTrigger {
-    function reportTrigger(
-        address _strategy
-    ) external view returns (bool, bytes memory);
+    function reportTrigger(address _strategy) external view returns (bool, bytes memory);
 }
 
 interface ICustomVaultTrigger {
-    function reportTrigger(
-        address _vault,
-        address _strategy
-    ) external view returns (bool, bytes memory);
+    function reportTrigger(address _vault, address _strategy) external view returns (bool, bytes memory);
 }
 
 interface ICustomAuctionTrigger {
-    function auctionTrigger(
-        address _strategy,
-        address _from
-    ) external view returns (bool, bytes memory);
+    function auctionTrigger(address _strategy, address _from) external view returns (bool, bytes memory);
 }
 
 interface IBaseFee {
@@ -55,38 +47,17 @@ contract CommonTrigger is Governance {
 
     event UpdatedAcceptableBaseFee(uint256 acceptableBaseFee);
 
-    event UpdatedCustomStrategyTrigger(
-        address indexed strategy,
-        address indexed trigger
-    );
+    event UpdatedCustomStrategyTrigger(address indexed strategy, address indexed trigger);
 
-    event UpdatedCustomStrategyBaseFee(
-        address indexed strategy,
-        uint256 acceptableBaseFee
-    );
+    event UpdatedCustomStrategyBaseFee(address indexed strategy, uint256 acceptableBaseFee);
 
-    event UpdatedCustomVaultTrigger(
-        address indexed vault,
-        address indexed strategy,
-        address indexed trigger
-    );
+    event UpdatedCustomVaultTrigger(address indexed vault, address indexed strategy, address indexed trigger);
 
-    event UpdatedCustomVaultBaseFee(
-        address indexed vault,
-        address indexed strategy,
-        uint256 acceptableBaseFee
-    );
+    event UpdatedCustomVaultBaseFee(address indexed vault, address indexed strategy, uint256 acceptableBaseFee);
 
-    event UpdatedCustomAuctionTrigger(
-        address indexed strategy,
-        address indexed trigger
-    );
+    event UpdatedCustomAuctionTrigger(address indexed strategy, address indexed trigger);
 
-    event UpdatedMinimumAmountToKick(
-        address indexed strategy,
-        address indexed token,
-        uint256 amount
-    );
+    event UpdatedMinimumAmountToKick(address indexed strategy, address indexed token, uint256 amount);
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
@@ -95,8 +66,7 @@ contract CommonTrigger is Governance {
     string public name = "Yearn Common Trigger";
 
     // Address of the legacy CommonReportTrigger for fallback support
-    address public constant LEGACY_REPORT_TRIGGER =
-        0xA045D4dAeA28BA7Bfe234c96eAa03daFae85A147;
+    address public constant LEGACY_REPORT_TRIGGER = 0xA045D4dAeA28BA7Bfe234c96eAa03daFae85A147;
 
     // Address to retrieve the current base fee on the network from.
     address public baseFeeProvider;
@@ -153,10 +123,7 @@ contract CommonTrigger is Governance {
      * @param _strategy The address of the strategy to set the trigger for.
      * @param _trigger The address of the custom trigger contract.
      */
-    function setCustomStrategyTrigger(
-        address _strategy,
-        address _trigger
-    ) external virtual {
+    function setCustomStrategyTrigger(address _strategy, address _trigger) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyTrigger[_strategy] = _trigger;
 
@@ -176,10 +143,7 @@ contract CommonTrigger is Governance {
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
      */
-    function setCustomStrategyBaseFee(
-        address _strategy,
-        uint256 _baseFee
-    ) external virtual {
+    function setCustomStrategyBaseFee(address _strategy, uint256 _baseFee) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customStrategyBaseFee[_strategy] = _baseFee;
 
@@ -202,11 +166,7 @@ contract CommonTrigger is Governance {
      * @param _strategy The address of the strategy to set the trigger for.
      * @param _trigger The address of the custom trigger contract.
      */
-    function setCustomVaultTrigger(
-        address _vault,
-        address _strategy,
-        address _trigger
-    ) external virtual {
+    function setCustomVaultTrigger(address _vault, address _strategy, address _trigger) external virtual {
         // Check that the address has the REPORTING_MANAGER role on the vault.
         uint256 mask = 32;
         require((IVault(_vault).roles(msg.sender) & mask) != 0, "!authorized");
@@ -231,11 +191,7 @@ contract CommonTrigger is Governance {
      * @param _strategy The address of the strategy to customize.
      * @param _baseFee The max acceptable network base fee.
      */
-    function setCustomVaultBaseFee(
-        address _vault,
-        address _strategy,
-        uint256 _baseFee
-    ) external virtual {
+    function setCustomVaultBaseFee(address _vault, address _strategy, uint256 _baseFee) external virtual {
         // Check that the address has the REPORTING_MANAGER role on the vault.
         uint256 mask = 32;
         require((IVault(_vault).roles(msg.sender) & mask) != 0, "!authorized");
@@ -257,10 +213,7 @@ contract CommonTrigger is Governance {
      * @param _strategy The address of the strategy to set the trigger for.
      * @param _trigger The address of the custom trigger contract.
      */
-    function setCustomAuctionTrigger(
-        address _strategy,
-        address _trigger
-    ) external virtual {
+    function setCustomAuctionTrigger(address _strategy, address _trigger) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         customAuctionTrigger[_strategy] = _trigger;
 
@@ -277,11 +230,7 @@ contract CommonTrigger is Governance {
      * @param _token The address of the token, or address(0) for global minimum.
      * @param _amount The minimum amount of tokens required to kick an auction.
      */
-    function setMinimumAmountToKick(
-        address _strategy,
-        address _token,
-        uint256 _amount
-    ) external virtual {
+    function setMinimumAmountToKick(address _strategy, address _token, uint256 _amount) external virtual {
         require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         minimumAmountToKick[_strategy][_token] = _amount;
 
@@ -301,9 +250,7 @@ contract CommonTrigger is Governance {
      * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function strategyReportTrigger(
-        address _strategy
-    ) external view virtual returns (bool, bytes memory) {
+    function strategyReportTrigger(address _strategy) external view virtual returns (bool, bytes memory) {
         address _trigger = _getCustomStrategyTrigger(_strategy);
 
         // If a custom trigger contract is set use that one.
@@ -335,9 +282,7 @@ contract CommonTrigger is Governance {
      * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function defaultStrategyReportTrigger(
-        address _strategy
-    ) public view virtual returns (bool, bytes memory) {
+    function defaultStrategyReportTrigger(address _strategy) public view virtual returns (bool, bytes memory) {
         // Cache the strategy instance.
         IStrategy strategy = IStrategy(_strategy);
 
@@ -350,24 +295,17 @@ contract CommonTrigger is Governance {
         // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = _getCustomStrategyBaseFee(
-                _strategy
-            );
+            uint256 customAcceptableBaseFee = _getCustomStrategyBaseFee(_strategy);
             // Use the custom base fee if set, otherwise use the default.
-            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
-                ? customAcceptableBaseFee
-                : acceptableBaseFee;
+            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0 ? customAcceptableBaseFee : acceptableBaseFee;
 
             // Don't report if the base fee is to high.
-            if (
-                IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
-            ) return (false, bytes("Base Fee"));
+            if (IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee) return (false, bytes("Base Fee"));
         }
 
         return (
             // Return true is the full profit unlock time has passed since the last report.
-            block.timestamp - strategy.lastReport() >
-                strategy.profitMaxUnlockTime(),
+            block.timestamp - strategy.lastReport() > strategy.profitMaxUnlockTime(),
             // Return the report function sig as the calldata.
             abi.encodeWithSelector(strategy.report.selector)
         );
@@ -384,16 +322,12 @@ contract CommonTrigger is Governance {
      * @return . Bool if the strategy should report to the vault.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function vaultReportTrigger(
-        address _vault,
-        address _strategy
-    ) external view virtual returns (bool, bytes memory) {
+    function vaultReportTrigger(address _vault, address _strategy) external view virtual returns (bool, bytes memory) {
         address _trigger = _getCustomVaultTrigger(_vault, _strategy);
 
         // If a custom trigger contract is set use that.
         if (_trigger != address(0)) {
-            return
-                ICustomVaultTrigger(_trigger).reportTrigger(_vault, _strategy);
+            return ICustomVaultTrigger(_trigger).reportTrigger(_vault, _strategy);
         }
 
         // return the default trigger.
@@ -421,10 +355,12 @@ contract CommonTrigger is Governance {
      * @return . Bool if the strategy should report to the vault.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function defaultVaultReportTrigger(
-        address _vault,
-        address _strategy
-    ) public view virtual returns (bool, bytes memory) {
+    function defaultVaultReportTrigger(address _vault, address _strategy)
+        public
+        view
+        virtual
+        returns (bool, bytes memory)
+    {
         // Cache the vault instance.
         IVault vault = IVault(_vault);
 
@@ -435,25 +371,19 @@ contract CommonTrigger is Governance {
         IVault.StrategyParams memory params = vault.strategies(_strategy);
 
         // Don't report if the strategy is not active or has no funds.
-        if (params.activation == 0 || params.current_debt == 0)
+        if (params.activation == 0 || params.current_debt == 0) {
             return (false, bytes("Not Active"));
+        }
 
         // Check if a `baseFeeProvider` is set.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = _getCustomVaultBaseFee(
-                _vault,
-                _strategy
-            );
+            uint256 customAcceptableBaseFee = _getCustomVaultBaseFee(_vault, _strategy);
             // Use the custom base fee if set, otherwise use the default.
-            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
-                ? customAcceptableBaseFee
-                : acceptableBaseFee;
+            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0 ? customAcceptableBaseFee : acceptableBaseFee;
 
             // Don't report if the base fee is to high.
-            if (
-                IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
-            ) return (false, bytes("Base Fee"));
+            if (IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee) return (false, bytes("Base Fee"));
         }
 
         return (
@@ -476,9 +406,7 @@ contract CommonTrigger is Governance {
      * @return . Bool if the strategy should be tended.
      * @return . Bytes with the calldata.
      */
-    function strategyTendTrigger(
-        address _strategy
-    ) external view virtual returns (bool, bytes memory) {
+    function strategyTendTrigger(address _strategy) external view virtual returns (bool, bytes memory) {
         // Return the status of the tend trigger.
         return IStrategy(_strategy).tendTrigger();
     }
@@ -526,18 +454,15 @@ contract CommonTrigger is Governance {
      * @return . Bool representing if the auction should be kicked.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function auctionTrigger(
-        address _strategy,
-        address _from
-    ) external view virtual returns (bool, bytes memory) {
+    function auctionTrigger(address _strategy, address _from) external view virtual returns (bool, bytes memory) {
         address _trigger = _getCustomAuctionTrigger(_strategy);
 
         // If a custom trigger contract is set use that one.
         if (_trigger != address(0)) {
             // Use try-catch to handle any reverts in the custom trigger
-            try
-                ICustomAuctionTrigger(_trigger).auctionTrigger(_strategy, _from)
-            returns (bool shouldKick, bytes memory data) {
+            try ICustomAuctionTrigger(_trigger).auctionTrigger(_strategy, _from) returns (
+                bool shouldKick, bytes memory data
+            ) {
                 return (shouldKick, data);
             } catch {} // If it fails, try the default trigger path
         }
@@ -560,25 +485,16 @@ contract CommonTrigger is Governance {
      * @return . Bool representing if the auction should be kicked.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function defaultAuctionTrigger(
-        address _strategy,
-        address _from
-    ) public view virtual returns (bool, bytes memory) {
+    function defaultAuctionTrigger(address _strategy, address _from) public view virtual returns (bool, bytes memory) {
         // Check if a `baseFeeProvider` is set and if base fee is acceptable.
         address _baseFeeProvider = baseFeeProvider;
         if (_baseFeeProvider != address(0)) {
-            uint256 customAcceptableBaseFee = _getCustomStrategyBaseFee(
-                _strategy
-            );
+            uint256 customAcceptableBaseFee = _getCustomStrategyBaseFee(_strategy);
             // Use the custom base fee if set, otherwise use the default.
-            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0
-                ? customAcceptableBaseFee
-                : acceptableBaseFee;
+            uint256 _acceptableBaseFee = customAcceptableBaseFee != 0 ? customAcceptableBaseFee : acceptableBaseFee;
 
             // Don't trigger if the base fee is too high.
-            if (
-                IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee
-            ) return (false, bytes("Base Fee"));
+            if (IBaseFee(_baseFeeProvider).basefee_global() > _acceptableBaseFee) return (false, bytes("Base Fee"));
         }
 
         // Check if minimum amount to kick is met
@@ -586,30 +502,18 @@ contract CommonTrigger is Governance {
         if (minimumAmount > 0) {
             uint256 balance = ERC20(_from).balanceOf(_strategy);
             if (balance > minimumAmount) {
-                return (
-                    true,
-                    abi.encodeCall(
-                        IAuctionSwapper(_strategy).kickAuction,
-                        (_from)
-                    )
-                );
+                return (true, abi.encodeCall(IAuctionSwapper(_strategy).kickAuction, (_from)));
             }
         }
 
         // Try to call auctionTrigger on the strategy itself
         // Use try-catch to handle strategies that don't implement it or revert
-        try IAuctionSwapper(_strategy).auctionTrigger(_from) returns (
-            bool shouldKick,
-            bytes memory data
-        ) {
+        try IAuctionSwapper(_strategy).auctionTrigger(_from) returns (bool shouldKick, bytes memory data) {
             return (shouldKick, data);
         } catch {
             // If the call fails (strategy doesn't implement it or reverts),
             // return false with a descriptive message
-            return (
-                false,
-                bytes("Strategy trigger not implemented or reverted")
-            );
+            return (false, bytes("Strategy trigger not implemented or reverted"));
         }
     }
 
@@ -620,19 +524,13 @@ contract CommonTrigger is Governance {
     /**
      * @dev Internal function to get custom strategy trigger with legacy fallback.
      */
-    function _getCustomStrategyTrigger(
-        address _strategy
-    ) internal view returns (address) {
+    function _getCustomStrategyTrigger(address _strategy) internal view returns (address) {
         address trigger = customStrategyTrigger[_strategy];
 
         // If not set locally, check legacy contract
         if (trigger == address(0)) {
-            bytes memory data = _getFromLegacy(
-                abi.encodeCall(
-                    CommonTrigger(LEGACY_REPORT_TRIGGER).customStrategyTrigger,
-                    (_strategy)
-                )
-            );
+            bytes memory data =
+                _getFromLegacy(abi.encodeCall(CommonTrigger(LEGACY_REPORT_TRIGGER).customStrategyTrigger, (_strategy)));
             if (data.length > 0) {
                 trigger = abi.decode(data, (address));
             }
@@ -644,19 +542,13 @@ contract CommonTrigger is Governance {
     /**
      * @dev Internal function to get custom strategy base fee with legacy fallback.
      */
-    function _getCustomStrategyBaseFee(
-        address _strategy
-    ) internal view returns (uint256) {
+    function _getCustomStrategyBaseFee(address _strategy) internal view returns (uint256) {
         uint256 baseFee = customStrategyBaseFee[_strategy];
 
         // If not set locally, check legacy contract
         if (baseFee == 0) {
-            bytes memory data = _getFromLegacy(
-                abi.encodeCall(
-                    CommonTrigger(LEGACY_REPORT_TRIGGER).customStrategyBaseFee,
-                    (_strategy)
-                )
-            );
+            bytes memory data =
+                _getFromLegacy(abi.encodeCall(CommonTrigger(LEGACY_REPORT_TRIGGER).customStrategyBaseFee, (_strategy)));
             if (data.length > 0) {
                 baseFee = abi.decode(data, (uint256));
             }
@@ -668,19 +560,13 @@ contract CommonTrigger is Governance {
     /**
      * @dev Internal function to get custom vault trigger with legacy fallback.
      */
-    function _getCustomVaultTrigger(
-        address _vault,
-        address _strategy
-    ) internal view returns (address) {
+    function _getCustomVaultTrigger(address _vault, address _strategy) internal view returns (address) {
         address trigger = customVaultTrigger[_vault][_strategy];
 
         // If not set locally, check legacy contract
         if (trigger == address(0)) {
             bytes memory data = _getFromLegacy(
-                abi.encodeCall(
-                    CommonTrigger(LEGACY_REPORT_TRIGGER).customVaultTrigger,
-                    (_vault, _strategy)
-                )
+                abi.encodeCall(CommonTrigger(LEGACY_REPORT_TRIGGER).customVaultTrigger, (_vault, _strategy))
             );
             if (data.length > 0) {
                 trigger = abi.decode(data, (address));
@@ -693,19 +579,13 @@ contract CommonTrigger is Governance {
     /**
      * @dev Internal function to get custom vault base fee with legacy fallback.
      */
-    function _getCustomVaultBaseFee(
-        address _vault,
-        address _strategy
-    ) internal view returns (uint256) {
+    function _getCustomVaultBaseFee(address _vault, address _strategy) internal view returns (uint256) {
         uint256 baseFee = customVaultBaseFee[_vault][_strategy];
 
         // If not set locally, check legacy contract
         if (baseFee == 0) {
             bytes memory data = _getFromLegacy(
-                abi.encodeCall(
-                    CommonTrigger(LEGACY_REPORT_TRIGGER).customVaultBaseFee,
-                    (_vault, _strategy)
-                )
+                abi.encodeCall(CommonTrigger(LEGACY_REPORT_TRIGGER).customVaultBaseFee, (_vault, _strategy))
             );
             if (data.length > 0) {
                 baseFee = abi.decode(data, (uint256));
@@ -715,12 +595,8 @@ contract CommonTrigger is Governance {
         return baseFee;
     }
 
-    function _getFromLegacy(
-        bytes memory _data
-    ) internal view returns (bytes memory) {
-        (bool success, bytes memory data) = LEGACY_REPORT_TRIGGER.staticcall(
-            _data
-        );
+    function _getFromLegacy(bytes memory _data) internal view returns (bytes memory) {
+        (bool success, bytes memory data) = LEGACY_REPORT_TRIGGER.staticcall(_data);
         if (success && data.length > 0) {
             return data;
         }
@@ -730,9 +606,7 @@ contract CommonTrigger is Governance {
     /**
      * @dev Internal function to get custom auction trigger - no legacy fallback since this is new.
      */
-    function _getCustomAuctionTrigger(
-        address _strategy
-    ) internal view returns (address) {
+    function _getCustomAuctionTrigger(address _strategy) internal view returns (address) {
         return customAuctionTrigger[_strategy];
     }
 
@@ -740,10 +614,7 @@ contract CommonTrigger is Governance {
      * @dev Internal function to get minimum amount to kick for a strategy-token pair.
      * First checks for specific token minimum, then falls back to global minimum.
      */
-    function _getMinimumAmountToKick(
-        address _strategy,
-        address _token
-    ) internal view returns (uint256) {
+    function _getMinimumAmountToKick(address _strategy, address _token) internal view returns (uint256) {
         // Check for specific token minimum
         uint256 specificMinimum = minimumAmountToKick[_strategy][_token];
         if (specificMinimum > 0) {
@@ -763,9 +634,7 @@ contract CommonTrigger is Governance {
      * @dev Throws if the caller is not current governance.
      * @param _baseFeeProvider The network's baseFeeProvider address.
      */
-    function setBaseFeeProvider(
-        address _baseFeeProvider
-    ) external virtual onlyGovernance {
+    function setBaseFeeProvider(address _baseFeeProvider) external virtual onlyGovernance {
         baseFeeProvider = _baseFeeProvider;
 
         emit NewBaseFeeProvider(_baseFeeProvider);
@@ -776,9 +645,7 @@ contract CommonTrigger is Governance {
      * @dev Throws if the caller is not current governance.
      * @param _newAcceptableBaseFee The acceptable network base fee.
      */
-    function setAcceptableBaseFee(
-        uint256 _newAcceptableBaseFee
-    ) external virtual onlyGovernance {
+    function setAcceptableBaseFee(uint256 _newAcceptableBaseFee) external virtual onlyGovernance {
         acceptableBaseFee = _newAcceptableBaseFee;
 
         emit UpdatedAcceptableBaseFee(_newAcceptableBaseFee);

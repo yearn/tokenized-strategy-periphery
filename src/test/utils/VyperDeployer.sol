@@ -14,10 +14,8 @@ interface _CheatCodes {
  * and deploys the corresponding Vyper contract, returning the address
  * that the bytecode was deployed to.
  */
-
 contract VyperDeployer {
-    address constant HEVM_ADDRESS =
-        address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
+    address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
 
     /// @notice Initializes cheat codes in order to use ffi to compile Vyper contracts
     _CheatCodes cheatCodes = _CheatCodes(HEVM_ADDRESS);
@@ -31,10 +29,7 @@ contract VyperDeployer {
      * For example, the file name for "Token.vy" is "Token".
      * @return deployedAddress The address that the contract was deployed to.
      */
-    function deployContract(
-        string memory path,
-        string memory fileName
-    ) public returns (address) {
+    function deployContract(string memory path, string memory fileName) public returns (address) {
         ///@notice create a list of strings with the commands necessary to compile Vyper contracts
         string[] memory cmds = new string[](2);
         cmds[0] = "vyper";
@@ -50,10 +45,7 @@ contract VyperDeployer {
         }
 
         ///@notice check that the deployment was successful
-        require(
-            deployedAddress != address(0),
-            "VyperDeployer could not deploy contract"
-        );
+        require(deployedAddress != address(0), "VyperDeployer could not deploy contract");
 
         ///@notice return the address that the contract was deployed to
         return deployedAddress;
@@ -68,11 +60,7 @@ contract VyperDeployer {
      * For example, the file name for "Token.vy" is "Token".
      * @return deployedAddress The address that the contract was deployed to.
      */
-    function deployContract(
-        string memory path,
-        string memory fileName,
-        bytes calldata args
-    ) public returns (address) {
+    function deployContract(string memory path, string memory fileName, bytes calldata args) public returns (address) {
         ///@notice create a list of strings with the commands necessary to compile Vyper contracts
         string[] memory cmds = new string[](2);
         cmds[0] = "vyper";
@@ -91,10 +79,7 @@ contract VyperDeployer {
         }
 
         ///@notice check that the deployment was successful
-        require(
-            deployedAddress != address(0),
-            "VyperDeployer could not deploy contract"
-        );
+        require(deployedAddress != address(0), "VyperDeployer could not deploy contract");
 
         ///@notice return the address that the contract was deployed to
         return deployedAddress;

@@ -6,10 +6,7 @@ import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface IOracle {
-    function aprAfterDebtChange(
-        address _strategy,
-        int256 _delta
-    ) external view returns (uint256);
+    function aprAfterDebtChange(address _strategy, int256 _delta) external view returns (uint256);
 }
 
 /**
@@ -38,8 +35,7 @@ contract AprOracle is Governance {
     uint256 internal constant MAX_BPS_EXTENDED = 1_000_000_000_000;
     uint256 internal constant SECONDS_PER_YEAR = 31_556_952;
 
-    address internal constant LEGACY_ORACLE =
-        0x27aD2fFc74F74Ed27e1C0A19F1858dD0963277aE;
+    address internal constant LEGACY_ORACLE = 0x27aD2fFc74F74Ed27e1C0A19F1858dD0963277aE;
 
     constructor(address _governance) Governance(_governance) {}
 
@@ -58,22 +54,15 @@ contract AprOracle is Governance {
      * @param _debtChange Positive or negative change in debt.
      * @return apr The expected APR it will be earning represented as 1e18.
      */
-    function getStrategyApr(
-        address _strategy,
-        int256 _debtChange
-    ) public view virtual returns (uint256 apr) {
+    function getStrategyApr(address _strategy, int256 _debtChange) public view virtual returns (uint256 apr) {
         // Get the oracle set for this specific strategy.
         address oracle = oracles[_strategy];
 
         // If not set, check the legacy oracle.
         if (oracle == address(0)) {
             // Do a low level call in case the legacy oracle is not deployed.
-            (bool success, bytes memory data) = LEGACY_ORACLE.staticcall(
-                abi.encodeWithSelector(
-                    AprOracle(LEGACY_ORACLE).oracles.selector,
-                    _strategy
-                )
-            );
+            (bool success, bytes memory data) =
+                LEGACY_ORACLE.staticcall(abi.encodeWithSelector(AprOracle(LEGACY_ORACLE).oracles.selector, _strategy));
             if (success && data.length > 0) {
                 oracle = abi.decode(data, (address));
             }
@@ -88,9 +77,7 @@ contract AprOracle is Governance {
                 return getWeightedAverageApr(_strategy, _debtChange);
             } catch {
                 // If the strategy is a v3 TokenizedStrategy, we can default to the expected apr.
-                try IStrategy(_strategy).fullProfitUnlockDate() returns (
-                    uint256
-                ) {
+                try IStrategy(_strategy).fullProfitUnlockDate() returns (uint256) {
                     return getExpectedApr(_strategy, _debtChange);
                 } catch {
                     // Else just return 0.
@@ -112,10 +99,7 @@ contract AprOracle is Governance {
      */
     function setOracle(address _strategy, address _oracle) external virtual {
         if (governance != msg.sender) {
-            require(
-                msg.sender == IStrategy(_strategy).management(),
-                "!authorized"
-            );
+            require(msg.sender == IStrategy(_strategy).management(), "!authorized");
         }
 
         oracles[_strategy] = _oracle;
@@ -131,9 +115,7 @@ contract AprOracle is Governance {
      * @param _vault The address of the vault or strategy.
      * @return apr The current apr expressed as 1e18.
      */
-    function getCurrentApr(
-        address _vault
-    ) external view virtual returns (uint256 apr) {
+    function getCurrentApr(address _vault) external view virtual returns (uint256 apr) {
         return getExpectedApr(_vault, 0);
     }
 
@@ -152,10 +134,7 @@ contract AprOracle is Governance {
      * @param _delta The positive or negative change in `totalAssets`.
      * @return apr The expected apr expressed as 1e18.
      */
-    function getExpectedApr(
-        address _vault,
-        int256 _delta
-    ) public view virtual returns (uint256 apr) {
+    function getExpectedApr(address _vault, int256 _delta) public view virtual returns (uint256 apr) {
         IVault vault = IVault(_vault);
 
         // Check if the full profit has already been unlocked.
@@ -169,15 +148,10 @@ contract AprOracle is Governance {
 
         // We need to get the amount of assets that are unlocking per second.
         // `profitUnlockingRate` is in shares so we convert it to assets.
-        uint256 assetUnlockingRate = vault.convertToAssets(
-            vault.profitUnlockingRate()
-        );
+        uint256 assetUnlockingRate = vault.convertToAssets(vault.profitUnlockingRate());
 
         // APR = assets unlocking per second * seconds per year / the total assets.
-        apr =
-            (1e18 * assetUnlockingRate * SECONDS_PER_YEAR) /
-            MAX_BPS_EXTENDED /
-            assets;
+        apr = (1e18 * assetUnlockingRate * SECONDS_PER_YEAR) / MAX_BPS_EXTENDED / assets;
     }
 
     /**
@@ -186,27 +160,19 @@ contract AprOracle is Governance {
      * @param _vault The address of the vault.
      * @return apr The weighted average apr expressed as 1e18.
      */
-    function getWeightedAverageApr(
-        address _vault,
-        int256 _delta
-    ) public view virtual returns (uint256) {
+    function getWeightedAverageApr(address _vault, int256 _delta) public view virtual returns (uint256) {
         address[] memory strategies = IVault(_vault).get_default_queue();
         uint256 totalAssets = IVault(_vault).totalAssets();
 
         uint256 totalApr = 0;
         for (uint256 i = 0; i < strategies.length; i++) {
-            uint256 debt = IVault(_vault)
-                .strategies(strategies[i])
-                .current_debt;
+            uint256 debt = IVault(_vault).strategies(strategies[i]).current_debt;
 
             if (debt == 0) continue;
 
             // Get a performance fee if the strategy has one.
-            (bool success, bytes memory fee) = strategies[i].staticcall(
-                abi.encodeWithSelector(
-                    IStrategy(strategies[i]).performanceFee.selector
-                )
-            );
+            (bool success, bytes memory fee) =
+                strategies[i].staticcall(abi.encodeWithSelector(IStrategy(strategies[i]).performanceFee.selector));
 
             uint256 performanceFee;
             if (success) {
@@ -217,11 +183,9 @@ contract AprOracle is Governance {
             int256 debtChange = (_delta * int256(debt)) / int256(totalAssets);
 
             // Add the weighted apr of the strategy to the total apr.
-            totalApr +=
-                (getStrategyApr(strategies[i], debtChange) *
-                    uint256(int256(debt) + debtChange) *
-                    (MAX_BPS - performanceFee)) /
-                MAX_BPS;
+            totalApr += (getStrategyApr(strategies[i], debtChange)
+                    * uint256(int256(debt) + debtChange)
+                    * (MAX_BPS - performanceFee)) / MAX_BPS;
         }
 
         // Divide by the total assets to get apr as 1e18.

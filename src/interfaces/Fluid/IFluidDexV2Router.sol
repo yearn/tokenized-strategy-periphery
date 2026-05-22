@@ -27,15 +27,10 @@ interface IFluidDexT1 {
         uint256 oracleMapping;
     }
 
-    function constantsView()
-        external
-        view
-        returns (ConstantViews memory constantsView_);
+    function constantsView() external view returns (ConstantViews memory constantsView_);
 
-    function swapIn(
-        bool swap0to1_,
-        uint256 amountIn_,
-        uint256 amountOutMin_,
-        address to_
-    ) external payable returns (uint256 amountOut_);
+    function swapIn(bool swap0to1_, uint256 amountIn_, uint256 amountOutMin_, address to_)
+        external
+        payable
+        returns (uint256 amountOut_);
 }

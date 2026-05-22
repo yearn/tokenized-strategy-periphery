@@ -34,29 +34,12 @@ interface ITokenizedStaker is IBaseHealthCheck {
 
     /* ========== EVENTS ========== */
 
-    event RewardTokenAdded(
-        address indexed rewardToken,
-        address indexed rewardsDistributor,
-        uint256 rewardsDuration
-    );
+    event RewardTokenAdded(address indexed rewardToken, address indexed rewardsDistributor, uint256 rewardsDuration);
     event RewardAdded(address indexed rewardToken, uint256 reward);
-    event RewardPaid(
-        address indexed user,
-        address indexed rewardToken,
-        uint256 reward
-    );
-    event RewardsDistributorUpdated(
-        address indexed rewardToken,
-        address indexed rewardsDistributor
-    );
-    event RewardsDurationUpdated(
-        address indexed rewardToken,
-        uint256 newDuration
-    );
-    event ClaimForRecipientUpdated(
-        address indexed staker,
-        address indexed recipient
-    );
+    event RewardPaid(address indexed user, address indexed rewardToken, uint256 reward);
+    event RewardsDistributorUpdated(address indexed rewardToken, address indexed rewardsDistributor);
+    event RewardsDurationUpdated(address indexed rewardToken, uint256 newDuration);
+    event ClaimForRecipientUpdated(address indexed staker, address indexed recipient);
     event NotifiedWithZeroSupply(address indexed rewardToken, uint256 reward);
     event Recovered(address token, uint256 amount);
 
@@ -78,44 +61,24 @@ interface ITokenizedStaker is IBaseHealthCheck {
 
     function getRewardTokens() external view returns (address[] memory);
 
-    function userRewardPerTokenPaid(
-        address _account,
-        address _rewardToken
-    ) external view returns (uint256);
+    function userRewardPerTokenPaid(address _account, address _rewardToken) external view returns (uint256);
 
-    function rewards(
-        address _account,
-        address _rewardToken
-    ) external view returns (uint256);
+    function rewards(address _account, address _rewardToken) external view returns (uint256);
 
     function claimForRecipient(address) external view returns (address);
 
     /* ========== FUNCTIONS ========== */
-    function lastTimeRewardApplicable(
-        address _rewardToken
-    ) external view returns (uint256);
+    function lastTimeRewardApplicable(address _rewardToken) external view returns (uint256);
 
-    function rewardPerToken(
-        address _rewardToken
-    ) external view returns (uint256);
+    function rewardPerToken(address _rewardToken) external view returns (uint256);
 
-    function earned(
-        address _account,
-        address _rewardToken
-    ) external view returns (uint256);
+    function earned(address _account, address _rewardToken) external view returns (uint256);
 
-    function earnedMulti(
-        address _account
-    ) external view returns (uint256[] memory);
+    function earnedMulti(address _account) external view returns (uint256[] memory);
 
-    function getRewardForDuration(
-        address _rewardToken
-    ) external view returns (uint256);
+    function getRewardForDuration(address _rewardToken) external view returns (uint256);
 
-    function notifyRewardAmount(
-        address _rewardToken,
-        uint256 _rewardAmount
-    ) external;
+    function notifyRewardAmount(address _rewardToken, uint256 _rewardAmount) external;
 
     function getReward() external;
 
@@ -123,29 +86,17 @@ interface ITokenizedStaker is IBaseHealthCheck {
 
     function exit() external;
 
-    function setRewardsDistributor(
-        address _rewardToken,
-        address _rewardsDistributor
-    ) external;
+    function setRewardsDistributor(address _rewardToken, address _rewardsDistributor) external;
 
-    function setRewardsDuration(
-        address _rewardToken,
-        uint256 _rewardsDuration
-    ) external;
+    function setRewardsDuration(address _rewardToken, uint256 _rewardsDuration) external;
 
     function setClaimFor(address _staker, address _recipient) external;
 
     function setClaimForSelf(address _recipient) external;
 
-    function rewardData(
-        address rewardToken
-    ) external view returns (Reward memory);
+    function rewardData(address rewardToken) external view returns (Reward memory);
 
-    function addReward(
-        address _rewardToken,
-        address _rewardsDistributor,
-        uint256 _rewardsDuration
-    ) external;
+    function addReward(address _rewardToken, address _rewardsDistributor, uint256 _rewardsDuration) external;
 
     function getOneReward(address _rewardToken) external;
 

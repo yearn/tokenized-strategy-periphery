@@ -96,12 +96,7 @@ interface IAuction {
      * @param _governance Address of the contract governance.
      * @param _startingPrice Starting price for each auction.
      */
-    function initialize(
-        address _want,
-        address _receiver,
-        address _governance,
-        uint256 _startingPrice
-    ) external;
+    function initialize(address _want, address _receiver, address _governance, uint256 _startingPrice) external;
 
     /*//////////////////////////////////////////////////////////////
                          VIEW METHODS
@@ -164,10 +159,7 @@ interface IAuction {
      * @param _amountToTake The amount of `from` to take in the auction.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(
-        address _from,
-        uint256 _amountToTake
-    ) external view returns (uint256);
+    function getAmountNeeded(address _from, uint256 _amountToTake) external view returns (uint256);
 
     /**
      * @notice Gets the amount of `want` needed to buy a specific amount of `from` at a specific timestamp.
@@ -176,11 +168,7 @@ interface IAuction {
      * @param _timestamp The specific timestamp for calculating the amount needed.
      * @return . The amount of `want` needed to fulfill the take amount.
      */
-    function getAmountNeeded(
-        address _from,
-        uint256 _amountToTake,
-        uint256 _timestamp
-    ) external view returns (uint256);
+    function getAmountNeeded(address _from, uint256 _amountToTake, uint256 _timestamp) external view returns (uint256);
 
     /**
      * @notice Gets the price of the auction at the current timestamp.
@@ -195,10 +183,7 @@ interface IAuction {
      * @param _timestamp The specific timestamp for calculating the price.
      * @return . The price of the auction.
      */
-    function price(
-        address _from,
-        uint256 _timestamp
-    ) external view returns (uint256);
+    function price(address _from, uint256 _timestamp) external view returns (uint256);
 
     /*//////////////////////////////////////////////////////////////
                             SETTERS
@@ -304,11 +289,7 @@ interface IAuction {
      * @param _receiver The address that will receive the fromToken.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
-    function take(
-        address _from,
-        uint256 _maxAmount,
-        address _receiver
-    ) external returns (uint256);
+    function take(address _from, uint256 _maxAmount, address _receiver) external returns (uint256);
 
     /**
      * @notice Take the token being sold in a live auction.
@@ -318,18 +299,10 @@ interface IAuction {
      * @param _data The data signify the callback should be used and sent with it.
      * @return _amountTaken The amount of fromToken taken in the auction.
      */
-    function take(
-        address _from,
-        uint256 _maxAmount,
-        address _receiver,
-        bytes calldata _data
-    ) external returns (uint256);
+    function take(address _from, uint256 _maxAmount, address _receiver, bytes calldata _data) external returns (uint256);
 
     /// @dev Validates a COW order signature.
-    function isValidSignature(
-        bytes32 _hash,
-        bytes calldata signature
-    ) external view returns (bytes4);
+    function isValidSignature(bytes32 _hash, bytes calldata signature) external view returns (bytes4);
 
     /**
      * @notice Forces a kick for the auction.

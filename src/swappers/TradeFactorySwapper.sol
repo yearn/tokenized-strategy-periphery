@@ -45,10 +45,7 @@ abstract contract TradeFactorySwapper {
     /**
      * @dev Add an array of tokens to sell to its corresponding `_to_.
      */
-    function _addTokens(
-        address[] memory _from,
-        address[] memory _to
-    ) internal virtual {
+    function _addTokens(address[] memory _from, address[] memory _to) internal virtual {
         for (uint256 i; i < _from.length; ++i) {
             _addToken(_from[i], _to[i]);
         }
@@ -71,19 +68,14 @@ abstract contract TradeFactorySwapper {
      * @dev Remove a specific `_tokenFrom` that was previously added to not be
      * sold through the Trade Factory any more.
      */
-    function _removeToken(
-        address _tokenFrom,
-        address _tokenTo
-    ) internal virtual {
+    function _removeToken(address _tokenFrom, address _tokenTo) internal virtual {
         address _tf = tradeFactory();
         address[] memory _rewardTokensLocal = rewardTokens();
         for (uint256 i; i < _rewardTokensLocal.length; ++i) {
             if (_rewardTokensLocal[i] == _tokenFrom) {
                 if (i != _rewardTokensLocal.length - 1) {
                     // if it isn't the last token, swap with the last one/
-                    _rewardTokensLocal[i] = _rewardTokensLocal[
-                        _rewardTokensLocal.length - 1
-                    ];
+                    _rewardTokensLocal[i] = _rewardTokensLocal[_rewardTokensLocal.length - 1];
                 }
 
                 if (_tf != address(0)) {
@@ -112,10 +104,7 @@ abstract contract TradeFactorySwapper {
      *   Then will add the new approvals for the new Trade Factory.
      *   Can pass in address(0) for `tradeFactory_` to remove all permissions.
      */
-    function _setTradeFactory(
-        address tradeFactory_,
-        address _tokenTo
-    ) internal virtual {
+    function _setTradeFactory(address tradeFactory_, address _tokenTo) internal virtual {
         address _tf = tradeFactory();
 
         // Remove any old Trade Factory

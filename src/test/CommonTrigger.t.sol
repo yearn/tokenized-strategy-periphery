@@ -28,17 +28,13 @@ contract CommonTriggerTest is Setup {
         customVaultTrigger = new MockCustomVaultTrigger();
         customAuctionTrigger = new MockCustomAuctionTrigger();
 
-        strategyWithAuctionTrigger = new MockStrategyWithAuctionTrigger(
-            address(asset)
-        );
+        strategyWithAuctionTrigger = new MockStrategyWithAuctionTrigger(address(asset));
         _setupStrategy(strategyWithAuctionTrigger);
     }
 
     function _setupStrategy(MockStrategyWithAuctionTrigger strategy) internal {
         IStrategy(address(strategy)).setKeeper(keeper);
-        IStrategy(address(strategy)).setPerformanceFeeRecipient(
-            performanceFeeRecipient
-        );
+        IStrategy(address(strategy)).setPerformanceFeeRecipient(performanceFeeRecipient);
         IStrategy(address(strategy)).setPendingManagement(management);
         vm.prank(management);
         IStrategy(address(strategy)).acceptManagement();
@@ -51,17 +47,8 @@ contract CommonTriggerTest is Setup {
         assertEq(commonTrigger.governance(), address(daddy));
         assertEq(commonTrigger.baseFeeProvider(), address(0));
         assertEq(commonTrigger.acceptableBaseFee(), 0);
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(0)
-        );
-        assertEq(
-            commonTrigger.customVaultTrigger(
-                address(vault),
-                address(mockStrategy)
-            ),
-            address(0)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(0));
+        assertEq(commonTrigger.customVaultTrigger(address(vault), address(mockStrategy)), address(0));
     }
 
     function test_addBaseFeeProvider(address _address) public {
@@ -81,10 +68,7 @@ contract CommonTriggerTest is Setup {
         assertEq(commonTrigger.baseFeeProvider(), baseFeeProvider);
     }
 
-    function test_addAcceptableBaseFee(
-        address _address,
-        uint256 _amount
-    ) public {
+    function test_addAcceptableBaseFee(address _address, uint256 _amount) public {
         vm.assume(_address != daddy);
         vm.assume(_amount != 0);
 
@@ -102,10 +86,7 @@ contract CommonTriggerTest is Setup {
         assertEq(commonTrigger.acceptableBaseFee(), _amount);
     }
 
-    function test_transferGovernance(
-        address _caller,
-        address _newOwner
-    ) public {
+    function test_transferGovernance(address _caller, address _newOwner) public {
         vm.assume(_caller != daddy);
         vm.assume(_newOwner != daddy && _newOwner != address(0));
 
@@ -132,87 +113,43 @@ contract CommonTriggerTest is Setup {
     function test_setCustomStrategyTrigger(address _address) public {
         vm.assume(_address != management);
 
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(0)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(0));
 
         vm.expectRevert("!authorized");
         vm.prank(_address);
-        commonTrigger.setCustomStrategyTrigger(
-            address(mockStrategy),
-            address(customStrategyTrigger)
-        );
+        commonTrigger.setCustomStrategyTrigger(address(mockStrategy), address(customStrategyTrigger));
 
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(0)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(0));
 
         vm.prank(management);
-        commonTrigger.setCustomStrategyTrigger(
-            address(mockStrategy),
-            address(customStrategyTrigger)
-        );
+        commonTrigger.setCustomStrategyTrigger(address(mockStrategy), address(customStrategyTrigger));
 
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(customStrategyTrigger)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(customStrategyTrigger));
     }
 
     function test_setCustomVaultTrigger() public {
         // Deploy a vault.
         vault = setUpVault();
 
-        assertEq(
-            commonTrigger.customVaultTrigger(
-                address(vault),
-                address(mockStrategy)
-            ),
-            address(0)
-        );
+        assertEq(commonTrigger.customVaultTrigger(address(vault), address(mockStrategy)), address(0));
 
         vm.expectRevert("!authorized");
         vm.prank(user);
-        commonTrigger.setCustomVaultTrigger(
-            address(vault),
-            address(mockStrategy),
-            address(customVaultTrigger)
-        );
+        commonTrigger.setCustomVaultTrigger(address(vault), address(mockStrategy), address(customVaultTrigger));
 
-        assertEq(
-            commonTrigger.customVaultTrigger(
-                address(vault),
-                address(mockStrategy)
-            ),
-            address(0)
-        );
+        assertEq(commonTrigger.customVaultTrigger(address(vault), address(mockStrategy)), address(0));
 
         // Give the user the reporting manager role.
         vm.prank(management);
         vault.set_role(user, Roles.REPORTING_MANAGER);
 
         vm.prank(user);
-        commonTrigger.setCustomVaultTrigger(
-            address(vault),
-            address(mockStrategy),
-            address(customVaultTrigger)
-        );
+        commonTrigger.setCustomVaultTrigger(address(vault), address(mockStrategy), address(customVaultTrigger));
 
-        assertEq(
-            commonTrigger.customVaultTrigger(
-                address(vault),
-                address(mockStrategy)
-            ),
-            address(customVaultTrigger)
-        );
+        assertEq(commonTrigger.customVaultTrigger(address(vault), address(mockStrategy)), address(customVaultTrigger));
     }
 
-    function test_setCustomStrategyBaseFee(
-        address _address,
-        uint256 _baseFee
-    ) public {
+    function test_setCustomStrategyBaseFee(address _address, uint256 _baseFee) public {
         vm.assume(_address != management);
         vm.assume(_baseFee != 0);
 
@@ -227,10 +164,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(management);
         commonTrigger.setCustomStrategyBaseFee(address(mockStrategy), _baseFee);
 
-        assertEq(
-            commonTrigger.customStrategyBaseFee(address(mockStrategy)),
-            _baseFee
-        );
+        assertEq(commonTrigger.customStrategyBaseFee(address(mockStrategy)), _baseFee);
     }
 
     function test_setCustomVaultBaseFee() public {
@@ -239,56 +173,28 @@ contract CommonTriggerTest is Setup {
         // Deploy a vault.
         vault = setUpVault();
 
-        assertEq(
-            commonTrigger.customVaultBaseFee(
-                address(vault),
-                address(mockStrategy)
-            ),
-            0
-        );
+        assertEq(commonTrigger.customVaultBaseFee(address(vault), address(mockStrategy)), 0);
 
         vm.expectRevert("!authorized");
         vm.prank(user);
-        commonTrigger.setCustomVaultBaseFee(
-            address(vault),
-            address(mockStrategy),
-            _baseFee
-        );
+        commonTrigger.setCustomVaultBaseFee(address(vault), address(mockStrategy), _baseFee);
 
-        assertEq(
-            commonTrigger.customVaultBaseFee(
-                address(vault),
-                address(mockStrategy)
-            ),
-            0
-        );
+        assertEq(commonTrigger.customVaultBaseFee(address(vault), address(mockStrategy)), 0);
 
         // Give the user the reporting manager role.
         vm.prank(management);
         vault.set_role(user, Roles.REPORTING_MANAGER);
 
         vm.prank(user);
-        commonTrigger.setCustomVaultBaseFee(
-            address(vault),
-            address(mockStrategy),
-            _baseFee
-        );
+        commonTrigger.setCustomVaultBaseFee(address(vault), address(mockStrategy), _baseFee);
 
-        assertEq(
-            commonTrigger.customVaultBaseFee(
-                address(vault),
-                address(mockStrategy)
-            ),
-            _baseFee
-        );
+        assertEq(commonTrigger.customVaultBaseFee(address(vault), address(mockStrategy)), _baseFee);
     }
 
     function test_defaultStrategyTrigger(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
-        bytes memory _calldata = abi.encodeWithSelector(
-            mockStrategy.report.selector
-        );
+        bytes memory _calldata = abi.encodeWithSelector(mockStrategy.report.selector);
 
         // Set up base fee provider.
         vm.prank(daddy);
@@ -303,25 +209,17 @@ contract CommonTriggerTest is Setup {
         // Test when nothing has happened. Should be false.
         bool response;
         bytes memory data;
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Zero Assets"));
 
         // Deposit into the strategy.
-        mintAndDepositIntoStrategy(
-            IStrategy(address(mockStrategy)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
 
         // Skip time for report
         skip(mockStrategy.profitMaxUnlockTime() + 1);
 
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
@@ -331,9 +229,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase / 2);
 
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Base Fee"));
 
@@ -341,9 +237,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
@@ -351,18 +245,14 @@ contract CommonTriggerTest is Setup {
         vm.prank(user);
         mockStrategy.redeem(_amount, user, user);
         //Should be false with total Assets = 0.
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Zero Assets"));
 
         // Deposit back in.
         depositIntoStrategy(IStrategy(address(mockStrategy)), user, _amount);
 
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
@@ -370,9 +260,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(management);
         mockStrategy.shutdownStrategy();
 
-        (response, data) = commonTrigger.strategyReportTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyReportTrigger(address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Shutdown"));
     }
@@ -383,10 +271,7 @@ contract CommonTriggerTest is Setup {
         // Deploy a vault.
         vault = setUpVault();
 
-        bytes memory _calldata = abi.encodeWithSelector(
-            vault.process_report.selector,
-            address(mockStrategy)
-        );
+        bytes memory _calldata = abi.encodeWithSelector(vault.process_report.selector, address(mockStrategy));
         bool response;
         bytes memory data;
 
@@ -401,28 +286,17 @@ contract CommonTriggerTest is Setup {
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
         // Test when nothing has happened. Should be false.
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Not Active"));
 
         // Setup strategy and give it debt through the vault.
-        addStrategyAndDebt(
-            vault,
-            IStrategy(address(mockStrategy)),
-            user,
-            _amount
-        );
+        addStrategyAndDebt(vault, IStrategy(address(mockStrategy)), user, _amount);
 
         // Skip time for report trigger
         skip(vault.profitMaxUnlockTime() + 1);
 
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
@@ -431,10 +305,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase / 2);
 
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Base Fee"));
 
@@ -443,65 +314,45 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
         // Withdraw funds
         addDebtToStrategy(vault, IStrategy(address(mockStrategy)), 0);
         //Should be false with currentDebt = 0.
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Not Active"));
 
         // Deposit back in.
         addDebtToStrategy(vault, IStrategy(address(mockStrategy)), _amount);
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, true);
         assertEq(data, _calldata);
 
         // Shutdown
         vm.prank(vaultManagement);
         vault.shutdown_vault();
-        (response, data) = commonTrigger.vaultReportTrigger(
-            address(vault),
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.vaultReportTrigger(address(vault), address(mockStrategy));
         assertEq(response, false);
         assertEq(data, bytes("Shutdown"));
     }
 
     function test_tendTrigger(bool _status) public {
-        bytes memory _calldata = abi.encodeWithSelector(
-            mockStrategy.tend.selector
-        );
+        bytes memory _calldata = abi.encodeWithSelector(mockStrategy.tend.selector);
 
         bool response;
         bytes memory data;
 
-        (response, data) = commonTrigger.strategyTendTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyTendTrigger(address(mockStrategy));
 
         assertEq(response, false);
         assertEq(data, _calldata);
 
-        address(mockStrategy).call(
-            abi.encodeWithSignature("setTendStatus(bool)", _status)
-        );
+        address(mockStrategy).call(abi.encodeWithSignature("setTendStatus(bool)", _status));
 
-        (response, data) = commonTrigger.strategyTendTrigger(
-            address(mockStrategy)
-        );
+        (response, data) = commonTrigger.strategyTendTrigger(address(mockStrategy));
 
         assertEq(response, _status);
         assertEq(data, _calldata);
@@ -512,41 +363,20 @@ contract CommonTriggerTest is Setup {
     //////////////////////////////////////////////////////////////*/
 
     function test_setCustomAuctionTrigger() public {
-        assertEq(
-            commonTrigger.customAuctionTrigger(
-                address(strategyWithAuctionTrigger)
-            ),
-            address(0)
-        );
+        assertEq(commonTrigger.customAuctionTrigger(address(strategyWithAuctionTrigger)), address(0));
 
         // Test unauthorized user
         vm.expectRevert("!authorized");
         vm.prank(user);
-        commonTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(customAuctionTrigger)
-        );
+        commonTrigger.setCustomAuctionTrigger(address(strategyWithAuctionTrigger), address(customAuctionTrigger));
 
-        assertEq(
-            commonTrigger.customAuctionTrigger(
-                address(strategyWithAuctionTrigger)
-            ),
-            address(0)
-        );
+        assertEq(commonTrigger.customAuctionTrigger(address(strategyWithAuctionTrigger)), address(0));
 
         // Test authorized management
         vm.prank(management);
-        commonTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(customAuctionTrigger)
-        );
+        commonTrigger.setCustomAuctionTrigger(address(strategyWithAuctionTrigger), address(customAuctionTrigger));
 
-        assertEq(
-            commonTrigger.customAuctionTrigger(
-                address(strategyWithAuctionTrigger)
-            ),
-            address(customAuctionTrigger)
-        );
+        assertEq(commonTrigger.customAuctionTrigger(address(strategyWithAuctionTrigger)), address(customAuctionTrigger));
     }
 
     function test_auctionTriggerWithStrategyImplementation() public {
@@ -555,24 +385,16 @@ contract CommonTriggerTest is Setup {
         strategyWithAuctionTrigger.setReturnCalldata(true);
 
         // Call auctionTrigger
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeWithSignature("kickAuction(address)", fromToken)
-        );
+        assertEq(data, abi.encodeWithSignature("kickAuction(address)", fromToken));
 
         // Set auction ready to false
         strategyWithAuctionTrigger.setAuctionReady(false);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertFalse(shouldKick);
         assertEq(data, bytes("Not Ready"));
@@ -581,16 +403,11 @@ contract CommonTriggerTest is Setup {
     function test_auctionTriggerWithCustomTrigger() public {
         // Set custom trigger
         vm.prank(management);
-        commonTrigger.setCustomAuctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(customAuctionTrigger)
-        );
+        commonTrigger.setCustomAuctionTrigger(address(strategyWithAuctionTrigger), address(customAuctionTrigger));
 
         // Custom trigger initially returns false
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertFalse(shouldKick);
         assertEq(data, bytes("Custom Not Ready"));
@@ -598,10 +415,7 @@ contract CommonTriggerTest is Setup {
         // Enable the custom trigger
         customAuctionTrigger.setShouldKick(true);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertTrue(shouldKick);
         assertEq(data, bytes("Custom Kick"));
@@ -620,10 +434,8 @@ contract CommonTriggerTest is Setup {
         // Strategy is ready but base fee is too high
         strategyWithAuctionTrigger.setAuctionReady(true);
 
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertFalse(shouldKick);
         assertEq(data, bytes("Base Fee"));
@@ -632,10 +444,7 @@ contract CommonTriggerTest is Setup {
         vm.prank(daddy);
         commonTrigger.setAcceptableBaseFee(currentBase * 2);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertTrue(shouldKick);
     }
@@ -654,36 +463,25 @@ contract CommonTriggerTest is Setup {
         // Strategy is ready but base fee is too high
         strategyWithAuctionTrigger.setAuctionReady(true);
 
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertFalse(shouldKick);
         assertEq(data, bytes("Base Fee"));
 
         // Set custom base fee for this specific strategy
         vm.prank(management);
-        commonTrigger.setCustomStrategyBaseFee(
-            address(strategyWithAuctionTrigger),
-            currentBase * 2
-        );
+        commonTrigger.setCustomStrategyBaseFee(address(strategyWithAuctionTrigger), currentBase * 2);
 
         // Now it should work with the custom base fee
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            fromToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertTrue(shouldKick);
     }
 
     function test_auctionTriggerNoImplementation() public {
         // Test with a strategy that doesn't implement auctionTrigger
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(mockStrategy),
-            fromToken
-        );
+        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(address(mockStrategy), fromToken);
 
         assertFalse(shouldKick);
         assertEq(data, bytes("Strategy trigger not implemented or reverted"));
@@ -694,69 +492,33 @@ contract CommonTriggerTest is Setup {
         strategyWithAuctionTrigger.setAuctionReady(true);
         strategyWithAuctionTrigger.setReturnCalldata(true);
 
-        (bool shouldKick, bytes memory data) = commonTrigger
-            .defaultAuctionTrigger(
-                address(strategyWithAuctionTrigger),
-                fromToken
-            );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.defaultAuctionTrigger(address(strategyWithAuctionTrigger), fromToken);
 
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeWithSignature("kickAuction(address)", fromToken)
-        );
+        assertEq(data, abi.encodeWithSignature("kickAuction(address)", fromToken));
     }
 
     function test_setMinimumAmountToKick() public {
         // Test unauthorized user cannot set minimum
         vm.expectRevert("!authorized");
         vm.prank(user);
-        commonTrigger.setMinimumAmountToKick(
-            address(strategyWithAuctionTrigger),
-            fromToken,
-            1000e6
-        );
+        commonTrigger.setMinimumAmountToKick(address(strategyWithAuctionTrigger), fromToken, 1000e6);
 
         // Check minimum is initially 0
-        assertEq(
-            commonTrigger.minimumAmountToKick(
-                address(strategyWithAuctionTrigger),
-                fromToken
-            ),
-            0
-        );
+        assertEq(commonTrigger.minimumAmountToKick(address(strategyWithAuctionTrigger), fromToken), 0);
 
         // Test authorized management can set minimum
         vm.prank(management);
-        commonTrigger.setMinimumAmountToKick(
-            address(strategyWithAuctionTrigger),
-            fromToken,
-            1000e6
-        );
+        commonTrigger.setMinimumAmountToKick(address(strategyWithAuctionTrigger), fromToken, 1000e6);
 
-        assertEq(
-            commonTrigger.minimumAmountToKick(
-                address(strategyWithAuctionTrigger),
-                fromToken
-            ),
-            1000e6
-        );
+        assertEq(commonTrigger.minimumAmountToKick(address(strategyWithAuctionTrigger), fromToken), 1000e6);
 
         // Test setting global minimum (address(0))
         vm.prank(management);
-        commonTrigger.setMinimumAmountToKick(
-            address(strategyWithAuctionTrigger),
-            address(0),
-            500e6
-        );
+        commonTrigger.setMinimumAmountToKick(address(strategyWithAuctionTrigger), address(0), 500e6);
 
-        assertEq(
-            commonTrigger.minimumAmountToKick(
-                address(strategyWithAuctionTrigger),
-                address(0)
-            ),
-            500e6
-        );
+        assertEq(commonTrigger.minimumAmountToKick(address(strategyWithAuctionTrigger), address(0)), 500e6);
     }
 
     function test_auctionTriggerWithMinimumAmount() public {
@@ -775,55 +537,30 @@ contract CommonTriggerTest is Setup {
         strategyWithAuctionTrigger.setReturnCalldata(false);
 
         // Give the strategy balance > minimum amount
-        deal(
-            address(asset),
-            address(strategyWithAuctionTrigger),
-            minimumAmount + 1
-        );
+        deal(address(asset), address(strategyWithAuctionTrigger), minimumAmount + 1);
 
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(asset)
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), address(asset));
 
         // Should return true with kickAuction calldata since balance > minimum
         assertTrue(shouldKick);
         assertEq(
-            data,
-            abi.encodeCall(
-                IAuctionSwapper(address(strategyWithAuctionTrigger))
-                    .kickAuction,
-                (address(asset))
-            )
+            data, abi.encodeCall(IAuctionSwapper(address(strategyWithAuctionTrigger)).kickAuction, (address(asset)))
         );
 
         // Now test with balance exactly equal to minimum (should not trigger)
-        deal(
-            address(asset),
-            address(strategyWithAuctionTrigger),
-            minimumAmount
-        );
+        deal(address(asset), address(strategyWithAuctionTrigger), minimumAmount);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(asset)
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), address(asset));
 
         // Should return false since balance is not > minimum
         assertFalse(shouldKick);
         assertEq(data, bytes("Not Ready"));
 
         // Test with balance less than minimum
-        deal(
-            address(asset),
-            address(strategyWithAuctionTrigger),
-            minimumAmount - 1
-        );
+        deal(address(asset), address(strategyWithAuctionTrigger), minimumAmount - 1);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(asset)
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), address(asset));
 
         // Should return false
         assertFalse(shouldKick);
@@ -833,28 +570,18 @@ contract CommonTriggerTest is Setup {
         strategyWithAuctionTrigger.setAuctionReady(true);
         strategyWithAuctionTrigger.setReturnCalldata(true);
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            address(asset)
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), address(asset));
 
         // Should follow normal strategy trigger since balance <= minimum
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeWithSignature("kickAuction(address)", address(asset))
-        );
+        assertEq(data, abi.encodeWithSignature("kickAuction(address)", address(asset)));
     }
 
     function test_globalMinimumFallback() public {
         // Set a global minimum (address(0))
         uint256 globalMinimum = 100e6;
         vm.prank(management);
-        commonTrigger.setMinimumAmountToKick(
-            address(strategyWithAuctionTrigger),
-            address(0),
-            globalMinimum
-        );
+        commonTrigger.setMinimumAmountToKick(address(strategyWithAuctionTrigger), address(0), globalMinimum);
 
         // Strategy is ready (but this will be overridden if balance > minimum)
         strategyWithAuctionTrigger.setAuctionReady(true);
@@ -866,103 +593,59 @@ contract CommonTriggerTest is Setup {
         // Mock the token as a contract with balance equal to global minimum
         vm.mockCall(
             otherToken,
-            abi.encodeWithSelector(
-                ERC20.balanceOf.selector,
-                address(strategyWithAuctionTrigger)
-            ),
+            abi.encodeWithSelector(ERC20.balanceOf.selector, address(strategyWithAuctionTrigger)),
             abi.encode(globalMinimum)
         );
 
         // Should use global minimum and since balance is not > minimum, goes through normal flow
-        (bool shouldKick, bytes memory data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            otherToken
-        );
+        (bool shouldKick, bytes memory data) =
+            commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), otherToken);
 
         // Should go through normal flow since balance <= minimum, strategy returns true
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeWithSignature("kickAuction(address)", otherToken)
-        );
+        assertEq(data, abi.encodeWithSignature("kickAuction(address)", otherToken));
 
         // Give strategy tokens more than global minimum
         vm.mockCall(
             otherToken,
-            abi.encodeWithSelector(
-                ERC20.balanceOf.selector,
-                address(strategyWithAuctionTrigger)
-            ),
+            abi.encodeWithSelector(ERC20.balanceOf.selector, address(strategyWithAuctionTrigger)),
             abi.encode(globalMinimum + 1)
         );
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            otherToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), otherToken);
 
         // Should return true with kickAuction since balance > minimum
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeCall(
-                IAuctionSwapper(address(strategyWithAuctionTrigger))
-                    .kickAuction,
-                (otherToken)
-            )
-        );
+        assertEq(data, abi.encodeCall(IAuctionSwapper(address(strategyWithAuctionTrigger)).kickAuction, (otherToken)));
 
         // Now set a specific minimum for this token that overrides global
         uint256 specificMinimum = 200e6;
         vm.prank(management);
-        commonTrigger.setMinimumAmountToKick(
-            address(strategyWithAuctionTrigger),
-            otherToken,
-            specificMinimum
-        );
+        commonTrigger.setMinimumAmountToKick(address(strategyWithAuctionTrigger), otherToken, specificMinimum);
 
         // With balance = globalMinimum + 1 < specificMinimum, should go through normal flow
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            otherToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), otherToken);
 
         // Since balance (globalMinimum + 1) < specificMinimum, should use normal strategy trigger
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeWithSignature("kickAuction(address)", otherToken)
-        );
+        assertEq(data, abi.encodeWithSignature("kickAuction(address)", otherToken));
 
         // Update balance to be > specific minimum
         vm.mockCall(
             otherToken,
-            abi.encodeWithSelector(
-                ERC20.balanceOf.selector,
-                address(strategyWithAuctionTrigger)
-            ),
+            abi.encodeWithSelector(ERC20.balanceOf.selector, address(strategyWithAuctionTrigger)),
             abi.encode(specificMinimum + 1)
         );
 
-        (shouldKick, data) = commonTrigger.auctionTrigger(
-            address(strategyWithAuctionTrigger),
-            otherToken
-        );
+        (shouldKick, data) = commonTrigger.auctionTrigger(address(strategyWithAuctionTrigger), otherToken);
 
         // Should return true with kickAuction since balance > specific minimum
         assertTrue(shouldKick);
-        assertEq(
-            data,
-            abi.encodeCall(
-                IAuctionSwapper(address(strategyWithAuctionTrigger))
-                    .kickAuction,
-                (otherToken)
-            )
-        );
+        assertEq(data, abi.encodeCall(IAuctionSwapper(address(strategyWithAuctionTrigger)).kickAuction, (otherToken)));
     }
 
     /*//////////////////////////////////////////////////////////////
-                    LEGACY FALLBACK TESTS  
+                    LEGACY FALLBACK TESTS
     //////////////////////////////////////////////////////////////*/
 
     function test_legacyFallbackForCustomTriggers() public {
@@ -972,22 +655,13 @@ contract CommonTriggerTest is Setup {
 
         // The legacy fallback will check the LEGACY_REPORT_TRIGGER address
         // if local storage returns address(0)
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(0)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(0));
 
         // When LEGACY_REPORT_TRIGGER is set and has data, it would return that
         // For now, this test confirms the local storage works correctly
         vm.prank(management);
-        commonTrigger.setCustomStrategyTrigger(
-            address(mockStrategy),
-            address(customStrategyTrigger)
-        );
+        commonTrigger.setCustomStrategyTrigger(address(mockStrategy), address(customStrategyTrigger));
 
-        assertEq(
-            commonTrigger.customStrategyTrigger(address(mockStrategy)),
-            address(customStrategyTrigger)
-        );
+        assertEq(commonTrigger.customStrategyTrigger(address(mockStrategy)), address(customStrategyTrigger));
     }
 }

@@ -17,11 +17,7 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
         hooksImpl = address(new MockHooksUpgradeable());
 
         // Deploy proxy and initialize
-        address proxy = deployUpgradeableStrategy(
-            hooksImpl,
-            address(asset),
-            "Hooked"
-        );
+        address proxy = deployUpgradeableStrategy(hooksImpl, address(asset), "Hooked");
 
         mockStrategy = IStrategy(proxy);
         vm.prank(management);
@@ -248,10 +244,8 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
         // Store current state
         uint256 totalAssets = mockStrategy.totalAssets();
         uint256 userBalance = mockStrategy.balanceOf(user);
-        bool doHealthCheck = MockHooksUpgradeable(address(mockStrategy))
-            .doHealthCheck();
-        uint256 profitLimit = MockHooksUpgradeable(address(mockStrategy))
-            .profitLimitRatio();
+        bool doHealthCheck = MockHooksUpgradeable(address(mockStrategy)).doHealthCheck();
+        uint256 profitLimit = MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio();
 
         // Deploy new hooks implementation
         MockHooksUpgradeable newImpl = new MockHooksUpgradeable();
@@ -262,14 +256,8 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
         // Verify state preserved
         assertEq(mockStrategy.totalAssets(), totalAssets);
         assertEq(mockStrategy.balanceOf(user), userBalance);
-        assertEq(
-            MockHooksUpgradeable(address(mockStrategy)).doHealthCheck(),
-            doHealthCheck
-        );
-        assertEq(
-            MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio(),
-            profitLimit
-        );
+        assertEq(MockHooksUpgradeable(address(mockStrategy)).doHealthCheck(), doHealthCheck);
+        assertEq(MockHooksUpgradeable(address(mockStrategy)).profitLimitRatio(), profitLimit);
 
         // Verify hooks work after upgrade
         vm.expectEmit(true, true, true, true, address(mockStrategy));
@@ -289,11 +277,7 @@ contract BaseHooksUpgradeableTest is UpgradeableSetup, HookEvents {
 
         for (uint256 i = 20; i <= 25; i++) {
             bytes32 slot = readStorageSlot(address(mockStrategy), i);
-            assertEq(
-                slot,
-                bytes32(0),
-                "Hooks should not use additional storage"
-            );
+            assertEq(slot, bytes32(0), "Hooks should not use additional storage");
         }
     }
 }

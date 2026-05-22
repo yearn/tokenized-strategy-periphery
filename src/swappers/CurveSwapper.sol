@@ -33,8 +33,7 @@ contract CurveSwapper is BaseSwapper {
         address[5] pools;
     }
 
-    mapping(address => mapping(address => CurveRouteParams))
-        internal _curveRoutes;
+    mapping(address => mapping(address => CurveRouteParams)) internal _curveRoutes;
 
     /**
      * @dev Set the Curve route for a token pair.
@@ -52,11 +51,7 @@ contract CurveSwapper is BaseSwapper {
         address[5] memory _pools
     ) internal virtual {
         require(_route[0] == _from, "!route");
-        _curveRoutes[_from][_to] = CurveRouteParams(
-            _route,
-            _swapParams,
-            _pools
-        );
+        _curveRoutes[_from][_to] = CurveRouteParams(_route, _swapParams, _pools);
     }
 
     /**
@@ -73,25 +68,18 @@ contract CurveSwapper is BaseSwapper {
      * @param _minAmountOut The min of `_to` to get out.
      * @return _amountOut The actual amount of `_to` that was swapped to.
      */
-    function _curveSwapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) internal virtual returns (uint256 _amountOut) {
+    function _curveSwapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         if (_amountIn != 0 && _amountIn >= minAmountToSell) {
             _checkAllowance(curveRouter, _from, _amountIn);
 
             CurveRouteParams storage params = _curveRoutes[_from][_to];
 
-            _amountOut = ICurveRouter(curveRouter).exchange(
-                params.route,
-                params.swapParams,
-                _amountIn,
-                _minAmountOut,
-                params.pools,
-                address(this)
-            );
+            _amountOut = ICurveRouter(curveRouter)
+                .exchange(params.route, params.swapParams, _amountIn, _minAmountOut, params.pools, address(this));
         }
     }
 
@@ -103,11 +91,7 @@ contract CurveSwapper is BaseSwapper {
      * @param _token The ERC-20 token that will be getting spent.
      * @param _amount The amount of `_token` to be spent.
      */
-    function _checkAllowance(
-        address _contract,
-        address _token,
-        uint256 _amount
-    ) internal virtual {
+    function _checkAllowance(address _contract, address _token, uint256 _amount) internal virtual {
         if (ERC20(_token).allowance(address(this), _contract) < _amount) {
             ERC20(_token).forceApprove(_contract, 0);
             ERC20(_token).forceApprove(_contract, _amount);

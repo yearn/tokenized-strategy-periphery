@@ -13,12 +13,10 @@ contract CurveSwapperTest is Setup {
     ERC20 public dai;
 
     // Curve tricrypto2 pool: USDT(0), WBTC(1), WETH(2)
-    address public constant TRICRYPTO2 =
-        0xD51a44d3FaE010294C616388b506AcdA1bfAAE46;
+    address public constant TRICRYPTO2 = 0xD51a44d3FaE010294C616388b506AcdA1bfAAE46;
 
     // Curve 3pool: DAI(0), USDC(1), USDT(2)
-    address public constant THREE_POOL =
-        0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
+    address public constant THREE_POOL = 0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7;
 
     uint256 public minWethAmount = 1e10;
     uint256 public maxWethAmount = 1e20;
@@ -53,12 +51,7 @@ contract CurveSwapperTest is Setup {
         assertEq(dai.balanceOf(address(curveSwapper)), 0);
         assertEq(usdt.balanceOf(address(curveSwapper)), 0);
 
-        uint256 amountOut = curveSwapper.swapFrom(
-            address(weth),
-            address(dai),
-            amount,
-            0
-        );
+        uint256 amountOut = curveSwapper.swapFrom(address(weth), address(dai), amount, 0);
 
         assertEq(weth.balanceOf(address(curveSwapper)), 0);
         // No intermediate USDT should remain
@@ -76,12 +69,7 @@ contract CurveSwapperTest is Setup {
         assertEq(weth.balanceOf(address(curveSwapper)), 0);
         assertEq(usdt.balanceOf(address(curveSwapper)), 0);
 
-        uint256 amountOut = curveSwapper.swapFrom(
-            address(dai),
-            address(weth),
-            amount,
-            0
-        );
+        uint256 amountOut = curveSwapper.swapFrom(address(dai), address(weth), amount, 0);
 
         assertEq(dai.balanceOf(address(curveSwapper)), 0);
         // No intermediate USDT should remain
@@ -139,12 +127,7 @@ contract CurveSwapperTest is Setup {
     }
 
     function test_zeroAmount_noSwap() public {
-        uint256 amountOut = curveSwapper.swapFrom(
-            address(weth),
-            address(dai),
-            0,
-            0
-        );
+        uint256 amountOut = curveSwapper.swapFrom(address(weth), address(dai), 0, 0);
 
         assertEq(amountOut, 0);
     }
@@ -157,12 +140,7 @@ contract CurveSwapperTest is Setup {
 
         airdrop(weth, address(curveSwapper), amount);
 
-        uint256 amountOut = curveSwapper.swapFrom(
-            address(weth),
-            address(dai),
-            amount,
-            0
-        );
+        uint256 amountOut = curveSwapper.swapFrom(address(weth), address(dai), amount, 0);
 
         assertEq(amountOut, 0);
         assertEq(weth.balanceOf(address(curveSwapper)), amount);
@@ -176,13 +154,7 @@ contract CurveSwapperTest is Setup {
         address[5] memory pools;
 
         vm.expectRevert("!route");
-        curveSwapper.setCurveRoute(
-            address(dai),
-            address(weth),
-            route,
-            swapParams,
-            pools
-        );
+        curveSwapper.setCurveRoute(address(dai), address(weth), route, swapParams, pools);
     }
 
     // -----------------------------------------------------------------------
@@ -206,13 +178,7 @@ contract CurveSwapperTest is Setup {
 
         address[5] memory pools;
 
-        curveSwapper.setCurveRoute(
-            address(weth),
-            address(dai),
-            route,
-            swapParams,
-            pools
-        );
+        curveSwapper.setCurveRoute(address(weth), address(dai), route, swapParams, pools);
     }
 
     function _setRouteDaiToWeth() internal {
@@ -232,12 +198,6 @@ contract CurveSwapperTest is Setup {
 
         address[5] memory pools;
 
-        curveSwapper.setCurveRoute(
-            address(dai),
-            address(weth),
-            route,
-            swapParams,
-            pools
-        );
+        curveSwapper.setCurveRoute(address(dai), address(weth), route, swapParams, pools);
     }
 }

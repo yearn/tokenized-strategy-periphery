@@ -11,11 +11,7 @@ contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
 
     function _freeFunds(uint256) internal override {}
 
-    function _harvestAndReport()
-        internal
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
         _totalAssets = asset.balanceOf(address(this));
     }
 
@@ -31,20 +27,11 @@ contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
         base = _base;
     }
 
-    function setStable(
-        address _token0,
-        address _token1,
-        bool _stable
-    ) external {
+    function setStable(address _token0, address _token1, bool _stable) external {
         _setStable(_token0, _token1, _stable);
     }
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external {
         _swapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }
@@ -59,12 +46,7 @@ interface IMockSolidlySwapper is IStrategy, ISolidlySwapper {
 
     function setBase(address _base) external;
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external;
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external;
 
     function setStable(address _token0, address _token1, bool _stable) external;
 }

@@ -6,7 +6,6 @@ import {AuctionRegistry} from "../src/Auctions/AuctionRegistry.sol";
 
 // Deploy the AuctionRegistry contract with known factory addresses
 contract DeployAuctionRegistry is BaseScript {
-
     function run() external {
         vm.startBroadcast();
 
@@ -30,8 +29,7 @@ contract DeployAuctionRegistry is BaseScript {
 
         // Get the bytecode with constructor arguments
         bytes memory bytecode = abi.encodePacked(
-            vm.getCode("AuctionRegistry.sol:AuctionRegistry"),
-            abi.encode(initGov, knownFactories, versions)
+            vm.getCode("AuctionRegistry.sol:AuctionRegistry"), abi.encode(initGov, knownFactories, versions)
         );
 
         // Use a consistent salt for deterministic deployment
@@ -47,5 +45,4 @@ contract DeployAuctionRegistry is BaseScript {
 
         vm.stopBroadcast();
     }
-
 }

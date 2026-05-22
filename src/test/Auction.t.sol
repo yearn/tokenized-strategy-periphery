@@ -17,13 +17,7 @@ contract AuctionTest is Setup, ITaker {
 
     event AuctionKicked(address indexed from, uint256 available);
 
-    event Callback(
-        address indexed from,
-        address _sender,
-        uint256 _amountTaken,
-        uint256 _amountNeeded,
-        bytes _data
-    );
+    event Callback(address indexed from, address _sender, uint256 _amountTaken, uint256 _amountNeeded, bytes _data);
 
     Auction public auction;
     AuctionFactory public auctionFactory;
@@ -53,10 +47,7 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.receiver(), address(this));
         assertEq(auction.governance(), address(this));
         assertEq(auction.auctionLength(), 1 days);
-        assertEq(
-            auction.startingPrice(),
-            auctionFactory.DEFAULT_STARTING_PRICE()
-        );
+        assertEq(auction.startingPrice(), auctionFactory.DEFAULT_STARTING_PRICE());
     }
 
     function test_enableAuction() public {
@@ -79,8 +70,7 @@ contract AuctionTest is Setup, ITaker {
         assertEq(auction.price(from), 0);
         assertEq(auction.receiver(), address(this));
 
-        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
@@ -107,8 +97,7 @@ contract AuctionTest is Setup, ITaker {
 
         assertEq(auction.getAllEnabledAuctions().length, 1);
 
-        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e12);
@@ -145,8 +134,7 @@ contract AuctionTest is Setup, ITaker {
         auction.enable(from);
 
         assertEq(auction.kickable(from), 0);
-        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, 1e10);
@@ -156,7 +144,7 @@ contract AuctionTest is Setup, ITaker {
         airdrop(ERC20(from), address(auction), _amount);
 
         assertEq(auction.kickable(from), _amount);
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
         assertEq(_initialAvailable, 0);
         assertEq(auction.available(from), 0);
@@ -164,36 +152,22 @@ contract AuctionTest is Setup, ITaker {
         uint256 available = auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), _amount);
-        uint256 startingPrice = ((auction.startingPrice() *
-            (WAD / wantScaler)) * 1e18) /
-            _amount /
-            fromScaler;
+        uint256 startingPrice = ((auction.startingPrice() * (WAD / wantScaler)) * 1e18) / _amount / fromScaler;
         assertEq(auction.price(from), startingPrice);
         assertApproxEqRel(
             auction.getAmountNeeded(from, _amount),
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler,
+            (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler,
             0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auction.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
-        uint256 expectedAmount = auction.getAmountNeeded(
-            from,
-            _amount,
-            block.timestamp + 100
-        );
-        assertLt(
-            expectedAmount,
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler
-        );
+        uint256 expectedAmount = auction.getAmountNeeded(from, _amount, block.timestamp + 100);
+        assertLt(expectedAmount, (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler);
 
         skip(100);
 
@@ -220,9 +194,7 @@ contract AuctionTest is Setup, ITaker {
         address from = tokenAddrs["WBTC"];
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
-        auction.setStartingPrice(
-            (_amount * 200_000) / (10 ** ERC20(from).decimals())
-        );
+        auction.setStartingPrice((_amount * 200_000) / (10 ** ERC20(from).decimals()));
         auction.setMinimumPrice(100_000 * 1e18);
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
@@ -268,13 +240,7 @@ contract AuctionTest is Setup, ITaker {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         address from = tokenAddrs["WBTC"];
-        auction = Auction(
-            auctionFactory.createNewAuction(
-                address(asset),
-                address(this),
-                daddy
-            )
-        );
+        auction = Auction(auctionFactory.createNewAuction(address(asset), address(this), daddy));
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
@@ -294,7 +260,7 @@ contract AuctionTest is Setup, ITaker {
         auction.forceKick(from);
 
         assertTrue(auction.isActive(from));
-        (uint128 _kicked, , uint128 _initialAvailable) = auction.auctions(from);
+        (uint128 _kicked,, uint128 _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), _amount);
@@ -314,9 +280,7 @@ contract AuctionTest is Setup, ITaker {
 
         // Verify new auction was started with total balance
         assertTrue(auction.isActive(from));
-        (uint128 newKicked, , uint128 newInitialAvailable) = auction.auctions(
-            from
-        );
+        (uint128 newKicked,, uint128 newInitialAvailable) = auction.auctions(from);
         assertEq(newKicked, block.timestamp);
         assertEq(newInitialAvailable, totalBalance);
         assertEq(auction.available(from), totalBalance);
@@ -333,9 +297,7 @@ contract AuctionTest is Setup, ITaker {
         auction.forceKick(from);
 
         assertTrue(auction.isActive(from));
-        (uint128 finalKicked, , uint128 finalAvailable) = auction.auctions(
-            from
-        );
+        (uint128 finalKicked,, uint128 finalAvailable) = auction.auctions(from);
         assertEq(finalKicked, block.timestamp);
         assertEq(finalAvailable, _amount + additionalAmount + _amount);
     }
@@ -344,12 +306,7 @@ contract AuctionTest is Setup, ITaker {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         address from = tokenAddrs["WBTC"];
-        auction = Auction(
-            auctionFactory.createNewAuction(
-                address(asset),
-                address(mockStrategy)
-            )
-        );
+        auction = Auction(auctionFactory.createNewAuction(address(asset), address(mockStrategy)));
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
@@ -361,8 +318,7 @@ contract AuctionTest is Setup, ITaker {
         uint256 available = auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint128 _kicked, uint128 _scaler, uint128 _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
         assertEq(_initialAvailable, _amount);
@@ -383,7 +339,7 @@ contract AuctionTest is Setup, ITaker {
 
         assertEq(amountTaken, _amount);
 
-        (, , _initialAvailable) = auction.auctions(from);
+        (,, _initialAvailable) = auction.auctions(from);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), 0);
 
@@ -399,12 +355,7 @@ contract AuctionTest is Setup, ITaker {
         _percent = uint16(bound(uint256(_percent), 1_000, MAX_BPS));
 
         address from = tokenAddrs["WBTC"];
-        auction = Auction(
-            auctionFactory.createNewAuction(
-                address(asset),
-                address(mockStrategy)
-            )
-        );
+        auction = Auction(auctionFactory.createNewAuction(address(asset), address(mockStrategy)));
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
@@ -416,8 +367,7 @@ contract AuctionTest is Setup, ITaker {
         auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction
-            .auctions(from);
+        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
         assertEq(_initialAvailable, _amount);
@@ -440,7 +390,7 @@ contract AuctionTest is Setup, ITaker {
 
         assertEq(amountTaken, toTake);
 
-        (, , _initialAvailable) = auction.auctions(from);
+        (,, _initialAvailable) = auction.auctions(from);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
@@ -454,12 +404,7 @@ contract AuctionTest is Setup, ITaker {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         address from = tokenAddrs["WBTC"];
-        auction = Auction(
-            auctionFactory.createNewAuction(
-                address(asset),
-                address(mockStrategy)
-            )
-        );
+        auction = Auction(auctionFactory.createNewAuction(address(asset), address(mockStrategy)));
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
@@ -471,8 +416,7 @@ contract AuctionTest is Setup, ITaker {
         auction.kick(from);
 
         assertEq(auction.kickable(from), 0);
-        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction
-            .auctions(from);
+        (uint256 _kicked, uint256 _scaler, uint256 _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, 1e10);
         assertEq(_initialAvailable, _amount);
@@ -500,7 +444,7 @@ contract AuctionTest is Setup, ITaker {
         assertTrue(callbackHit);
         assertEq(amountTaken, toTake);
 
-        (, , _initialAvailable) = auction.auctions(from);
+        (,, _initialAvailable) = auction.auctions(from);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
@@ -689,12 +633,8 @@ contract AuctionTest is Setup, ITaker {
 
         // Create two auctions with different decay rates
         // Use different receiver to get different salts
-        Auction auction1 = Auction(
-            auctionFactory.createNewAuction(address(asset), address(this))
-        );
-        Auction auction2 = Auction(
-            auctionFactory.createNewAuction(address(asset), address(management))
-        );
+        Auction auction1 = Auction(auctionFactory.createNewAuction(address(asset), address(this)));
+        Auction auction2 = Auction(auctionFactory.createNewAuction(address(asset), address(management)));
 
         // Set different decay rates (in basis points)
         auction1.setStepDecayRate(100); // 1% decay per step
@@ -730,18 +670,10 @@ contract AuctionTest is Setup, ITaker {
 
         // Verify the decay amounts are approximately correct
         // Auction1: price should be ~99% of initial (1% decay)
-        assertApproxEqRel(
-            price1After1Step,
-            (initialPrice1 * 9900) / 10000,
-            0.01e18
-        );
+        assertApproxEqRel(price1After1Step, (initialPrice1 * 9900) / 10000, 0.01e18);
 
         // Auction2: price should be ~99.75% of initial (0.25% decay)
-        assertApproxEqRel(
-            price2After1Step,
-            (initialPrice2 * 9975) / 10000,
-            0.01e18
-        );
+        assertApproxEqRel(price2After1Step, (initialPrice2 * 9975) / 10000, 0.01e18);
 
         // After multiple steps, the difference should be more pronounced
         skip(240); // 4 more steps (5 total)
@@ -754,10 +686,7 @@ contract AuctionTest is Setup, ITaker {
         assertLt(auction1.price(from), auction2.price(from));
 
         // Verify amount needed follows the same pattern
-        assertLt(
-            auction1.getAmountNeeded(from, _amount),
-            auction2.getAmountNeeded(from, _amount)
-        );
+        assertLt(auction1.getAmountNeeded(from, _amount), auction2.getAmountNeeded(from, _amount));
     }
 
     function test_stepDurationAffectsPrice(uint256 _amount) public {
@@ -767,12 +696,8 @@ contract AuctionTest is Setup, ITaker {
 
         // Create two auctions with different step durations
         // Use different receiver to get different salts
-        Auction auction1 = Auction(
-            auctionFactory.createNewAuction(address(asset), address(this))
-        );
-        Auction auction2 = Auction(
-            auctionFactory.createNewAuction(address(asset), address(management))
-        );
+        Auction auction1 = Auction(auctionFactory.createNewAuction(address(asset), address(this)));
+        Auction auction2 = Auction(auctionFactory.createNewAuction(address(asset), address(management)));
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
         wantScaler = WAD / 10 ** ERC20(asset).decimals();

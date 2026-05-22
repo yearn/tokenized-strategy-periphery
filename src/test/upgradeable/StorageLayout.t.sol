@@ -12,41 +12,25 @@ contract StorageLayoutTest is UpgradeableSetup {
     function test_baseStrategyStorageLayout() public {
         // Deploy strategy
         address impl = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Storage Test"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Storage Test");
 
         // Verify slot 0 contains packed data from TokenizedStrategy
         // The asset is part of this packed data but not easily extractable
         // We verify it through the strategy's asset() function instead
         bytes32 slot0 = readStorageSlot(proxy, 0);
         assertFalse(slot0 == bytes32(0), "Slot 0 should not be empty");
-        assertEq(
-            IStrategy(proxy).asset(),
-            address(asset),
-            "Strategy should return correct asset"
-        );
+        assertEq(IStrategy(proxy).asset(), address(asset), "Strategy should return correct asset");
 
         // Verify slot 1: TokenizedStrategy in BaseStrategyUpgradeable
         // This is set to address(this) which is the proxy
         bytes32 slot1 = readStorageSlot(proxy, 1);
         address tokenizedFromStorage = address(uint160(uint256(slot1)));
-        assertEq(
-            tokenizedFromStorage,
-            proxy,
-            "Slot 1 should contain TokenizedStrategy (proxy address)"
-        );
+        assertEq(tokenizedFromStorage, proxy, "Slot 1 should contain TokenizedStrategy (proxy address)");
 
         // Verify slots 2-9: gap (should be empty initially)
         for (uint256 i = 2; i <= 9; i++) {
             bytes32 gapSlot = readStorageSlot(proxy, i);
-            assertEq(
-                gapSlot,
-                bytes32(0),
-                string.concat("Gap slot ", vm.toString(i), " should be empty")
-            );
+            assertEq(gapSlot, bytes32(0), string.concat("Gap slot ", vm.toString(i), " should be empty"));
         }
 
         // Slot 10 is where strategy implementations can start adding storage
@@ -55,42 +39,24 @@ contract StorageLayoutTest is UpgradeableSetup {
 
         bytes32 slot10 = readStorageSlot(proxy, 10);
         uint256 deployedFunds = uint256(slot10);
-        assertEq(
-            deployedFunds,
-            maxFuzzAmount,
-            "Slot 10 should contain deployedFunds"
-        );
+        assertEq(deployedFunds, maxFuzzAmount, "Slot 10 should contain deployedFunds");
     }
 
     function test_healthCheckStorageLayout() public {
         // Deploy health check strategy
         address impl = address(new MockHealthCheckUpgradeable());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Health Check Storage"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Health Check Storage");
 
-        MockHealthCheckUpgradeable healthCheck = MockHealthCheckUpgradeable(
-            proxy
-        );
+        MockHealthCheckUpgradeable healthCheck = MockHealthCheckUpgradeable(proxy);
 
         // Verify base storage (slots 0-9)
         bytes32 slot0 = readStorageSlot(proxy, 0);
         assertFalse(slot0 == bytes32(0), "Slot 0 should not be empty");
-        assertEq(
-            IStrategy(address(healthCheck)).asset(),
-            address(asset),
-            "Asset accessible via function"
-        );
+        assertEq(IStrategy(address(healthCheck)).asset(), address(asset), "Asset accessible via function");
 
         // Slot 1 contains TokenizedStrategy address (the proxy itself)
         bytes32 slot1 = readStorageSlot(proxy, 1);
-        assertEq(
-            address(uint160(uint256(slot1))),
-            proxy,
-            "TokenizedStrategy in slot 1"
-        );
+        assertEq(address(uint160(uint256(slot1))), proxy, "TokenizedStrategy in slot 1");
 
         // Verify slot 10: packed storage (doHealthCheck, _profitLimitRatio, _lossLimitRatio)
         bytes32 slot10 = readStorageSlot(proxy, 10);
@@ -125,26 +91,14 @@ contract StorageLayoutTest is UpgradeableSetup {
         // Verify gap slots 11-19
         for (uint256 i = 11; i <= 19; i++) {
             bytes32 gapSlot = readStorageSlot(proxy, i);
-            assertEq(
-                gapSlot,
-                bytes32(0),
-                string.concat(
-                    "Health check gap slot ",
-                    vm.toString(i),
-                    " should be empty"
-                )
-            );
+            assertEq(gapSlot, bytes32(0), string.concat("Health check gap slot ", vm.toString(i), " should be empty"));
         }
     }
 
     function test_hooksNoAdditionalStorage() public {
         // Deploy hooks strategy
         address impl = address(new MockHooksUpgradeable());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Hooks Storage"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Hooks Storage");
 
         // Hooks should not add any storage beyond health check
         // Verify slots 0-19 match health check pattern
@@ -152,33 +106,19 @@ contract StorageLayoutTest is UpgradeableSetup {
         // Base strategy slots (0-9)
         bytes32 slot0 = readStorageSlot(proxy, 0);
         assertFalse(slot0 == bytes32(0), "Slot 0 should not be empty");
-        assertEq(
-            IStrategy(proxy).asset(),
-            address(asset),
-            "Asset accessible via function"
-        );
+        assertEq(IStrategy(proxy).asset(), address(asset), "Asset accessible via function");
 
         // Health check slot (10)
         bytes32 slot10 = readStorageSlot(proxy, 10);
         uint256 packedValue = uint256(slot10);
         bool doHealthCheck = uint8(packedValue) != 0;
-        assertEq(
-            doHealthCheck,
-            true,
-            "Health check values should be initialized"
-        );
+        assertEq(doHealthCheck, true, "Health check values should be initialized");
 
         // Verify no additional storage used (slots 20+)
         for (uint256 i = 20; i <= 30; i++) {
             bytes32 slot = readStorageSlot(proxy, i);
             assertEq(
-                slot,
-                bytes32(0),
-                string.concat(
-                    "Slot ",
-                    vm.toString(i),
-                    " should be empty (hooks adds no storage)"
-                )
+                slot, bytes32(0), string.concat("Slot ", vm.toString(i), " should be empty (hooks adds no storage)")
             );
         }
     }
@@ -186,11 +126,7 @@ contract StorageLayoutTest is UpgradeableSetup {
     function test_crossVersionCompatibility() public {
         // Deploy V1
         address implV1 = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            implV1,
-            address(asset),
-            "Version Test"
-        );
+        address proxy = deployUpgradeableStrategy(implV1, address(asset), "Version Test");
 
         MockUpgradeableStrategy v1 = MockUpgradeableStrategy(proxy);
 
@@ -210,11 +146,7 @@ contract StorageLayoutTest is UpgradeableSetup {
         // Verify slot 10 unchanged (deployedFunds preserved)
         bytes32 slot10After = readStorageSlot(proxy, 10);
         assertEq(slot10After, slot10Before, "Slot 10 should be preserved");
-        assertEq(
-            v2.deployedFunds(),
-            maxFuzzAmount,
-            "deployedFunds value preserved"
-        );
+        assertEq(v2.deployedFunds(), maxFuzzAmount, "deployedFunds value preserved");
 
         // Add new V2 data (uses slot 11 for newVariable)
         vm.prank(management);
@@ -238,11 +170,7 @@ contract StorageLayoutTest is UpgradeableSetup {
 
         // Deploy strategy with known storage values
         address impl = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            impl,
-            address(asset),
-            "Collision Test"
-        );
+        address proxy = deployUpgradeableStrategy(impl, address(asset), "Collision Test");
 
         // Set up some state
         mintAndDepositIntoStrategy(IStrategy(proxy), user, maxFuzzAmount);
@@ -260,11 +188,7 @@ contract StorageLayoutTest is UpgradeableSetup {
         // Verify base slots unchanged
         for (uint256 i = 0; i < 10; i++) {
             bytes32 currentSlot = readStorageSlot(proxy, i);
-            assertEq(
-                currentSlot,
-                originalSlots[i],
-                string.concat("Slot ", vm.toString(i), " should be unchanged")
-            );
+            assertEq(currentSlot, originalSlots[i], string.concat("Slot ", vm.toString(i), " should be unchanged"));
         }
 
         // Upgrade to hooks
@@ -275,13 +199,7 @@ contract StorageLayoutTest is UpgradeableSetup {
         for (uint256 i = 0; i < 10; i++) {
             bytes32 currentSlot = readStorageSlot(proxy, i);
             assertEq(
-                currentSlot,
-                originalSlots[i],
-                string.concat(
-                    "Slot ",
-                    vm.toString(i),
-                    " should still be unchanged"
-                )
+                currentSlot, originalSlots[i], string.concat("Slot ", vm.toString(i), " should still be unchanged")
             );
         }
     }
@@ -289,11 +207,7 @@ contract StorageLayoutTest is UpgradeableSetup {
     function test_gapUsageInUpgrade() public {
         // Deploy V1
         address implV1 = address(new MockUpgradeableStrategy());
-        address proxy = deployUpgradeableStrategy(
-            implV1,
-            address(asset),
-            "Gap Usage Test"
-        );
+        address proxy = deployUpgradeableStrategy(implV1, address(asset), "Gap Usage Test");
 
         // V1 uses slot 10 for deployedFunds
         mintAndDepositIntoStrategy(IStrategy(proxy), user, maxFuzzAmount);

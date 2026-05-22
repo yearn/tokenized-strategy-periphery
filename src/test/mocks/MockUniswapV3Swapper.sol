@@ -11,11 +11,7 @@ contract MockUniswapV3Swapper is BaseStrategy, UniswapV3Swapper {
 
     function _freeFunds(uint256) internal override {}
 
-    function _harvestAndReport()
-        internal
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
         _totalAssets = asset.balanceOf(address(this));
     }
 
@@ -31,29 +27,15 @@ contract MockUniswapV3Swapper is BaseStrategy, UniswapV3Swapper {
         base = _base;
     }
 
-    function setUniFees(
-        address _token0,
-        address _token1,
-        uint24 _fee
-    ) external {
+    function setUniFees(address _token0, address _token1, uint24 _fee) external {
         _setUniFees(_token0, _token1, _fee);
     }
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256) {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256) {
         return _swapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 
-    function swapTo(
-        address _from,
-        address _to,
-        uint256 _amountTo,
-        uint256 _maxAmountFrom
-    ) external returns (uint256) {
+    function swapTo(address _from, address _to, uint256 _amountTo, uint256 _maxAmountFrom) external returns (uint256) {
         return _swapTo(_from, _to, _amountTo, _maxAmountFrom);
     }
 }
@@ -68,19 +50,9 @@ interface IMockUniswapV3Swapper is IStrategy, IUniswapV3Swapper {
 
     function setBase(address _base) external;
 
-    function swapTo(
-        address _from,
-        address _to,
-        uint256 _amountTo,
-        uint256 _maxAmountFrom
-    ) external returns (uint256);
+    function swapTo(address _from, address _to, uint256 _amountTo, uint256 _maxAmountFrom) external returns (uint256);
 
-    function swapFrom(
-        address _from,
-        address _to,
-        uint256 _amountIn,
-        uint256 _minAmountOut
-    ) external returns (uint256);
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256);
 
     function setUniFees(address _token0, address _token1, uint24 _fee) external;
 }

@@ -18,7 +18,5 @@ abstract contract CustomStrategyTriggerBase {
      * @return . Bool representing if the strategy is ready to report.
      * @return . Bytes with either the calldata or reason why False.
      */
-    function reportTrigger(
-        address _strategy
-    ) external view virtual returns (bool, bytes memory);
+    function reportTrigger(address _strategy) external view virtual returns (bool, bytes memory);
 }

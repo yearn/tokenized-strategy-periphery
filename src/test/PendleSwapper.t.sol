@@ -20,8 +20,7 @@ contract PendleSwapperTest is Setup {
     MockToken public mockAsset;
 
     // Pendle Router V4
-    address public constant PENDLE_ROUTER =
-        0x888888888889758F76e7103c6CbF23ABbF58F946;
+    address public constant PENDLE_ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
 
     // Mock addresses for unit tests
     address public constant MOCK_MARKET = address(0x1111);
@@ -33,9 +32,7 @@ contract PendleSwapperTest is Setup {
         mockAsset = new MockToken("Mock Asset", "MOCK", 18);
 
         // Deploy mock pendle swapper with the mock asset
-        pendleSwapper = IMockPendleSwapper(
-            address(new MockPendleSwapper(address(mockAsset)))
-        );
+        pendleSwapper = IMockPendleSwapper(address(new MockPendleSwapper(address(mockAsset))));
 
         pendleSwapper.setKeeper(keeper);
         pendleSwapper.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -90,12 +87,7 @@ contract PendleSwapperTest is Setup {
         mockAsset.mint(address(pendleSwapper), amount);
 
         // Swap should return 0 when amount is below minAmountToSell
-        uint256 amountOut = pendleSwapper.pendleSwapFrom(
-            address(mockAsset),
-            address(0x9999),
-            amount,
-            0
-        );
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(address(mockAsset), address(0x9999), amount, 0);
 
         // Should not have swapped
         assertEq(amountOut, 0);
@@ -110,12 +102,7 @@ contract PendleSwapperTest is Setup {
 
         // Try to swap to an unknown token (no market registered)
         vm.expectRevert("PendleSwapper: unknown market");
-        pendleSwapper.pendleSwapFrom(
-            address(mockAsset),
-            unknownToken,
-            amount,
-            0
-        );
+        pendleSwapper.pendleSwapFrom(address(mockAsset), unknownToken, amount, 0);
     }
 
     function test_zeroAmount_returns_zero() public {
@@ -124,12 +111,7 @@ contract PendleSwapperTest is Setup {
         pendleSwapper.setMarket(MOCK_PT, MOCK_MARKET);
 
         // Swap with 0 amount should return 0
-        uint256 amountOut = pendleSwapper.pendleSwapFrom(
-            address(mockAsset),
-            MOCK_PT,
-            0,
-            0
-        );
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(address(mockAsset), MOCK_PT, 0, 0);
 
         assertEq(amountOut, 0);
     }
@@ -172,16 +154,13 @@ contract PendleSwapperForkTest is Setup {
 
     // USDC token on mainnet
     ERC20 public usdc;
-    address public constant USDC_ADDRESS =
-        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     // Pendle market for USDC PT
-    address public constant PENDLE_MARKET =
-        0xaC24A6f0068d9701EAEa76AB0B418021017F8D59;
+    address public constant PENDLE_MARKET = 0xaC24A6f0068d9701EAEa76AB0B418021017F8D59;
 
     // Pendle Router V4
-    address public constant PENDLE_ROUTER =
-        0x888888888889758F76e7103c6CbF23ABbF58F946;
+    address public constant PENDLE_ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
 
     // PT token address - will be fetched from market
     address public pt;
@@ -194,13 +173,11 @@ contract PendleSwapperForkTest is Setup {
         usdc = ERC20(USDC_ADDRESS);
 
         // Get PT address from market
-        (, IPPrincipalToken _PT, ) = IPMarket(PENDLE_MARKET).readTokens();
+        (, IPPrincipalToken _PT,) = IPMarket(PENDLE_MARKET).readTokens();
         pt = address(_PT);
 
         // Deploy mock pendle swapper with USDC as asset
-        pendleSwapper = IMockPendleSwapper(
-            address(new MockPendleSwapper(USDC_ADDRESS))
-        );
+        pendleSwapper = IMockPendleSwapper(address(new MockPendleSwapper(USDC_ADDRESS)));
 
         pendleSwapper.setKeeper(keeper);
         pendleSwapper.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -229,11 +206,7 @@ contract PendleSwapperForkTest is Setup {
         uint256 usdcBefore = usdc.balanceOf(address(pendleSwapper));
         uint256 ptBefore = ERC20(pt).balanceOf(address(pendleSwapper));
 
-        assertEq(
-            usdcBefore,
-            amount,
-            "USDC balance should equal airdropped amount"
-        );
+        assertEq(usdcBefore, amount, "USDC balance should equal airdropped amount");
         assertEq(ptBefore, 0, "PT balance should be 0 before swap");
 
         // Swap USDC to PT (buying PT)
@@ -263,12 +236,7 @@ contract PendleSwapperForkTest is Setup {
 
         // First buy some PT
         airdrop(usdc, address(pendleSwapper), amount);
-        uint256 ptAmount = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 ptAmount = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         // Record balances before selling
         uint256 usdcBefore = usdc.balanceOf(address(pendleSwapper));
@@ -291,11 +259,7 @@ contract PendleSwapperForkTest is Setup {
 
         assertEq(ptAfter, 0, "PT should be fully sold");
         assertGt(usdcAfter, 0, "Should have received USDC");
-        assertEq(
-            usdcAfter,
-            amountOut,
-            "USDC balance should match return value"
-        );
+        assertEq(usdcAfter, amountOut, "USDC balance should match return value");
     }
 
     function test_fork_buyPt_withMinAmountOut() public {
@@ -311,16 +275,8 @@ contract PendleSwapperForkTest is Setup {
         pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, unreasonableMin);
 
         // Verify no swap occurred
-        assertEq(
-            usdc.balanceOf(address(pendleSwapper)),
-            amount,
-            "USDC should not be spent"
-        );
-        assertEq(
-            ERC20(pt).balanceOf(address(pendleSwapper)),
-            0,
-            "Should not have PT"
-        );
+        assertEq(usdc.balanceOf(address(pendleSwapper)), amount, "USDC should not be spent");
+        assertEq(ERC20(pt).balanceOf(address(pendleSwapper)), 0, "Should not have PT");
     }
 
     function test_fork_sellPt_withMinAmountOut() public {
@@ -333,42 +289,24 @@ contract PendleSwapperForkTest is Setup {
 
         // First buy some PT
         airdrop(usdc, address(pendleSwapper), amount);
-        uint256 ptAmount = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 ptAmount = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         // Set an unreasonably high minAmountOut
         uint256 unreasonableMin = amount * 1e18;
 
         vm.expectRevert();
-        pendleSwapper.pendleSwapFrom(
-            pt,
-            USDC_ADDRESS,
-            ptAmount,
-            unreasonableMin
-        );
+        pendleSwapper.pendleSwapFrom(pt, USDC_ADDRESS, ptAmount, unreasonableMin);
 
         // Verify no swap occurred
-        assertEq(
-            ERC20(pt).balanceOf(address(pendleSwapper)),
-            ptAmount,
-            "PT should not be spent"
-        );
+        assertEq(ERC20(pt).balanceOf(address(pendleSwapper)), ptAmount, "PT should not be spent");
     }
 
     function test_fork_marketConfiguration() public {
         // Verify market is correctly registered
-        assertEq(
-            pendleSwapper.markets(pt),
-            PENDLE_MARKET,
-            "Market should be registered"
-        );
+        assertEq(pendleSwapper.markets(pt), PENDLE_MARKET, "Market should be registered");
 
         // Verify PT is not expired for active trading tests
-        (, IPPrincipalToken _PT, ) = IPMarket(PENDLE_MARKET).readTokens();
+        (, IPPrincipalToken _PT,) = IPMarket(PENDLE_MARKET).readTokens();
 
         // Log expiry for debugging
         uint256 expiry = _PT.expiry();
@@ -383,29 +321,16 @@ contract PendleSwapperForkTest is Setup {
         vm.prank(management);
         pendleSwapper.setGuessMaxMultiplier(2e18); // 2x multiplier
 
-        assertEq(
-            pendleSwapper.guessMaxMultiplier(),
-            2e18,
-            "Multiplier should be set"
-        );
+        assertEq(pendleSwapper.guessMaxMultiplier(), 2e18, "Multiplier should be set");
 
         // Airdrop USDC to the swapper
         airdrop(usdc, address(pendleSwapper), amount);
 
         // Swap should still work with custom multiplier
-        uint256 amountOut = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         assertGt(amountOut, 0, "Swap should succeed with custom multiplier");
-        assertEq(
-            ERC20(pt).balanceOf(address(pendleSwapper)),
-            amountOut,
-            "Should have PT"
-        );
+        assertEq(ERC20(pt).balanceOf(address(pendleSwapper)), amountOut, "Should have PT");
     }
 
     function test_fork_minAmountToSell() public {
@@ -419,24 +344,11 @@ contract PendleSwapperForkTest is Setup {
         airdrop(usdc, address(pendleSwapper), amount);
 
         // Swap should return 0 and not execute because amount < minAmountToSell
-        uint256 amountOut = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 amountOut = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         assertEq(amountOut, 0, "Should return 0 when below minAmountToSell");
-        assertEq(
-            usdc.balanceOf(address(pendleSwapper)),
-            amount,
-            "USDC should not be spent"
-        );
-        assertEq(
-            ERC20(pt).balanceOf(address(pendleSwapper)),
-            0,
-            "Should not have PT"
-        );
+        assertEq(usdc.balanceOf(address(pendleSwapper)), amount, "USDC should not be spent");
+        assertEq(ERC20(pt).balanceOf(address(pendleSwapper)), 0, "Should not have PT");
     }
 
     function test_fork_roundTrip(uint256 amount) public {
@@ -451,33 +363,19 @@ contract PendleSwapperForkTest is Setup {
         airdrop(usdc, address(pendleSwapper), amount);
 
         // Buy PT
-        uint256 ptReceived = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 ptReceived = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         assertGt(ptReceived, 0, "Should receive PT");
 
         // Sell PT back to USDC
-        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(
-            pt,
-            USDC_ADDRESS,
-            ptReceived,
-            0
-        );
+        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(pt, USDC_ADDRESS, ptReceived, 0);
 
         assertGt(usdcReceived, 0, "Should receive USDC back");
 
         // Due to AMM fees and slippage, we expect some loss
         // The received amount should be less than original but reasonably close
         assertLt(usdcReceived, amount, "Should have some slippage loss");
-        assertGt(
-            usdcReceived,
-            (amount * 90) / 100,
-            "Should not lose more than 10%"
-        );
+        assertGt(usdcReceived, (amount * 90) / 100, "Should not lose more than 10%");
     }
 
     function test_fork_multipleSwaps() public {
@@ -492,32 +390,17 @@ contract PendleSwapperForkTest is Setup {
 
         // First swap
         airdrop(usdc, address(pendleSwapper), amount1);
-        uint256 pt1 = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount1,
-            0
-        );
+        uint256 pt1 = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount1, 0);
         assertGt(pt1, 0, "First swap should succeed");
 
         // Second swap
         airdrop(usdc, address(pendleSwapper), amount2);
-        uint256 pt2 = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount2,
-            0
-        );
+        uint256 pt2 = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount2, 0);
         assertGt(pt2, 0, "Second swap should succeed");
 
         // Third swap
         airdrop(usdc, address(pendleSwapper), amount3);
-        uint256 pt3 = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount3,
-            0
-        );
+        uint256 pt3 = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount3, 0);
         assertGt(pt3, 0, "Third swap should succeed");
 
         // Total PT should be sum of all swaps
@@ -525,26 +408,16 @@ contract PendleSwapperForkTest is Setup {
         assertEq(totalPt, pt1 + pt2 + pt3, "Total PT should be sum of swaps");
 
         // Sell all PT at once
-        uint256 usdcBack = pendleSwapper.pendleSwapFrom(
-            pt,
-            USDC_ADDRESS,
-            totalPt,
-            0
-        );
+        uint256 usdcBack = pendleSwapper.pendleSwapFrom(pt, USDC_ADDRESS, totalPt, 0);
         assertGt(usdcBack, 0, "Should receive USDC back");
     }
 
     function test_fork_pendleRouterAddress() public {
-        assertEq(
-            pendleSwapper.pendleRouter(),
-            PENDLE_ROUTER,
-            "Pendle router should be correctly set"
-        );
+        assertEq(pendleSwapper.pendleRouter(), PENDLE_ROUTER, "Pendle router should be correctly set");
     }
 
     // Chainlink USDC/USD price feed on mainnet
-    address public constant CHAINLINK_USDC_USD =
-        0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+    address public constant CHAINLINK_USDC_USD = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
     /**
      * @dev Helper to mock Chainlink price feeds after time warp.
@@ -572,17 +445,12 @@ contract PendleSwapperForkTest is Setup {
 
         // Buy PT before expiry
         airdrop(usdc, address(pendleSwapper), amount);
-        uint256 ptReceived = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 ptReceived = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         assertGt(ptReceived, 0, "Should receive PT");
 
         // Get PT expiry and warp past it
-        (, IPPrincipalToken _PT, ) = IPMarket(PENDLE_MARKET).readTokens();
+        (, IPPrincipalToken _PT,) = IPMarket(PENDLE_MARKET).readTokens();
         uint256 expiry = _PT.expiry();
 
         // Warp to after expiry
@@ -592,22 +460,14 @@ contract PendleSwapperForkTest is Setup {
         _mockChainlinkAfterWarp();
 
         // Verify market is now expired
-        assertTrue(
-            IPMarket(PENDLE_MARKET).isExpired(),
-            "Market should be expired"
-        );
+        assertTrue(IPMarket(PENDLE_MARKET).isExpired(), "Market should be expired");
 
         // Record PT balance before redemption
         uint256 ptBefore = ERC20(pt).balanceOf(address(pendleSwapper));
         assertEq(ptBefore, ptReceived, "PT balance should match");
 
         // Redeem PT after expiry - should call redeemPyToToken
-        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(
-            pt,
-            USDC_ADDRESS,
-            ptReceived,
-            0
-        );
+        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(pt, USDC_ADDRESS, ptReceived, 0);
 
         // Verify redemption results
         uint256 ptAfter = ERC20(pt).balanceOf(address(pendleSwapper));
@@ -615,19 +475,13 @@ contract PendleSwapperForkTest is Setup {
 
         assertEq(ptAfter, 0, "All PT should be redeemed");
         assertGt(usdcReceived, 0, "Should receive USDC from redemption");
-        assertEq(
-            usdcAfter,
-            usdcReceived,
-            "USDC balance should match return value"
-        );
+        assertEq(usdcAfter, usdcReceived, "USDC balance should match return value");
 
         // After expiry, PT redeems 1:1 with underlying value
         // We should get back approximately the original amount (within 1% for rounding)
         // PT at expiry = 1 unit of underlying value
         assertGe(
-            usdcReceived,
-            (amount * 99) / 100,
-            "Should receive at least 99% of original amount after expiry redemption"
+            usdcReceived, (amount * 99) / 100, "Should receive at least 99% of original amount after expiry redemption"
         );
     }
 
@@ -636,15 +490,10 @@ contract PendleSwapperForkTest is Setup {
 
         // Buy PT before expiry
         airdrop(usdc, address(pendleSwapper), amount);
-        uint256 ptReceived = pendleSwapper.pendleSwapFrom(
-            USDC_ADDRESS,
-            pt,
-            amount,
-            0
-        );
+        uint256 ptReceived = pendleSwapper.pendleSwapFrom(USDC_ADDRESS, pt, amount, 0);
 
         // Get PT expiry and warp past it
-        (, IPPrincipalToken _PT, ) = IPMarket(PENDLE_MARKET).readTokens();
+        (, IPPrincipalToken _PT,) = IPMarket(PENDLE_MARKET).readTokens();
         uint256 expiry = _PT.expiry();
         vm.warp(expiry + 1);
 
@@ -652,30 +501,16 @@ contract PendleSwapperForkTest is Setup {
         _mockChainlinkAfterWarp();
 
         // Redeem PT after expiry
-        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(
-            pt,
-            USDC_ADDRESS,
-            ptReceived,
-            0
-        );
+        uint256 usdcReceived = pendleSwapper.pendleSwapFrom(pt, USDC_ADDRESS, ptReceived, 0);
 
         // Log values for debugging
         emit log_named_uint("Original USDC amount", amount);
         emit log_named_uint("PT received from swap", ptReceived);
         emit log_named_uint("USDC received from redemption", usdcReceived);
-        emit log_named_uint(
-            "Difference",
-            usdcReceived > amount
-                ? usdcReceived - amount
-                : amount - usdcReceived
-        );
+        emit log_named_uint("Difference", usdcReceived > amount ? usdcReceived - amount : amount - usdcReceived);
 
         // PT should redeem for full underlying value at expiry
         // The slight gain is due to buying PT at a discount (implied yield)
-        assertGe(
-            usdcReceived,
-            amount,
-            "Should receive at least original amount at expiry"
-        );
+        assertGe(usdcReceived, amount, "Should receive at least original amount at expiry");
     }
 }

@@ -30,14 +30,7 @@ contract AuctionFactory is ClonableCreate2 {
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(address _want) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                msg.sender,
-                msg.sender,
-                DEFAULT_STARTING_PRICE,
-                bytes32(0)
-            );
+        return _createNewAuction(_want, msg.sender, msg.sender, DEFAULT_STARTING_PRICE, bytes32(0));
     }
 
     /**
@@ -46,18 +39,8 @@ contract AuctionFactory is ClonableCreate2 {
      * @param _receiver Address that will receive the funds in the auction.
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver
-    ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                msg.sender,
-                DEFAULT_STARTING_PRICE,
-                bytes32(0)
-            );
+    function createNewAuction(address _want, address _receiver) external returns (address) {
+        return _createNewAuction(_want, _receiver, msg.sender, DEFAULT_STARTING_PRICE, bytes32(0));
     }
 
     /**
@@ -67,19 +50,8 @@ contract AuctionFactory is ClonableCreate2 {
      * @param _governance Address allowed to enable and disable auctions.
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver,
-        address _governance
-    ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                _governance,
-                DEFAULT_STARTING_PRICE,
-                bytes32(0)
-            );
+    function createNewAuction(address _want, address _receiver, address _governance) external returns (address) {
+        return _createNewAuction(_want, _receiver, _governance, DEFAULT_STARTING_PRICE, bytes32(0));
     }
 
     /**
@@ -91,20 +63,11 @@ contract AuctionFactory is ClonableCreate2 {
      *  NOTE: The starting price should be without decimals (1k == 1_000).
      * @return _newAuction Address of the newly created auction contract.
      */
-    function createNewAuction(
-        address _want,
-        address _receiver,
-        address _governance,
-        uint256 _startingPrice
-    ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                _governance,
-                _startingPrice,
-                bytes32(0)
-            );
+    function createNewAuction(address _want, address _receiver, address _governance, uint256 _startingPrice)
+        external
+        returns (address)
+    {
+        return _createNewAuction(_want, _receiver, _governance, _startingPrice, bytes32(0));
     }
 
     /**
@@ -123,14 +86,7 @@ contract AuctionFactory is ClonableCreate2 {
         uint256 _startingPrice,
         bytes32 _salt
     ) external returns (address) {
-        return
-            _createNewAuction(
-                _want,
-                _receiver,
-                _governance,
-                _startingPrice,
-                _salt
-            );
+        return _createNewAuction(_want, _receiver, _governance, _startingPrice, _salt);
     }
 
     /**
@@ -150,12 +106,7 @@ contract AuctionFactory is ClonableCreate2 {
 
         _newAuction = _cloneCreate2(_salt);
 
-        Auction(_newAuction).initialize(
-            _want,
-            _receiver,
-            _governance,
-            _startingPrice
-        );
+        Auction(_newAuction).initialize(_want, _receiver, _governance, _startingPrice);
 
         auctions.push(_newAuction);
 

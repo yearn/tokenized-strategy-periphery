@@ -26,9 +26,7 @@ contract AuctionSwapperTest is Setup {
 
         auctionFactory = new AuctionFactory();
 
-        swapper = IMockAuctionSwapper(
-            address(new MockAuctionSwapper(address(asset)))
-        );
+        swapper = IMockAuctionSwapper(address(new MockAuctionSwapper(address(asset))));
 
         vm.label(address(auctionFactory), "Auction Factory ");
         vm.label(address(swapper), "Auction Swapper");
@@ -39,12 +37,7 @@ contract AuctionSwapperTest is Setup {
         assertFalse(swapper.useAuction());
 
         // Create a new auction for testing
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
 
         // Setting auction should emit both events (AuctionSet and UseAuctionSet)
         vm.expectEmit(true, false, false, false);
@@ -73,12 +66,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["USDC"];
 
         // Create and set auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
 
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
@@ -115,12 +103,7 @@ contract AuctionSwapperTest is Setup {
         assertFalse(swapper.useAuction());
 
         // Create first auction
-        address auction1 = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address auction1 = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
 
         // Setting first auction should auto-enable useAuction
         vm.expectEmit(true, false, false, false);
@@ -135,12 +118,7 @@ contract AuctionSwapperTest is Setup {
         skip(1); // Get different salt
 
         // Create second auction
-        address auction2 = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(management),
-            2e6
-        );
+        address auction2 = auctionFactory.createNewAuction(address(asset), address(swapper), address(management), 2e6);
 
         // Setting second auction when useAuction is already true should NOT emit UseAuctionSet
         vm.expectEmit(true, false, false, false);
@@ -192,12 +170,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["WBTC"];
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
         auction.enable(from);
@@ -221,12 +194,7 @@ contract AuctionSwapperTest is Setup {
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         // Setup auction properly
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
@@ -234,8 +202,7 @@ contract AuctionSwapperTest is Setup {
 
         assertEq(swapper.kickable(from), 0);
         assertEq(auction.kickable(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, fromScaler);
@@ -245,7 +212,7 @@ contract AuctionSwapperTest is Setup {
 
         assertEq(swapper.kickable(from), _amount);
         assertEq(auction.kickable(from), 0);
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
         assertEq(_initialAvailable, 0);
 
@@ -256,35 +223,21 @@ contract AuctionSwapperTest is Setup {
 
         assertEq(swapper.kickable(from), 0); // Returns 0 when auction is active with available tokens
         assertEq(auction.kickable(from), 0);
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
-        uint256 startingPrice = ((auction.startingPrice() *
-            (WAD / wantScaler)) * 1e18) /
-            _amount /
-            fromScaler;
+        uint256 startingPrice = ((auction.startingPrice() * (WAD / wantScaler)) * 1e18) / _amount / fromScaler;
         assertEq(auction.price(from), startingPrice);
         assertApproxEqRel(
             auction.getAmountNeeded(from, _amount),
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler,
+            (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler,
             0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auction.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
-        uint256 expectedAmount = auction.getAmountNeeded(
-            from,
-            _amount,
-            block.timestamp + 100
-        );
-        assertLt(
-            expectedAmount,
-            (startingPrice * fromScaler * _amount) /
-                (WAD / wantScaler) /
-                wantScaler
-        );
+        uint256 expectedAmount = auction.getAmountNeeded(from, _amount, block.timestamp + 100);
+        assertLt(expectedAmount, (startingPrice * fromScaler * _amount) / (WAD / wantScaler) / wantScaler);
 
         skip(100);
 
@@ -308,12 +261,7 @@ contract AuctionSwapperTest is Setup {
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         // Setup auction properly
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
@@ -324,8 +272,7 @@ contract AuctionSwapperTest is Setup {
         swapper.kickAuction(from);
 
         assertEq(swapper.kickable(from), 0); // Returns 0 when auction is active with available tokens
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, fromScaler);
         assertEq(_initialAvailable, _amount);
@@ -349,7 +296,7 @@ contract AuctionSwapperTest is Setup {
 
         assertEq(amountTaken, toTake);
 
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
@@ -369,20 +316,14 @@ contract AuctionSwapperTest is Setup {
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         // Setup auction properly
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
         auction.enable(from);
 
         assertEq(swapper.kickable(from), 0);
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, 0);
         assertEq(_scaler, fromScaler);
@@ -398,7 +339,7 @@ contract AuctionSwapperTest is Setup {
         swapper.setLetKick(kickable);
 
         assertEq(swapper.kickable(from), kickable);
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, 0);
         assertEq(_initialAvailable, 0);
 
@@ -407,35 +348,21 @@ contract AuctionSwapperTest is Setup {
         assertEq(ERC20(from).balanceOf(address(swapper)), _amount - kickable);
         assertEq(ERC20(from).balanceOf(address(auction)), kickable);
 
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, kickable);
-        uint256 startingPrice = ((auction.startingPrice() *
-            (WAD / wantScaler)) * 1e18) /
-            kickable /
-            fromScaler;
+        uint256 startingPrice = ((auction.startingPrice() * (WAD / wantScaler)) * 1e18) / kickable / fromScaler;
         assertEq(auction.price(from), startingPrice);
         assertApproxEqRel(
             auction.getAmountNeeded(from, kickable),
-            (startingPrice * fromScaler * kickable) /
-                (WAD / wantScaler) /
-                wantScaler,
+            (startingPrice * fromScaler * kickable) / (WAD / wantScaler) / wantScaler,
             0.0001e18 // 0.01% tolerance
         );
 
         uint256 expectedPrice = auction.price(from, block.timestamp + 100);
         assertLt(expectedPrice, startingPrice);
-        uint256 expectedAmount = auction.getAmountNeeded(
-            from,
-            kickable,
-            block.timestamp + 100
-        );
-        assertLt(
-            expectedAmount,
-            (startingPrice * fromScaler * kickable) /
-                (WAD / wantScaler) /
-                wantScaler
-        );
+        uint256 expectedAmount = auction.getAmountNeeded(from, kickable, block.timestamp + 100);
+        assertLt(expectedAmount, (startingPrice * fromScaler * kickable) / (WAD / wantScaler) / wantScaler);
 
         skip(100);
 
@@ -459,12 +386,7 @@ contract AuctionSwapperTest is Setup {
         wantScaler = WAD / 10 ** ERC20(asset).decimals();
 
         // Setup auction properly
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
@@ -481,8 +403,7 @@ contract AuctionSwapperTest is Setup {
 
         swapper.kickAuction(from);
 
-        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction
-            .auctions(from);
+        (uint64 _kicked, uint64 _scaler, uint128 _initialAvailable) = auction.auctions(from);
 
         assertEq(_kicked, block.timestamp);
         assertEq(_scaler, fromScaler);
@@ -507,7 +428,7 @@ contract AuctionSwapperTest is Setup {
 
         assertEq(amountTaken, toTake);
 
-        (_kicked, , _initialAvailable) = auction.auctions(from);
+        (_kicked,, _initialAvailable) = auction.auctions(from);
         assertEq(_initialAvailable, kickable);
         assertEq(auction.available(from), left);
         assertEq(ERC20(asset).balanceOf(address(this)), beforeAsset);
@@ -521,12 +442,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["WBTC"];
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
@@ -552,12 +468,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["WBTC"];
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
         auction.enable(from);
@@ -591,12 +502,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["WBTC"];
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         swapper.setUseAuction(true);
         auction = Auction(newAuction);
@@ -616,12 +522,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(data, bytes("No auction set"));
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
         auction.enable(from);
@@ -687,12 +588,7 @@ contract AuctionSwapperTest is Setup {
         address from = tokenAddrs["WBTC"];
 
         // Setup auction
-        address newAuction = auctionFactory.createNewAuction(
-            address(asset),
-            address(swapper),
-            address(this),
-            1e6
-        );
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
         swapper.setAuction(newAuction);
         auction = Auction(newAuction);
         auction.enable(from);

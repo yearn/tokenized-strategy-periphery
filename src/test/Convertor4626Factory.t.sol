@@ -19,25 +19,15 @@ contract Convertor4626FactoryTest is Setup {
         oracle = new MockConvertorOracle();
         oracle.setPrice(1e36);
 
-        factory = new Convertor4626Factory(
-            management,
-            performanceFeeRecipient,
-            keeper,
-            EMERGENCY_ADMIN
-        );
+        factory = new Convertor4626Factory(management, performanceFeeRecipient, keeper, EMERGENCY_ADMIN);
     }
 
     function test_newConvertor4626_deploysAndConfiguresStrategy() public {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed = factory.newConvertor4626(
-            address(asset),
-            "Factory 4626 Convertor",
-            want,
-            address(oracle),
-            address(vault)
-        );
+        address deployed =
+            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault));
 
         IBaseConvertor4626 convertor = IBaseConvertor4626(deployed);
 
@@ -50,10 +40,7 @@ contract Convertor4626FactoryTest is Setup {
         assertEq(convertor.pendingManagement(), management);
         assertEq(convertor.emergencyAdmin(), EMERGENCY_ADMIN);
 
-        assertEq(
-            factory.deployments4626(address(asset), want, address(vault)),
-            deployed
-        );
+        assertEq(factory.deployments4626(address(asset), want, address(vault)), deployed);
         assertTrue(factory.isDeployedConvertor4626(deployed));
     }
 
@@ -61,27 +48,11 @@ contract Convertor4626FactoryTest is Setup {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed = factory.newConvertor4626(
-            address(asset),
-            "Factory 4626 Convertor",
-            want,
-            address(oracle),
-            address(vault)
-        );
+        address deployed =
+            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Convertor4626Factory.AlreadyDeployed.selector,
-                deployed
-            )
-        );
-        factory.newConvertor4626(
-            address(asset),
-            "Factory 4626 Convertor",
-            want,
-            address(oracle),
-            address(vault)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Convertor4626Factory.AlreadyDeployed.selector, deployed));
+        factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault));
     }
 
     function test_setAddresses_onlyManagement() public {

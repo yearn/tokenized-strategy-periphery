@@ -3,10 +3,7 @@ pragma solidity >=0.8.18;
 
 contract Governance {
     /// @notice Emitted when the governance address is updated.
-    event GovernanceTransferred(
-        address indexed previousGovernance,
-        address indexed newGovernance
-    );
+    event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance);
 
     modifier onlyGovernance() {
         _checkGovernance();
@@ -32,9 +29,7 @@ contract Governance {
      * @dev Throws if the caller is not current governance.
      * @param _newGovernance The new governance address.
      */
-    function transferGovernance(
-        address _newGovernance
-    ) external virtual onlyGovernance {
+    function transferGovernance(address _newGovernance) external virtual onlyGovernance {
         require(_newGovernance != address(0), "ZERO ADDRESS");
         address oldGovernance = governance;
         governance = _newGovernance;

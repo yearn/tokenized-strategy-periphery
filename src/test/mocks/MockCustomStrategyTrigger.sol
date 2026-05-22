@@ -8,7 +8,12 @@ contract MockCustomStrategyTrigger is CustomStrategyTriggerBase {
 
     function reportTrigger(
         address /*_strategy*/
-    ) external view override returns (bool, bytes memory) {
+    )
+        external
+        view
+        override
+        returns (bool, bytes memory)
+    {
         return (triggerStatus, bytes("Test trigger status"));
     }
 

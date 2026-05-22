@@ -15,10 +15,7 @@ interface IGovernance {
      * @param previousGovernance The previous governance address
      * @param newGovernance The new governance address
      */
-    event GovernanceTransferred(
-        address indexed previousGovernance,
-        address indexed newGovernance
-    );
+    event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance);
 
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES

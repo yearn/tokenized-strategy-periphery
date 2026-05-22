@@ -39,29 +39,12 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     /* ========== EVENTS ========== */
 
-    event RewardTokenAdded(
-        address indexed rewardToken,
-        address indexed rewardsDistributor,
-        uint256 rewardsDuration
-    );
+    event RewardTokenAdded(address indexed rewardToken, address indexed rewardsDistributor, uint256 rewardsDuration);
     event RewardAdded(address indexed rewardToken, uint256 reward);
-    event RewardPaid(
-        address indexed user,
-        address indexed rewardToken,
-        uint256 reward
-    );
-    event RewardsDistributorUpdated(
-        address indexed rewardToken,
-        address indexed rewardsDistributor
-    );
-    event RewardsDurationUpdated(
-        address indexed rewardToken,
-        uint256 newDuration
-    );
-    event ClaimForRecipientUpdated(
-        address indexed staker,
-        address indexed recipient
-    );
+    event RewardPaid(address indexed user, address indexed rewardToken, uint256 reward);
+    event RewardsDistributorUpdated(address indexed rewardToken, address indexed rewardsDistributor);
+    event RewardsDurationUpdated(address indexed rewardToken, uint256 newDuration);
+    event ClaimForRecipientUpdated(address indexed staker, address indexed recipient);
     event NotifiedWithZeroSupply(address indexed rewardToken, uint256 reward);
     event Recovered(address token, uint256 amount);
 
@@ -75,17 +58,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     function _updateReward(address _account) internal virtual {
         for (uint256 i; i < rewardTokens.length; ++i) {
             address rewardToken = rewardTokens[i];
-            rewardData[rewardToken].rewardPerTokenStored = uint128(
-                rewardPerToken(rewardToken)
-            );
-            rewardData[rewardToken].lastUpdateTime = uint96(
-                lastTimeRewardApplicable(rewardToken)
-            );
+            rewardData[rewardToken].rewardPerTokenStored = uint128(rewardPerToken(rewardToken));
+            rewardData[rewardToken].lastUpdateTime = uint96(lastTimeRewardApplicable(rewardToken));
             if (_account != address(0)) {
                 rewards[_account][rewardToken] = earned(_account, rewardToken);
-                userRewardPerTokenPaid[_account][rewardToken] = rewardData[
-                    rewardToken
-                ].rewardPerTokenStored;
+                userRewardPerTokenPaid[_account][rewardToken] = rewardData[rewardToken].rewardPerTokenStored;
             }
         }
     }
@@ -106,8 +83,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @notice The amount of rewards allocated to a user per whole token staked.
      * @dev Note that this is not the same as amount of rewards claimed. Mapping order is user -> reward token -> amount
      */
-    mapping(address => mapping(address => uint256))
-        public userRewardPerTokenPaid;
+    mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
 
     /**
      * @notice The amount of unclaimed rewards an account is owed.
@@ -117,26 +93,33 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     uint256 internal constant PRECISION = 1e18;
 
-    constructor(
-        address _asset,
-        string memory _name
-    ) BaseHealthCheck(_asset, _name) {}
+    constructor(address _asset, string memory _name) BaseHealthCheck(_asset, _name) {}
 
     function _preDepositHook(
-        uint256 /* assets */,
-        uint256 /* shares */,
+        uint256,
+        /* assets */
+        uint256,
+        /* shares */
         address receiver
-    ) internal virtual override {
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(receiver);
     }
 
     function _preWithdrawHook(
-        uint256 /* assets */,
-        uint256 /* shares */,
-        address /* receiver */,
+        uint256, /* assets */
+        uint256, /* shares */
+        address, /* receiver */
         address owner,
         uint256 /* maxLoss */
-    ) internal virtual override {
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(owner);
     }
 
@@ -144,7 +127,11 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address from,
         address to,
         uint256 /* amount */
-    ) internal virtual override {
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(from);
         _updateReward(to);
     }
@@ -153,9 +140,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     // since fees are issued as shares to the recipients outside normal functionality.
     function _preReportHook() internal virtual override {
         _updateReward(TokenizedStrategy.performanceFeeRecipient());
-        (uint16 feeBps, address protocolFeeRecipient) = IVaultFactory(
-            TokenizedStrategy.FACTORY()
-        ).protocol_fee_config();
+        (uint16 feeBps, address protocolFeeRecipient) = IVaultFactory(TokenizedStrategy.FACTORY()).protocol_fee_config();
         if (feeBps > 0) {
             _updateReward(protocolFeeRecipient);
         }
@@ -165,29 +150,19 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @notice Get all reward tokens.
      * @return rewardTokens Array of reward token addresses.
      */
-    function getRewardTokens()
-        external
-        view
-        virtual
-        returns (address[] memory)
-    {
+    function getRewardTokens() external view virtual returns (address[] memory) {
         return rewardTokens;
     }
 
     /// @notice Either the current timestamp or end of the most recent period.
-    function lastTimeRewardApplicable(
-        address _rewardToken
-    ) public view virtual returns (uint256) {
-        return
-            block.timestamp < rewardData[_rewardToken].periodFinish
-                ? block.timestamp
-                : rewardData[_rewardToken].periodFinish;
+    function lastTimeRewardApplicable(address _rewardToken) public view virtual returns (uint256) {
+        return block.timestamp < rewardData[_rewardToken].periodFinish
+            ? block.timestamp
+            : rewardData[_rewardToken].periodFinish;
     }
 
     /// @notice Reward paid out per whole token.
-    function rewardPerToken(
-        address _rewardToken
-    ) public view virtual returns (uint256) {
+    function rewardPerToken(address _rewardToken) public view virtual returns (uint256) {
         // store in memory to save gas
         Reward memory _rewardData = rewardData[_rewardToken];
         uint256 totalSupply = _totalSupply();
@@ -196,24 +171,16 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             return _rewardData.rewardPerTokenStored;
         }
 
-        return
-            _rewardData.rewardPerTokenStored +
-            (((lastTimeRewardApplicable(_rewardToken) -
-                _rewardData.lastUpdateTime) * _rewardData.rewardRate) /
-                totalSupply);
+        return _rewardData.rewardPerTokenStored
+            + (((lastTimeRewardApplicable(_rewardToken) - _rewardData.lastUpdateTime) * _rewardData.rewardRate)
+                / totalSupply);
     }
 
     /// @notice Amount of reward token pending claim by an account.
-    function earned(
-        address _account,
-        address _rewardToken
-    ) public view virtual returns (uint256) {
-        return
-            (TokenizedStrategy.balanceOf(_account) *
-                (rewardPerToken(_rewardToken) -
-                    userRewardPerTokenPaid[_account][_rewardToken])) /
-            PRECISION +
-            rewards[_account][_rewardToken];
+    function earned(address _account, address _rewardToken) public view virtual returns (uint256) {
+        return (TokenizedStrategy.balanceOf(_account)
+                * (rewardPerToken(_rewardToken) - userRewardPerTokenPaid[_account][_rewardToken])) / PRECISION
+            + rewards[_account][_rewardToken];
     }
 
     /**
@@ -222,9 +189,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _account Account to check earned balance for.
      * @return pending Amount of reward token(s) pending claim.
      */
-    function earnedMulti(
-        address _account
-    ) public view virtual returns (uint256[] memory pending) {
+    function earnedMulti(address _account) public view virtual returns (uint256[] memory pending) {
         address[] memory _rewardTokens = rewardTokens;
         uint256 length = _rewardTokens.length;
         pending = new uint256[](length);
@@ -235,20 +200,14 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
     }
 
     /// @notice Reward tokens emitted over the entire rewardsDuration.
-    function getRewardForDuration(
-        address _rewardToken
-    ) external view virtual returns (uint256) {
+    function getRewardForDuration(address _rewardToken) external view virtual returns (uint256) {
         // note that if rewards are instant released, this will always return zero
-        return
-            (rewardData[_rewardToken].rewardRate *
-                rewardData[_rewardToken].rewardsDuration) / PRECISION;
+        return (rewardData[_rewardToken].rewardRate * rewardData[_rewardToken].rewardsDuration) / PRECISION;
     }
 
     /// @notice Correct Total supply for the locked shares from profits
     function _totalSupply() internal view virtual returns (uint256) {
-        return
-            TokenizedStrategy.totalSupply() -
-            TokenizedStrategy.balanceOf(address(this));
+        return TokenizedStrategy.totalSupply() - TokenizedStrategy.balanceOf(address(this));
     }
 
     /**
@@ -257,31 +216,24 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _rewardToken Address of the rewards token.
      * @param _rewardAmount Amount of reward tokens to add.
      */
-    function notifyRewardAmount(
-        address _rewardToken,
-        uint256 _rewardAmount
-    ) external virtual {
+    function notifyRewardAmount(address _rewardToken, uint256 _rewardAmount) external virtual {
         require(
-            rewardData[_rewardToken].rewardsDistributor == msg.sender ||
-                msg.sender == TokenizedStrategy.management(),
+            rewardData[_rewardToken].rewardsDistributor == msg.sender || msg.sender == TokenizedStrategy.management(),
             "!authorized"
         );
 
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the reward amount
-        ERC20(_rewardToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _rewardAmount
-        );
+        ERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), _rewardAmount);
 
         _notifyRewardAmount(_rewardToken, _rewardAmount);
     }
 
-    function _notifyRewardAmount(
-        address _rewardToken,
-        uint256 _rewardAmount
-    ) internal virtual updateReward(address(0)) {
+    function _notifyRewardAmount(address _rewardToken, uint256 _rewardAmount)
+        internal
+        virtual
+        updateReward(address(0))
+    {
         Reward memory _rewardData = rewardData[_rewardToken];
         require(_rewardAmount > 0, "bad reward value");
 
@@ -303,10 +255,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         if (_rewardData.rewardsDuration == 1) {
             // Update lastNotifyTime and lastRewardRate if needed (would revert if in the same block otherwise)
             if (uint96(block.timestamp) != _rewardData.lastNotifyTime) {
-                _rewardData.lastRewardRate = _safeUint128(
-                    (_rewardAmount * PRECISION) /
-                        (block.timestamp - _rewardData.lastNotifyTime)
-                );
+                _rewardData.lastRewardRate =
+                    _safeUint128((_rewardAmount * PRECISION) / (block.timestamp - _rewardData.lastNotifyTime));
                 _rewardData.lastNotifyTime = uint96(block.timestamp);
             }
 
@@ -315,11 +265,8 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
             _rewardData.periodFinish = uint96(block.timestamp);
 
             // Instantly release rewards by modifying rewardPerTokenStored
-            _rewardData.rewardPerTokenStored = _safeUint128(
-                _rewardData.rewardPerTokenStored +
-                    (_rewardAmount * PRECISION) /
-                    totalSupply
-            );
+            _rewardData.rewardPerTokenStored =
+                _safeUint128(_rewardData.rewardPerTokenStored + (_rewardAmount * PRECISION) / totalSupply);
         } else {
             // store current rewardRate
             _rewardData.lastRewardRate = _rewardData.rewardRate;
@@ -327,29 +274,22 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
             // update our rewardData with our new rewardRate
             if (block.timestamp >= _rewardData.periodFinish) {
-                _rewardData.rewardRate = _safeUint128(
-                    (_rewardAmount * PRECISION) / _rewardData.rewardsDuration
-                );
+                _rewardData.rewardRate = _safeUint128((_rewardAmount * PRECISION) / _rewardData.rewardsDuration);
             } else {
                 _rewardData.rewardRate = _safeUint128(
-                    (_rewardAmount *
-                        PRECISION +
-                        (_rewardData.periodFinish - block.timestamp) *
-                        _rewardData.rewardRate) / _rewardData.rewardsDuration
+                    (_rewardAmount * PRECISION + (_rewardData.periodFinish - block.timestamp) * _rewardData.rewardRate)
+                        / _rewardData.rewardsDuration
                 );
             }
 
             // update time-based struct fields
-            _rewardData.periodFinish = uint96(
-                block.timestamp + _rewardData.rewardsDuration
-            );
+            _rewardData.periodFinish = uint96(block.timestamp + _rewardData.rewardsDuration);
         }
 
         // make sure we have enough reward token for our new rewardRate
         require(
-            _rewardData.rewardRate <=
-                ((ERC20(_rewardToken).balanceOf(address(this)) * PRECISION) /
-                    _rewardData.rewardsDuration),
+            _rewardData.rewardRate
+                <= ((ERC20(_rewardToken).balanceOf(address(this)) * PRECISION) / _rewardData.rewardsDuration),
             "Not enough balance"
         );
 
@@ -367,12 +307,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @notice Claim any (and all) earned reward tokens.
      * @dev Can claim rewards even if no tokens still staked.
      */
-    function getReward()
-        external
-        virtual
-        nonReentrant
-        updateReward(msg.sender)
-    {
+    function getReward() external virtual nonReentrant updateReward(msg.sender) {
         _getRewardFor(msg.sender, msg.sender);
     }
 
@@ -381,18 +316,13 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @dev Mapping must be manually updated via management. Must be called by recipient.
      * @param _staker Address of the user to claim rewards for.
      */
-    function getRewardFor(
-        address _staker
-    ) external virtual nonReentrant updateReward(_staker) {
+    function getRewardFor(address _staker) external virtual nonReentrant updateReward(_staker) {
         require(claimForRecipient[_staker] == msg.sender, "!recipient");
         _getRewardFor(_staker, msg.sender);
     }
 
     // internal function to get rewards.
-    function _getRewardFor(
-        address _staker,
-        address _recipient
-    ) internal virtual {
+    function _getRewardFor(address _staker, address _recipient) internal virtual {
         for (uint256 i; i < rewardTokens.length; ++i) {
             address _rewardToken = rewardTokens[i];
             _getOneReward(_rewardToken, _staker, _recipient);
@@ -404,9 +334,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @dev Can claim rewards even if no tokens still staked.
      * @param _rewardToken Address of the rewards token to claim.
      */
-    function getOneReward(
-        address _rewardToken
-    ) external virtual nonReentrant updateReward(msg.sender) {
+    function getOneReward(address _rewardToken) external virtual nonReentrant updateReward(msg.sender) {
         _getOneReward(_rewardToken, msg.sender, msg.sender);
     }
 
@@ -416,19 +344,17 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _rewardToken Address of the rewards token to claim.
      * @param _staker Address of the user to claim rewards for.
      */
-    function getOneRewardFor(
-        address _rewardToken,
-        address _staker
-    ) external virtual nonReentrant updateReward(_staker) {
+    function getOneRewardFor(address _rewardToken, address _staker)
+        external
+        virtual
+        nonReentrant
+        updateReward(_staker)
+    {
         require(claimForRecipient[_staker] == msg.sender, "!recipient");
         _getOneReward(_rewardToken, _staker, msg.sender);
     }
 
-    function _getOneReward(
-        address _rewardToken,
-        address _staker,
-        address _recipient
-    ) internal virtual {
+    function _getOneReward(address _rewardToken, address _staker, address _recipient) internal virtual {
         uint256 reward = rewards[_staker][_rewardToken];
         if (reward > 0) {
             rewards[_staker][_rewardToken] = 0;
@@ -439,12 +365,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     /// @notice Unstake all of the sender's tokens and claim any outstanding rewards.
     function exit() external virtual nonReentrant {
-        redeem(
-            TokenizedStrategy.balanceOf(msg.sender),
-            msg.sender,
-            msg.sender,
-            10_000
-        );
+        redeem(TokenizedStrategy.balanceOf(msg.sender), msg.sender, msg.sender, 10_000);
         _getRewardFor(msg.sender, msg.sender);
     }
 
@@ -458,39 +379,25 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _rewardsDuration The duration of our rewards distribution for staking in seconds. Set to 1 for instant
      *  rewards distribution.
      */
-    function addReward(
-        address _rewardToken,
-        address _rewardsDistributor,
-        uint256 _rewardsDuration
-    ) external virtual onlyManagement {
+    function addReward(address _rewardToken, address _rewardsDistributor, uint256 _rewardsDuration)
+        external
+        virtual
+        onlyManagement
+    {
         _addReward(_rewardToken, _rewardsDistributor, _rewardsDuration);
     }
 
     /// @dev Internal function to add a new reward token to the staking contract.
-    function _addReward(
-        address _rewardToken,
-        address _rewardsDistributor,
-        uint256 _rewardsDuration
-    ) internal virtual {
-        require(
-            _rewardToken != address(0) && _rewardsDistributor != address(0),
-            "No zero address"
-        );
+    function _addReward(address _rewardToken, address _rewardsDistributor, uint256 _rewardsDuration) internal virtual {
+        require(_rewardToken != address(0) && _rewardsDistributor != address(0), "No zero address");
         require(_rewardsDuration > 0, "Must be >0");
-        require(
-            rewardData[_rewardToken].rewardsDuration == 0,
-            "Reward already added"
-        );
+        require(rewardData[_rewardToken].rewardsDuration == 0, "Reward already added");
 
         rewardTokens.push(_rewardToken);
         rewardData[_rewardToken].rewardsDistributor = _rewardsDistributor;
         rewardData[_rewardToken].rewardsDuration = uint96(_rewardsDuration);
 
-        emit RewardTokenAdded(
-            _rewardToken,
-            _rewardsDistributor,
-            _rewardsDuration
-        );
+        emit RewardTokenAdded(_rewardToken, _rewardsDistributor, _rewardsDuration);
     }
 
     /**
@@ -499,21 +406,12 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _rewardToken Address of the rewards token.
      * @param _rewardsDistributor Address of the rewards distributor.
      */
-    function setRewardsDistributor(
-        address _rewardToken,
-        address _rewardsDistributor
-    ) external virtual onlyManagement {
+    function setRewardsDistributor(address _rewardToken, address _rewardsDistributor) external virtual onlyManagement {
         _setRewardsDistributor(_rewardToken, _rewardsDistributor);
     }
 
-    function _setRewardsDistributor(
-        address _rewardToken,
-        address _rewardsDistributor
-    ) internal virtual {
-        require(
-            rewardData[_rewardToken].rewardsDistributor != address(0),
-            "Reward token not added"
-        );
+    function _setRewardsDistributor(address _rewardToken, address _rewardsDistributor) internal virtual {
+        require(rewardData[_rewardToken].rewardsDistributor != address(0), "Reward token not added");
         require(_rewardsDistributor != address(0), "No zero address");
 
         rewardData[_rewardToken].rewardsDistributor = _rewardsDistributor;
@@ -527,23 +425,14 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _rewardToken Address of the rewards token.
      * @param _rewardsDuration New length of period in seconds. Set to 1 for instant rewards release.
      */
-    function setRewardsDuration(
-        address _rewardToken,
-        uint256 _rewardsDuration
-    ) external virtual onlyManagement {
+    function setRewardsDuration(address _rewardToken, uint256 _rewardsDuration) external virtual onlyManagement {
         _setRewardsDuration(_rewardToken, _rewardsDuration);
     }
 
-    function _setRewardsDuration(
-        address _rewardToken,
-        uint256 _rewardsDuration
-    ) internal virtual {
+    function _setRewardsDuration(address _rewardToken, uint256 _rewardsDuration) internal virtual {
         _updateReward(address(0));
         // Previous rewards period must be complete before changing the duration for the new period
-        require(
-            block.timestamp > rewardData[_rewardToken].periodFinish,
-            "!period"
-        );
+        require(block.timestamp > rewardData[_rewardToken].periodFinish, "!period");
         require(_rewardsDuration > 0, "Must be >0");
         rewardData[_rewardToken].rewardsDuration = uint96(_rewardsDuration);
         emit RewardsDurationUpdated(_rewardToken, _rewardsDuration);
@@ -556,10 +445,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _staker Address that holds the vault tokens.
      * @param _recipient Address to claim and receive extra rewards on behalf of _staker.
      */
-    function setClaimFor(
-        address _staker,
-        address _recipient
-    ) external virtual onlyManagement {
+    function setClaimFor(address _staker, address _recipient) external virtual onlyManagement {
         _setClaimFor(_staker, _recipient);
     }
 
@@ -572,10 +458,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         _setClaimFor(msg.sender, _recipient);
     }
 
-    function _setClaimFor(
-        address _staker,
-        address _recipient
-    ) internal virtual {
+    function _setClaimFor(address _staker, address _recipient) internal virtual {
         require(_staker != address(0), "No zero address");
         claimForRecipient[_staker] = _recipient;
         emit ClaimForRecipientUpdated(_staker, _recipient);
@@ -587,10 +470,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
      * @param _tokenAddress Address of token to sweep.
      * @param _tokenAmount Amount of tokens to sweep.
      */
-    function recoverERC20(
-        address _tokenAddress,
-        uint256 _tokenAmount
-    ) external virtual onlyManagement {
+    function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external virtual onlyManagement {
         require(_tokenAddress != address(asset), "!asset");
 
         // can only recover reward tokens 90 days after last reward token ends
@@ -599,8 +479,7 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         uint256 maxPeriodFinish;
 
         for (uint256 i; i < _rewardTokens.length; ++i) {
-            uint256 rewardPeriodFinish = rewardData[_rewardTokens[i]]
-                .periodFinish;
+            uint256 rewardPeriodFinish = rewardData[_rewardTokens[i]].periodFinish;
             if (rewardPeriodFinish > maxPeriodFinish) {
                 maxPeriodFinish = rewardPeriodFinish;
             }
@@ -611,19 +490,13 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         }
 
         if (isRewardToken) {
-            require(
-                block.timestamp > maxPeriodFinish + 90 days,
-                "wait >90 days"
-            );
+            require(block.timestamp > maxPeriodFinish + 90 days, "wait >90 days");
 
             // if we do this, automatically sweep all reward token
             _tokenAmount = ERC20(_tokenAddress).balanceOf(address(this));
         }
 
-        ERC20(_tokenAddress).safeTransfer(
-            TokenizedStrategy.management(),
-            _tokenAmount
-        );
+        ERC20(_tokenAddress).safeTransfer(TokenizedStrategy.management(), _tokenAmount);
         emit Recovered(_tokenAddress, _tokenAmount);
     }
 }

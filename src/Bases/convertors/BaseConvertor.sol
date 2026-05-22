@@ -29,10 +29,7 @@ contract BaseConvertor is BaseHealthCheck {
     event DecayRateSet(uint256 indexed decayRate);
     event ReportBufferSet(uint16 indexed reportBuffer);
     event MinAmountToSellSet(uint256 indexed minAmountToSell);
-    event MaxAmountToSwapSet(
-        address indexed from,
-        uint256 indexed maxAmountToSwap
-    );
+    event MaxAmountToSwapSet(address indexed from, uint256 indexed maxAmountToSwap);
     event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
 
     uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
@@ -40,8 +37,7 @@ contract BaseConvertor is BaseHealthCheck {
     uint256 internal constant DEFAULT_AUCTION_DECAY_RATE = 50;
 
     /// @notice The Merkl Distributor contract for claiming rewards
-    IMerklDistributor public constant MERKL_DISTRIBUTOR =
-        IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
+    IMerklDistributor public constant MERKL_DISTRIBUTOR = IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
 
     /// @notice Token converted to/from strategy `asset`.
     ERC20 public immutable WANT;
@@ -77,29 +73,18 @@ contract BaseConvertor is BaseHealthCheck {
     /// @dev Zero means unlimited.
     mapping(address => uint256) public maxAmountToSwap;
 
-    constructor(
-        address _asset,
-        string memory _name,
-        address _want,
-        address _oracle
-    ) BaseHealthCheck(_asset, _name) {
+    constructor(address _asset, string memory _name, address _want, address _oracle) BaseHealthCheck(_asset, _name) {
         WANT = ERC20(_want);
 
-        AuctionFactory factory = AuctionFactory(
-            0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e
-        );
+        AuctionFactory factory = AuctionFactory(0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e);
 
-        Auction _sellAssetAuction = Auction(
-            factory.createNewAuction(_want, address(this), address(this))
-        );
+        Auction _sellAssetAuction = Auction(factory.createNewAuction(_want, address(this), address(this)));
         _sellAssetAuction.enable(_asset);
         _sellAssetAuction.setStepDecayRate(1);
         _sellAssetAuction.setGovernanceOnlyKick(true);
         SELL_ASSET_AUCTION = _sellAssetAuction;
 
-        Auction _buyAssetAuction = Auction(
-            factory.createNewAuction(_asset, address(this), address(this))
-        );
+        Auction _buyAssetAuction = Auction(factory.createNewAuction(_asset, address(this), address(this)));
         _buyAssetAuction.enable(_want);
         _buyAssetAuction.setStepDecayRate(1);
         _buyAssetAuction.setGovernanceOnlyKick(true);
@@ -120,9 +105,7 @@ contract BaseConvertor is BaseHealthCheck {
                         MANAGEMENT CONFIG
     //////////////////////////////////////////////////////////////*/
 
-    function setMinAmountToSell(
-        uint256 _minAmountToSell
-    ) external onlyManagement {
+    function setMinAmountToSell(uint256 _minAmountToSell) external onlyManagement {
         _setMinAmountToSell(_minAmountToSell);
     }
 
@@ -130,10 +113,7 @@ contract BaseConvertor is BaseHealthCheck {
         _setOracle(_oracle);
     }
 
-    function setMaxAmountToSwap(
-        address _from,
-        uint256 _maxAmountToSwap
-    ) external onlyManagement {
+    function setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) external onlyManagement {
         _setMaxAmountToSwap(_from, _maxAmountToSwap);
     }
 
@@ -141,9 +121,7 @@ contract BaseConvertor is BaseHealthCheck {
         _setMaxSlippageBps(_maxSlippageBps);
     }
 
-    function setStartingPriceBps(
-        uint16 _startingPriceBps
-    ) external onlyManagement {
+    function setStartingPriceBps(uint16 _startingPriceBps) external onlyManagement {
         _setStartingPriceBps(_startingPriceBps);
     }
 
@@ -157,17 +135,12 @@ contract BaseConvertor is BaseHealthCheck {
         _setReportBuffer(_reportBuffer);
     }
 
-    function setMaxGasPriceToTend(
-        uint256 _maxGasPriceToTend
-    ) external onlyManagement {
+    function setMaxGasPriceToTend(uint256 _maxGasPriceToTend) external onlyManagement {
         _setMaxGasPriceToTend(_maxGasPriceToTend);
     }
 
     /// @notice Management passthrough to set auction step duration.
-    function setAuctionStepDuration(
-        address _from,
-        uint256 _stepDuration
-    ) external onlyManagement {
+    function setAuctionStepDuration(address _from, uint256 _stepDuration) external onlyManagement {
         _auctionForToken(_from).setStepDuration(_stepDuration);
     }
 
@@ -195,19 +168,9 @@ contract BaseConvertor is BaseHealthCheck {
 
     function _kickAuction(address _from) internal virtual returns (uint256) {
         if (_from == address(WANT)) {
-            return
-                _kickConfiguredAuction(
-                    BUY_ASSET_AUCTION,
-                    _from,
-                    type(uint256).max
-                );
+            return _kickConfiguredAuction(BUY_ASSET_AUCTION, _from, type(uint256).max);
         }
-        return
-            _kickConfiguredAuction(
-                SELL_ASSET_AUCTION,
-                _from,
-                type(uint256).max
-            );
+        return _kickConfiguredAuction(SELL_ASSET_AUCTION, _from, type(uint256).max);
     }
 
     function kickable(address _from) public view virtual returns (uint256) {
@@ -219,9 +182,7 @@ contract BaseConvertor is BaseHealthCheck {
 
     /// @notice We use trigger to go from asset -> want.
     /// We cannot assume loose want should be converted, so it does not go back.
-    function auctionTrigger(
-        address _from
-    ) external view returns (bool shouldKick, bytes memory data) {
+    function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data) {
         if (_from == address(WANT)) return (false, bytes("want"));
 
         if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
@@ -246,20 +207,14 @@ contract BaseConvertor is BaseHealthCheck {
         _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT), _wantAmount);
     }
 
-    function _harvestAndReport()
-        internal
-        virtual
-        override
-        returns (uint256 _totalAssets)
-    {
+    function _harvestAndReport() internal virtual override returns (uint256 _totalAssets) {
         _claimAndSellRewards();
 
         _totalAssets = estimatedTotalAssets();
     }
 
     function estimatedTotalAssets() public view virtual returns (uint256) {
-        uint256 wantValueInAsset = (_quoteAssetFromWant(totalWant()) *
-            (MAX_BPS - reportBuffer)) / MAX_BPS;
+        uint256 wantValueInAsset = (_quoteAssetFromWant(totalWant()) * (MAX_BPS - reportBuffer)) / MAX_BPS;
 
         return balanceOfAsset() + balanceOfAssetInAuction() + wantValueInAsset;
     }
@@ -286,9 +241,7 @@ contract BaseConvertor is BaseHealthCheck {
         return WANT.balanceOf(address(BUY_ASSET_AUCTION));
     }
 
-    function availableWithdrawLimit(
-        address
-    ) public view virtual override returns (uint256) {
+    function availableWithdrawLimit(address) public view virtual override returns (uint256) {
         return balanceOfAsset();
     }
 
@@ -312,20 +265,14 @@ contract BaseConvertor is BaseHealthCheck {
         emit MinAmountToSellSet(_minAmountToSell);
     }
 
-    function _setMaxAmountToSwap(
-        address _from,
-        uint256 _maxAmountToSwap
-    ) internal virtual {
+    function _setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) internal virtual {
         maxAmountToSwap[_from] = _maxAmountToSwap;
         emit MaxAmountToSwapSet(_from, _maxAmountToSwap);
     }
 
     function _setMaxSlippageBps(uint16 _maxSlippageBps) internal virtual {
         require(_maxSlippageBps <= MAX_BPS, "slippage");
-        require(
-            startingPriceBps >= uint16(MAX_BPS - _maxSlippageBps),
-            "starting bps"
-        );
+        require(startingPriceBps >= uint16(MAX_BPS - _maxSlippageBps), "starting bps");
 
         maxSlippageBps = _maxSlippageBps;
         emit MaxSlippageBpsSet(_maxSlippageBps);
@@ -333,10 +280,7 @@ contract BaseConvertor is BaseHealthCheck {
 
     function _setStartingPriceBps(uint16 _startingPriceBps) internal virtual {
         require(_startingPriceBps != 0, "starting bps");
-        require(
-            _startingPriceBps >= uint16(MAX_BPS - maxSlippageBps),
-            "starting bps"
-        );
+        require(_startingPriceBps >= uint16(MAX_BPS - maxSlippageBps), "starting bps");
 
         startingPriceBps = _startingPriceBps;
         emit StartingPriceBpsSet(_startingPriceBps);
@@ -354,9 +298,7 @@ contract BaseConvertor is BaseHealthCheck {
         emit ReportBufferSet(_reportBuffer);
     }
 
-    function _setMaxGasPriceToTend(
-        uint256 _maxGasPriceToTend
-    ) internal virtual {
+    function _setMaxGasPriceToTend(uint256 _maxGasPriceToTend) internal virtual {
         maxGasPriceToTend = _maxGasPriceToTend;
         emit MaxGasPriceToTendSet(_maxGasPriceToTend);
     }
@@ -367,11 +309,11 @@ contract BaseConvertor is BaseHealthCheck {
         return block.basefee <= _maxGasPriceToTend;
     }
 
-    function _kickConfiguredAuction(
-        Auction _auction,
-        address _from,
-        uint256 _maxKickAmount
-    ) internal virtual returns (uint256 _available) {
+    function _kickConfiguredAuction(Auction _auction, address _from, uint256 _maxKickAmount)
+        internal
+        virtual
+        returns (uint256 _available)
+    {
         if (_auction.isActive(_from)) {
             // Will revert if the auction still has available funds.
             _auction.settle(_from);
@@ -385,10 +327,7 @@ contract BaseConvertor is BaseHealthCheck {
 
         uint256 balanceInAuction = ERC20(_from).balanceOf(address(_auction));
         if (balanceInAuction < _available) {
-            ERC20(_from).safeTransfer(
-                address(_auction),
-                _available - balanceInAuction
-            );
+            ERC20(_from).safeTransfer(address(_auction), _available - balanceInAuction);
         } else {
             _auction.sweep(_from);
             ERC20(_from).safeTransfer(address(_auction), _available);
@@ -397,16 +336,8 @@ contract BaseConvertor is BaseHealthCheck {
         _available = _auction.kick(_from);
     }
 
-    function _setAuctionPricing(
-        Auction _auction,
-        address _from,
-        uint256 _amount
-    ) internal virtual {
-        (
-            uint256 _startingPrice,
-            uint256 _minimumPrice,
-            uint256 _stepDecayRate
-        ) = _auctionPricingFor(_from, _amount);
+    function _setAuctionPricing(Auction _auction, address _from, uint256 _amount) internal virtual {
+        (uint256 _startingPrice, uint256 _minimumPrice, uint256 _stepDecayRate) = _auctionPricingFor(_from, _amount);
 
         if (_auction.startingPrice() != _startingPrice) {
             _auction.setStartingPrice(_startingPrice);
@@ -419,14 +350,10 @@ contract BaseConvertor is BaseHealthCheck {
         }
     }
 
-    function _kickableFromAuction(
-        Auction _auction,
-        address _from
-    ) internal view virtual returns (uint256) {
+    function _kickableFromAuction(Auction _auction, address _from) internal view virtual returns (uint256) {
         if (_auction.isActive(_from) && _auction.available(_from) > 0) return 0;
 
-        uint256 _kickable = ERC20(_from).balanceOf(address(this)) +
-            ERC20(_from).balanceOf(address(_auction));
+        uint256 _kickable = ERC20(_from).balanceOf(address(this)) + ERC20(_from).balanceOf(address(_auction));
         uint256 _maxAmountToSwap = maxAmountToSwap[_from];
 
         if (_maxAmountToSwap != 0 && _kickable > _maxAmountToSwap) {
@@ -436,9 +363,7 @@ contract BaseConvertor is BaseHealthCheck {
         return _kickable;
     }
 
-    function _auctionForToken(
-        address _from
-    ) internal view returns (Auction _auction) {
+    function _auctionForToken(address _from) internal view returns (Auction _auction) {
         if (_from == address(WANT)) return BUY_ASSET_AUCTION;
         return SELL_ASSET_AUCTION;
     }
@@ -448,57 +373,30 @@ contract BaseConvertor is BaseHealthCheck {
         require(_price > 0, "oracle");
     }
 
-    function _auctionPricingFor(
-        address _from,
-        uint256 _amount
-    )
+    function _auctionPricingFor(address _from, uint256 _amount)
         internal
         view
         virtual
-        returns (
-            uint256 _startingPrice,
-            uint256 _minimumPrice,
-            uint256 _stepDecayRate
-        )
+        returns (uint256 _startingPrice, uint256 _minimumPrice, uint256 _stepDecayRate)
     {
         // If non want/asset tokens, use the default auction pricing.
         if (_from != address(asset) && _from != address(WANT)) {
-            return (
-                DEFAULT_AUCTION_STARTING_PRICE,
-                0,
-                DEFAULT_AUCTION_DECAY_RATE
-            );
+            return (DEFAULT_AUCTION_STARTING_PRICE, 0, DEFAULT_AUCTION_DECAY_RATE);
         }
 
         uint256 fromScaler = 10 ** ERC20(_from).decimals();
         uint256 targetPrice = _targetAuctionPrice(_from);
-        uint256 startUnitPrice = Math.mulDiv(
-            targetPrice,
-            uint256(startingPriceBps),
-            MAX_BPS,
-            Math.Rounding.Up
-        );
+        uint256 startUnitPrice = Math.mulDiv(targetPrice, uint256(startingPriceBps), MAX_BPS, Math.Rounding.Up);
 
         // Auction starting price is a lot size, so we need to adjust for amount.
-        _startingPrice = Math.mulDiv(
-            _amount,
-            startUnitPrice,
-            fromScaler * 1e18,
-            Math.Rounding.Up
-        );
+        _startingPrice = Math.mulDiv(_amount, startUnitPrice, fromScaler * 1e18, Math.Rounding.Up);
         if (_startingPrice == 0) _startingPrice = 1;
 
-        _minimumPrice = Math.mulDiv(
-            targetPrice,
-            uint256(MAX_BPS) - uint256(maxSlippageBps),
-            MAX_BPS
-        );
+        _minimumPrice = Math.mulDiv(targetPrice, uint256(MAX_BPS) - uint256(maxSlippageBps), MAX_BPS);
         _stepDecayRate = decayRate;
     }
 
-    function _targetAuctionPrice(
-        address _from
-    ) internal view virtual returns (uint256 _price) {
+    function _targetAuctionPrice(address _from) internal view virtual returns (uint256 _price) {
         if (_from == address(asset)) {
             uint256 oneAsset = 10 ** asset.decimals();
             uint256 quoteWant = _quoteWantFromAsset(oneAsset);
@@ -512,18 +410,14 @@ contract BaseConvertor is BaseHealthCheck {
 
     /// @dev Convert `asset` amount to `want` using oracle price.
     /// Oracle semantics: `asset = want * price / 1e36`.
-    function _quoteWantFromAsset(
-        uint256 _amount
-    ) internal view virtual returns (uint256) {
+    function _quoteWantFromAsset(uint256 _amount) internal view virtual returns (uint256) {
         if (_amount == 0) return 0;
         return Math.mulDiv(_amount, ORACLE_PRICE_SCALE, _oraclePrice());
     }
 
     /// @dev Convert `want` amount to `asset` using oracle price.
     /// Oracle semantics: `asset = want * price / 1e36`.
-    function _quoteAssetFromWant(
-        uint256 _amount
-    ) internal view virtual returns (uint256) {
+    function _quoteAssetFromWant(uint256 _amount) internal view virtual returns (uint256) {
         if (_amount == 0) return 0;
         return Math.mulDiv(_amount, _oraclePrice(), ORACLE_PRICE_SCALE);
     }

@@ -13,9 +13,7 @@ contract HealthCheckTest is Setup {
     function setUp() public override {
         super.setUp();
 
-        healthCheck = IMockHealthCheck(
-            address(new MockHealthCheck(address(asset)))
-        );
+        healthCheck = IMockHealthCheck(address(new MockHealthCheck(address(asset))));
 
         healthCheck.setKeeper(keeper);
         healthCheck.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -30,58 +28,30 @@ contract HealthCheckTest is Setup {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // Defaults to true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Defaults to 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Defaults to 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
 
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         vm.prank(keeper);
         healthCheck.report();
 
         // Should still be true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Should still be 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Should still be 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
 
         skip(healthCheck.profitMaxUnlockTime());
 
         // Should still be true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Should still be 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Should still be 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
 
@@ -91,34 +61,18 @@ contract HealthCheckTest is Setup {
         assertGe(asset.balanceOf(user), _amount);
 
         // Should still be true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Should still be 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Should still be 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
     }
 
     function test_limits() public {
         // Defaults to true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Defaults to 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Defaults to 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
 
@@ -128,17 +82,9 @@ contract HealthCheckTest is Setup {
         healthCheck.setProfitLimitRatio(0);
 
         // Should still be true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Should still be 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Should still be 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
 
@@ -150,17 +96,9 @@ contract HealthCheckTest is Setup {
         healthCheck.setLossLimitRatio(max);
 
         // Should still be true
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
         // Should still be 100%
-        assertEq(
-            healthCheck.profitLimitRatio(),
-            10_000,
-            "profitLimitRatio should be 10000"
-        );
+        assertEq(healthCheck.profitLimitRatio(), 10_000, "profitLimitRatio should be 10000");
         // Should still be 0%
         assertEq(healthCheck.lossLimitRatio(), 0, "lossLimitRatio should be 0");
     }
@@ -169,66 +107,42 @@ contract HealthCheckTest is Setup {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         // Turn off HealthCheck
         vm.prank(management);
         healthCheck.setDoHealthCheck(false);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            false,
-            "doHealthCheck should be false"
-        );
+        assertEq(healthCheck.doHealthCheck(), false, "doHealthCheck should be false");
 
         vm.prank(keeper);
         healthCheck.report();
 
         // Should be true again
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
     function test__normalHealthCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         uint256 profit = _amount / 10;
 
         // simulate earning a profit
         airdrop(asset, address(healthCheck), profit);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         vm.prank(keeper);
-        (uint256 realProfit, ) = healthCheck.report();
+        (uint256 realProfit,) = healthCheck.report();
 
         // Make sure we reported the correct profit
         assertEq(profit, realProfit, "Reported profit mismatch");
 
         // Health Check should still be on
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         skip(healthCheck.profitMaxUnlockTime());
 
@@ -242,11 +156,7 @@ contract HealthCheckTest is Setup {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         // Defaults to 100% so should revert if over amount
         uint256 profit = _amount + 1;
@@ -254,47 +164,31 @@ contract HealthCheckTest is Setup {
         // simulate earning the profit
         airdrop(asset, address(healthCheck), profit);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         vm.expectRevert("healthCheck");
         vm.prank(keeper);
         healthCheck.report();
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         // Increase the limit enough to allow profit
         vm.prank(management);
         healthCheck.setProfitLimitRatio(10_001);
 
         vm.prank(management);
-        (uint256 realProfit, ) = healthCheck.report();
+        (uint256 realProfit,) = healthCheck.report();
 
         assertEq(profit, realProfit, "Reported profit mismatch");
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
     function test_loss_reverts_increaseLimit(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         // Loose .01%
         uint256 loss = _amount / MAX_BPS;
@@ -303,21 +197,13 @@ contract HealthCheckTest is Setup {
         vm.prank(address(healthCheck));
         asset.safeTransfer(management, loss);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         vm.expectRevert("healthCheck");
         vm.prank(keeper);
         healthCheck.report();
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         // Increase the limit enough to allow 1% loss
         vm.prank(management);
@@ -328,22 +214,14 @@ contract HealthCheckTest is Setup {
 
         assertEq(loss, realLoss, "Reported loss mismatch");
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
     function test_toMuchProfit_reverts_turnOffCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         // Defaults to 100% so should revert if over amount
         uint256 profit = _amount + 1;
@@ -351,47 +229,31 @@ contract HealthCheckTest is Setup {
         // simulate earning the profit
         airdrop(asset, address(healthCheck), profit);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         vm.expectRevert("healthCheck");
         vm.prank(management);
         healthCheck.report();
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         // Turn off the health check
         vm.prank(management);
         healthCheck.setDoHealthCheck(false);
 
         vm.prank(keeper);
-        (uint256 realProfit, ) = healthCheck.report();
+        (uint256 realProfit,) = healthCheck.report();
 
         assertEq(profit, realProfit, "Reported profit mismatch");
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
     function test_loss_reverts_turnOffCheck(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
         // deposit
-        mintAndDepositIntoStrategy(
-            IStrategy(address(healthCheck)),
-            user,
-            _amount
-        );
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, _amount);
 
         // Loose .01%
         uint256 loss = _amount / MAX_BPS;
@@ -400,21 +262,13 @@ contract HealthCheckTest is Setup {
         vm.prank(address(healthCheck));
         asset.safeTransfer(management, loss);
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         vm.expectRevert("healthCheck");
         vm.prank(management);
         healthCheck.report();
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
 
         // Turn off the health check
         vm.prank(management);
@@ -425,11 +279,7 @@ contract HealthCheckTest is Setup {
 
         assertEq(loss, realLoss, "Reported loss mismatch");
 
-        assertEq(
-            healthCheck.doHealthCheck(),
-            true,
-            "doHealthCheck should be true"
-        );
+        assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
     function test_depositorWhitelist_openOrAllowed() public {

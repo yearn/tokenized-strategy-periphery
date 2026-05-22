@@ -30,10 +30,7 @@ contract TestFactory is ClonableCreate2 {
         return clone;
     }
 
-    function deployClone(
-        address _original,
-        bytes32 salt
-    ) external returns (address) {
+    function deployClone(address _original, bytes32 salt) external returns (address) {
         address clone = _cloneCreate2(_original, salt);
         emit CloneDeployed(clone, salt);
         return clone;
@@ -43,10 +40,7 @@ contract TestFactory is ClonableCreate2 {
         return computeCreate2Address(original, salt, msg.sender);
     }
 
-    function predictAddress(
-        address _original,
-        bytes32 salt
-    ) external view returns (address) {
+    function predictAddress(address _original, bytes32 salt) external view returns (address) {
         return computeCreate2Address(_original, salt, msg.sender);
     }
 }
@@ -98,18 +92,9 @@ contract ClonableCreate2Test is Test {
         address clone3 = factory.deployClone(salt);
 
         // All clones should have different addresses due to msg.sender protection
-        assertTrue(
-            clone1 != clone2,
-            "Clone1 and Clone2 should have different addresses"
-        );
-        assertTrue(
-            clone2 != clone3,
-            "Clone2 and Clone3 should have different addresses"
-        );
-        assertTrue(
-            clone1 != clone3,
-            "Clone1 and Clone3 should have different addresses"
-        );
+        assertTrue(clone1 != clone2, "Clone1 and Clone2 should have different addresses");
+        assertTrue(clone2 != clone3, "Clone2 and Clone3 should have different addresses");
+        assertTrue(clone1 != clone3, "Clone1 and Clone3 should have different addresses");
 
         // All clones should be functional
         MockImplementation(clone1).initialize(1);
@@ -132,11 +117,7 @@ contract ClonableCreate2Test is Test {
         vm.prank(user1);
         address deployed = factory.deployClone(salt);
 
-        assertEq(
-            predicted,
-            deployed,
-            "Predicted and deployed addresses should match"
-        );
+        assertEq(predicted, deployed, "Predicted and deployed addresses should match");
     }
 
     function testCannotDeploySameSaltTwice() public {
@@ -169,19 +150,12 @@ contract ClonableCreate2Test is Test {
         bytes32 salt = bytes32(uint256(888));
 
         // Predict address
-        address predicted = factory.predictAddress(
-            address(implementation2),
-            salt
-        );
+        address predicted = factory.predictAddress(address(implementation2), salt);
 
         // Deploy
         address deployed = factory.deployClone(address(implementation2), salt);
 
-        assertEq(
-            predicted,
-            deployed,
-            "Predicted and deployed should match for custom implementation"
-        );
+        assertEq(predicted, deployed, "Predicted and deployed should match for custom implementation");
     }
 
     function testFuzzSaltAndValue(bytes32 salt, uint256 value) public {
