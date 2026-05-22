@@ -256,13 +256,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
     {
         return
         // Scale _amountToTake to 1e18
-        (
-            _amountToTake * _auction.scaler
-            // Price is always 1e18
-            * _price(_auction.kicked, _auction.initialAvailable * _auction.scaler, _timestamp)
-        ) / 1e18
-        // Scale back down to want.
-        / wantInfo.scaler;
+        (_amountToTake
+                * _auction.scaler
+                // Price is always 1e18
+                * _price(_auction.kicked, _auction.initialAvailable * _auction.scaler, _timestamp)) / 1e18
+            // Scale back down to want.
+            / wantInfo.scaler;
     }
 
     /**

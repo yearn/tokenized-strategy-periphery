@@ -68,10 +68,9 @@ contract ShadowQueueAprOracle is Governance {
             int256 debtChange = (_debtChange * int256(debt)) / int256(totalAssets);
 
             // Add the weighted apr of the strategy to the total apr.
-            totalApr += (
-                CORE_ORACLE.getStrategyApr(strategies[i], debtChange) * uint256(int256(debt) + debtChange)
-                    * (MAX_BPS - performanceFee)
-            ) / MAX_BPS;
+            totalApr += (CORE_ORACLE.getStrategyApr(strategies[i], debtChange)
+                    * uint256(int256(debt) + debtChange)
+                    * (MAX_BPS - performanceFee)) / MAX_BPS;
         }
 
         for (uint256 i = 0; i < strategiesOutsideQueue.length; i++) {
@@ -93,10 +92,9 @@ contract ShadowQueueAprOracle is Governance {
             int256 debtChange = (_debtChange * int256(debt)) / int256(totalAssets);
 
             // Add the weighted apr of the strategy to the total apr.
-            totalApr += (
-                CORE_ORACLE.getStrategyApr(strategiesOutsideQueue[i], debtChange) * uint256(int256(debt) + debtChange)
-                    * (MAX_BPS - performanceFee)
-            ) / MAX_BPS;
+            totalApr += (CORE_ORACLE.getStrategyApr(strategiesOutsideQueue[i], debtChange)
+                    * uint256(int256(debt) + debtChange)
+                    * (MAX_BPS - performanceFee)) / MAX_BPS;
         }
 
         // Divide by the total assets to get apr as 1e18.

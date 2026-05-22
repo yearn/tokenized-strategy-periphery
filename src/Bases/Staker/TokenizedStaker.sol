@@ -95,7 +95,17 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
 
     constructor(address _asset, string memory _name) BaseHealthCheck(_asset, _name) {}
 
-    function _preDepositHook(uint256, /* assets */ uint256, /* shares */ address receiver) internal virtual override {
+    function _preDepositHook(
+        uint256,
+        /* assets */
+        uint256,
+        /* shares */
+        address receiver
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(receiver);
     }
 
@@ -105,11 +115,23 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         address, /* receiver */
         address owner,
         uint256 /* maxLoss */
-    ) internal virtual override {
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(owner);
     }
 
-    function _preTransferHook(address from, address to, uint256 /* amount */ ) internal virtual override {
+    function _preTransferHook(
+        address from,
+        address to,
+        uint256 /* amount */
+    )
+        internal
+        virtual
+        override
+    {
         _updateReward(from);
         _updateReward(to);
     }
@@ -150,18 +172,15 @@ abstract contract TokenizedStaker is BaseHooks, ReentrancyGuard {
         }
 
         return _rewardData.rewardPerTokenStored
-            + (
-                ((lastTimeRewardApplicable(_rewardToken) - _rewardData.lastUpdateTime) * _rewardData.rewardRate)
-                    / totalSupply
-            );
+            + (((lastTimeRewardApplicable(_rewardToken) - _rewardData.lastUpdateTime) * _rewardData.rewardRate)
+                / totalSupply);
     }
 
     /// @notice Amount of reward token pending claim by an account.
     function earned(address _account, address _rewardToken) public view virtual returns (uint256) {
-        return (
-            TokenizedStrategy.balanceOf(_account)
-                * (rewardPerToken(_rewardToken) - userRewardPerTokenPaid[_account][_rewardToken])
-        ) / PRECISION + rewards[_account][_rewardToken];
+        return (TokenizedStrategy.balanceOf(_account)
+                * (rewardPerToken(_rewardToken) - userRewardPerTokenPaid[_account][_rewardToken])) / PRECISION
+            + rewards[_account][_rewardToken];
     }
 
     /**

@@ -31,10 +31,7 @@ contract MockUniswapV3Swapper is BaseStrategy, UniswapV3Swapper {
         _setUniFees(_token0, _token1, _fee);
     }
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256)
-    {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256) {
         return _swapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 
@@ -55,9 +52,7 @@ interface IMockUniswapV3Swapper is IStrategy, IUniswapV3Swapper {
 
     function swapTo(address _from, address _to, uint256 _amountTo, uint256 _maxAmountFrom) external returns (uint256);
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256);
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256);
 
     function setUniFees(address _token0, address _token1, uint24 _fee) external;
 }

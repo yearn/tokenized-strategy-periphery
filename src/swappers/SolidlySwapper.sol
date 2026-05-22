@@ -63,9 +63,10 @@ contract SolidlySwapper is BaseSwapper {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
 
-            ISolidly(router).swapExactTokensForTokens(
-                _amountIn, _minAmountOut, _getTokenOutPath(_from, _to), address(this), block.timestamp
-            );
+            ISolidly(router)
+                .swapExactTokensForTokens(
+                    _amountIn, _minAmountOut, _getTokenOutPath(_from, _to), address(this), block.timestamp
+                );
         }
     }
 

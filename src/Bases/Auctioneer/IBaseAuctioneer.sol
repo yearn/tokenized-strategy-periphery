@@ -27,10 +27,7 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function getAmountNeeded(address _from, uint256 _amountToTake) external view returns (uint256);
 
-    function getAmountNeeded(address _from, uint256 _amountToTake, uint256 _timestamp)
-        external
-        view
-        returns (uint256);
+    function getAmountNeeded(address _from, uint256 _amountToTake, uint256 _timestamp) external view returns (uint256);
 
     function price(address _from) external view returns (uint256);
 
@@ -50,9 +47,7 @@ interface IBaseAuctioneer is IBaseHealthCheck {
 
     function take(address _from, uint256 _maxAmount, address _receiver) external returns (uint256);
 
-    function take(address _from, uint256 _maxAmount, address _receiver, bytes calldata _data)
-        external
-        returns (uint256);
+    function take(address _from, uint256 _maxAmount, address _receiver, bytes calldata _data) external returns (uint256);
 
     function isValidSignature(bytes32 _hash, bytes memory _signature) external view returns (bytes4);
 }

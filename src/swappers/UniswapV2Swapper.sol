@@ -44,9 +44,10 @@ contract UniswapV2Swapper is BaseSwapper {
         if (_amountIn > minAmountToSell) {
             _checkAllowance(router, _from, _amountIn);
 
-            IUniswapV2Router02(router).swapExactTokensForTokens(
-                _amountIn, _minAmountOut, _getTokenOutPath(_from, _to), address(this), block.timestamp
-            );
+            IUniswapV2Router02(router)
+                .swapExactTokensForTokens(
+                    _amountIn, _minAmountOut, _getTokenOutPath(_from, _to), address(this), block.timestamp
+                );
         }
     }
 

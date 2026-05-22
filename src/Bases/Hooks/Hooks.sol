@@ -10,13 +10,11 @@ contract DepositHooks {
 contract WithdrawHooks {
     function _preWithdrawHook(uint256 assets, uint256 shares, address receiver, address owner, uint256 maxLoss)
         internal
-        virtual
-    {}
+        virtual {}
 
     function _postWithdrawHook(uint256 assets, uint256 shares, address receiver, address owner, uint256 maxLoss)
         internal
-        virtual
-    {}
+        virtual {}
 }
 
 contract TransferHooks {

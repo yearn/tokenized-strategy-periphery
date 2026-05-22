@@ -139,7 +139,8 @@ contract FluidSwapper is BaseSwapper {
             ERC20(_from).forceApprove(_config.dex, _amountIn);
         }
 
-        _amountOut =
-            IFluidDexT1(_config.dex).swapIn{value: _msgValue}(_config.swap0to1, _amountIn, _minAmountOut, address(this));
+        _amountOut = IFluidDexT1(_config.dex).swapIn{value: _msgValue}(
+            _config.swap0to1, _amountIn, _minAmountOut, address(this)
+        );
     }
 }

@@ -121,17 +121,22 @@ contract PendleSwapper is BaseSwapper {
         address _market,
         uint256 _amountIn,
         uint256 _minPtOut
-    ) internal virtual returns (uint256 _amountOut) {
+    )
+        internal
+        virtual
+        returns (uint256 _amountOut)
+    {
         _checkAllowance(pendleRouter, _tokenIn, _amountIn);
 
-        (uint256 netPtOut,,) = IPendleRouter(pendleRouter).swapExactTokenForPt(
-            address(this),
-            _market,
-            _minPtOut,
-            _getDefaultApproxParams(_amountIn),
-            _getSimpleTokenInput(_tokenIn, _amountIn),
-            _getEmptyLimitOrderData()
-        );
+        (uint256 netPtOut,,) = IPendleRouter(pendleRouter)
+            .swapExactTokenForPt(
+                address(this),
+                _market,
+                _minPtOut,
+                _getDefaultApproxParams(_amountIn),
+                _getSimpleTokenInput(_tokenIn, _amountIn),
+                _getEmptyLimitOrderData()
+            );
 
         _amountOut = netPtOut;
     }
@@ -152,9 +157,14 @@ contract PendleSwapper is BaseSwapper {
     {
         _checkAllowance(pendleRouter, _pt, _amountIn);
 
-        (uint256 netTokenOut,,) = IPendleRouter(pendleRouter).swapExactPtForToken(
-            address(this), _market, _amountIn, _getSimpleTokenOutput(_tokenOut, _minTokenOut), _getEmptyLimitOrderData()
-        );
+        (uint256 netTokenOut,,) = IPendleRouter(pendleRouter)
+            .swapExactPtForToken(
+                address(this),
+                _market,
+                _amountIn,
+                _getSimpleTokenOutput(_tokenOut, _minTokenOut),
+                _getEmptyLimitOrderData()
+            );
 
         _amountOut = netTokenOut;
     }
@@ -177,9 +187,8 @@ contract PendleSwapper is BaseSwapper {
 
         _checkAllowance(pendleRouter, _pt, _amountIn);
 
-        (uint256 netTokenOut,) = IPendleRouter(pendleRouter).redeemPyToToken(
-            address(this), address(YT), _amountIn, _getSimpleTokenOutput(_tokenOut, _minTokenOut)
-        );
+        (uint256 netTokenOut,) = IPendleRouter(pendleRouter)
+            .redeemPyToToken(address(this), address(YT), _amountIn, _getSimpleTokenOutput(_tokenOut, _minTokenOut));
 
         _amountOut = netTokenOut;
     }
@@ -193,13 +202,14 @@ contract PendleSwapper is BaseSwapper {
     function _getDefaultApproxParams(uint256 _amountIn) internal view virtual returns (ApproxParams memory) {
         uint256 _guessMax = guessMaxMultiplier == 0 ? type(uint256).max : _amountIn * guessMaxMultiplier;
 
-        return ApproxParams({
-            guessMin: 0,
-            guessMax: _guessMax,
-            guessOffchain: 0,
-            maxIteration: 256,
-            eps: 1e14 // 0.01%
-        });
+        return
+            ApproxParams({
+                guessMin: 0,
+                guessMax: _guessMax,
+                guessOffchain: 0,
+                maxIteration: 256,
+                eps: 1e14 // 0.01%
+            });
     }
 
     /**
@@ -222,12 +232,7 @@ contract PendleSwapper is BaseSwapper {
      * @param _tokenIn The input token address.
      * @param _amount The amount of tokens.
      */
-    function _getSimpleTokenInput(address _tokenIn, uint256 _amount)
-        internal
-        pure
-        virtual
-        returns (TokenInput memory)
-    {
+    function _getSimpleTokenInput(address _tokenIn, uint256 _amount) internal pure virtual returns (TokenInput memory) {
         return TokenInput({
             tokenIn: _tokenIn,
             netTokenIn: _amount,

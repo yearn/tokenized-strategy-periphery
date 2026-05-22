@@ -20,9 +20,8 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
         address proxy = deployProxy(strategyImpl);
 
         // Initialize the strategy
-        MockUpgradeableStrategy(proxy).initialize(
-            address(asset), "Test Strategy", management, performanceFeeRecipient, keeper
-        );
+        MockUpgradeableStrategy(proxy)
+            .initialize(address(asset), "Test Strategy", management, performanceFeeRecipient, keeper);
 
         strategy = IStrategy(proxy);
     }
@@ -42,9 +41,8 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
     function test_preventDoubleInit() public {
         // Try to initialize again - should revert
         vm.expectRevert("Initializable: contract is already initialized");
-        MockUpgradeableStrategy(address(strategy)).initialize(
-            address(asset), "Another Name", management, performanceFeeRecipient, keeper
-        );
+        MockUpgradeableStrategy(address(strategy))
+            .initialize(address(asset), "Another Name", management, performanceFeeRecipient, keeper);
     }
 
     function test_implementationCannotBeInitialized() public {

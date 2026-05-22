@@ -45,10 +45,7 @@ contract MockUniswapUniversalSwapper is BaseStrategy, UniswapUniversalSwapper {
         _setV4Pool(_token0, _token1, _fee, _tickSpacing, _hooks);
     }
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256)
-    {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256) {
         return _swapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }
@@ -67,7 +64,5 @@ interface IMockUniswapUniversalSwapper is IStrategy, IUniswapUniversalSwapper {
 
     function setV4Pool(address _token0, address _token1, uint24 _fee, int24 _tickSpacing, address _hooks) external;
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256);
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256);
 }

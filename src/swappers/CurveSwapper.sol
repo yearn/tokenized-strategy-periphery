@@ -78,9 +78,8 @@ contract CurveSwapper is BaseSwapper {
 
             CurveRouteParams storage params = _curveRoutes[_from][_to];
 
-            _amountOut = ICurveRouter(curveRouter).exchange(
-                params.route, params.swapParams, _amountIn, _minAmountOut, params.pools, address(this)
-            );
+            _amountOut = ICurveRouter(curveRouter)
+                .exchange(params.route, params.swapParams, _amountIn, _minAmountOut, params.pools, address(this));
         }
     }
 

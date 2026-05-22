@@ -405,10 +405,7 @@ contract UniswapUniversalSwapper is BaseSwapper {
         });
 
         IV4Router.ExactInputParams memory swapParams = IV4Router.ExactInputParams({
-            currencyIn: v4From,
-            path: path,
-            amountIn: uint128(_amountIn),
-            amountOutMinimum: uint128(_minAmountOut)
+            currencyIn: v4From, path: path, amountIn: uint128(_amountIn), amountOutMinimum: uint128(_minAmountOut)
         });
 
         bytes memory actions = abi.encodePacked(

@@ -343,7 +343,14 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @param . The address that is depositing into the strategy.
      * @return . The available amount the `_owner` can deposit in terms of `asset`
      */
-    function availableDepositLimit(address /*_owner*/ ) public view virtual returns (uint256) {
+    function availableDepositLimit(
+        address /*_owner*/
+    )
+        public
+        view
+        virtual
+        returns (uint256)
+    {
         return type(uint256).max;
     }
 
@@ -365,7 +372,14 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * @param . The address that is withdrawing from the strategy.
      * @return . The available amount that can be withdrawn in terms of `asset`
      */
-    function availableWithdrawLimit(address /*_owner*/ ) public view virtual returns (uint256) {
+    function availableWithdrawLimit(
+        address /*_owner*/
+    )
+        public
+        view
+        virtual
+        returns (uint256)
+    {
         return type(uint256).max;
     }
 

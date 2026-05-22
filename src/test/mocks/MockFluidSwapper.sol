@@ -41,10 +41,7 @@ contract MockFluidSwapper is BaseStrategy, FluidSwapper {
         return _fluidSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256)
-    {
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256) {
         return _fluidSwapFrom(_from, _to, _amountIn, _minAmountOut);
     }
 }
@@ -65,7 +62,5 @@ interface IMockFluidSwapper is IStrategy, IFluidSwapper {
         external
         returns (uint256);
 
-    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut)
-        external
-        returns (uint256);
+    function swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) external returns (uint256);
 }

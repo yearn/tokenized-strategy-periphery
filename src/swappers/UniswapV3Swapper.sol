@@ -93,9 +93,10 @@ contract UniswapV3Swapper is BaseSwapper {
                     _to // tokenOut
                 );
 
-                _amountOut = ISwapRouter(router).exactInput(
-                    ISwapRouter.ExactInputParams(path, address(this), block.timestamp, _amountIn, _minAmountOut)
-                );
+                _amountOut = ISwapRouter(router)
+                    .exactInput(
+                        ISwapRouter.ExactInputParams(path, address(this), block.timestamp, _amountIn, _minAmountOut)
+                    );
             }
         }
     }
@@ -148,15 +149,16 @@ contract UniswapV3Swapper is BaseSwapper {
                     _from
                 );
 
-                _amountIn = ISwapRouter(router).exactOutput(
-                    ISwapRouter.ExactOutputParams(
-                        path,
-                        address(this),
-                        block.timestamp,
-                        _amountTo, // How much we want out
-                        _maxAmountFrom
-                    )
-                );
+                _amountIn = ISwapRouter(router)
+                    .exactOutput(
+                        ISwapRouter.ExactOutputParams(
+                            path,
+                            address(this),
+                            block.timestamp,
+                            _amountTo, // How much we want out
+                            _maxAmountFrom
+                        )
+                    );
             }
         }
     }

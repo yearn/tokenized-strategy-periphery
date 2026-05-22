@@ -645,7 +645,7 @@ contract CommonTriggerTest is Setup {
     }
 
     /*//////////////////////////////////////////////////////////////
-                    LEGACY FALLBACK TESTS  
+                    LEGACY FALLBACK TESTS
     //////////////////////////////////////////////////////////////*/
 
     function test_legacyFallbackForCustomTriggers() public {

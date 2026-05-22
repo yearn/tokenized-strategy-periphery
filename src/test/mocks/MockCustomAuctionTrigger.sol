@@ -7,7 +7,11 @@ contract MockCustomAuctionTrigger is ICustomAuctionTrigger {
     bool public shouldKick;
     bool public shouldRevert;
 
-    function auctionTrigger(address, /* _strategy */ address /* _from */ )
+    function auctionTrigger(
+        address,
+        /* _strategy */
+        address /* _from */
+    )
         external
         view
         override
@@ -35,7 +39,11 @@ contract MockCustomAuctionTrigger is ICustomAuctionTrigger {
 
 // Contract to test reverts in custom triggers
 contract RevertingCustomTrigger is ICustomAuctionTrigger {
-    function auctionTrigger(address, /* _strategy */ address /* _from */ )
+    function auctionTrigger(
+        address,
+        /* _strategy */
+        address /* _from */
+    )
         external
         pure
         override
