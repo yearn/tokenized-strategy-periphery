@@ -49,7 +49,7 @@ contract BaseConvertorTest is Setup {
         convertorStrategy.acceptManagement();
 
         vm.startPrank(management);
-        convertor.setMinAmountToSell(1);
+        convertor.setMinAmountToSell(address(asset), 1);
         convertor.setDoHealthCheck(false);
         vm.stopPrank();
     }
@@ -176,6 +176,38 @@ contract BaseConvertorTest is Setup {
         assertEq(convertor.maxAmountToSwap(address(asset)), 42);
     }
 
+    function test_setMinAmountToSell_perToken() public {
+        assertEq(convertor.minAmountToSell(address(asset)), 1);
+        assertEq(convertor.minAmountToSell(address(want)), 0);
+
+        vm.prank(management);
+        convertor.setMinAmountToSell(address(want), 42);
+
+        assertEq(convertor.minAmountToSell(address(asset)), 1);
+        assertEq(convertor.minAmountToSell(address(want)), 42);
+    }
+
+    function test_auctionTrigger_usesTokenMinAmountToSell() public {
+        uint256 assetAmount = 100 * 10 ** asset.decimals();
+        uint256 wantAmount = 100 * 10 ** want.decimals();
+
+        airdrop(asset, address(convertor), assetAmount);
+        airdrop(want, address(convertor), wantAmount);
+
+        vm.startPrank(management);
+        convertor.setMinAmountToSell(address(asset), assetAmount + 1);
+        convertor.setMinAmountToSell(address(want), 1);
+        vm.stopPrank();
+
+        (bool shouldKick, bytes memory data) = convertor.auctionTrigger(
+            address(asset)
+        );
+
+        assertFalse(shouldKick);
+        assertEq(data, bytes("not enough kickable"));
+        assertEq(convertor.minAmountToSell(address(want)), 1);
+    }
+
     function test_kickable_maxAmountToSwap_capsAssetAmount() public {
         uint256 amount = 100 * 10 ** asset.decimals();
         uint256 cap = 40 * 10 ** asset.decimals();
@@ -196,7 +228,7 @@ contract BaseConvertorTest is Setup {
 
         vm.startPrank(management);
         convertor.setMaxAmountToSwap(address(asset), cap);
-        convertor.setMinAmountToSell(cap + 1);
+        convertor.setMinAmountToSell(address(asset), cap + 1);
         vm.stopPrank();
 
         (bool shouldKick, bytes memory data) = convertor.auctionTrigger(address(asset));
@@ -436,7 +468,7 @@ contract BaseConvertorTest is Setup {
         convertor18Strategy.acceptManagement();
 
         vm.startPrank(management);
-        convertor18.setMinAmountToSell(1);
+        convertor18.setMinAmountToSell(address(asset), 1);
         convertor18.setDoHealthCheck(false);
         convertor18.setStartingPriceBps(10_000);
         convertor18.setMaxSlippageBps(500);
@@ -536,7 +568,7 @@ contract BaseConvertorTest is Setup {
         _strategy.acceptManagement();
 
         vm.startPrank(management);
-        _convertor.setMinAmountToSell(1);
+        _convertor.setMinAmountToSell(address(_asset), 1);
         _convertor.setDoHealthCheck(false);
         _convertor.setStartingPriceBps(_case.startingBps);
         _convertor.setMaxSlippageBps(_case.maxSlippageBps);

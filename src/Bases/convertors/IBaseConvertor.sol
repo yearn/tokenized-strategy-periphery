@@ -20,7 +20,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function reportBuffer() external view returns (uint16);
 
-    function minAmountToSell() external view returns (uint256);
+    function minAmountToSell(address _from) external view returns (uint256);
 
     function maxAmountToSwap(address _from) external view returns (uint256);
 
@@ -28,7 +28,10 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function setOracle(address _oracle) external;
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _from,
+        uint256 _minAmountToSell
+    ) external;
 
     function setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) external;
 

@@ -58,6 +58,13 @@ contract BaseConvertor4626 is BaseConvertor {
         return _quoteAssetFromWant(vault.convertToAssets(vault.maxRedeem(address(this))));
     }
 
+    function kickable(
+        address _from
+    ) public view virtual override returns (uint256) {
+        if (_from == address(vault)) return 0;
+        return super.kickable(_from);
+    }
+
     /*//////////////////////////////////////////////////////////////
                            INTERNAL VIEWS
     //////////////////////////////////////////////////////////////*/
@@ -96,7 +103,7 @@ contract BaseConvertor4626 is BaseConvertor {
 
     function _tendTrigger() internal view virtual override returns (bool) {
         if (!(_isBaseFeeAcceptable())) return false;
-        return _deployableWant() > minAmountToSell;
+        return _deployableWant() > minAmountToSell[address(WANT)];
     }
 
     function totalWant() public view virtual override returns (uint256) {
@@ -110,6 +117,13 @@ contract BaseConvertor4626 is BaseConvertor {
     /*//////////////////////////////////////////////////////////////
                           INTERNAL ACTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function _kickAuction(
+        address _from
+    ) internal virtual override returns (uint256) {
+        require(_from != address(vault), "protected token");
+        return super._kickAuction(_from);
+    }
 
     function _deployLooseWant() internal virtual returns (uint256 _deployed) {
         _deployed = _deployableWant();

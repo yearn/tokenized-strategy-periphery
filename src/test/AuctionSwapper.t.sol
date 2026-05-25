@@ -185,6 +185,42 @@ contract AuctionSwapperTest is Setup {
         swapper.kickAuction(from);
     }
 
+    function test_protectedToken_blocksKickViewsAndTrigger() public {
+        address from = tokenAddrs["WBTC"];
+        uint256 amount = 1e8;
+
+        address newAuction = auctionFactory.createNewAuction(
+            address(asset),
+            address(swapper),
+            address(this),
+            1e6
+        );
+        swapper.setAuction(newAuction);
+        auction = Auction(newAuction);
+        auction.enable(from);
+
+        address[] memory protectedTokens = new address[](1);
+        protectedTokens[0] = from;
+        swapper.setProtectedTokens(protectedTokens);
+
+        airdrop(ERC20(from), address(swapper), amount);
+
+        address[] memory configuredTokens = swapper.protectedTokens();
+        assertEq(configuredTokens.length, 1);
+        assertEq(configuredTokens[0], from);
+        assertEq(swapper.kickable(from), 0);
+
+        (bool shouldKick, bytes memory data) = swapper.auctionTrigger(from);
+        assertFalse(shouldKick);
+        assertEq(data, bytes("protected token"));
+
+        vm.expectRevert("protected token");
+        swapper.kickAuction(from);
+
+        assertEq(ERC20(from).balanceOf(address(swapper)), amount);
+        assertEq(ERC20(from).balanceOf(address(auction)), 0);
+    }
+
     function test_kickAuction_default(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 

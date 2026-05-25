@@ -28,7 +28,7 @@ contract BaseConvertor is BaseHealthCheck {
     event StartingPriceBpsSet(uint16 indexed startingPriceBps);
     event DecayRateSet(uint256 indexed decayRate);
     event ReportBufferSet(uint16 indexed reportBuffer);
-    event MinAmountToSellSet(uint256 indexed minAmountToSell);
+    event MinAmountToSellSet(address indexed from, uint256 indexed minAmountToSell);
     event MaxAmountToSwapSet(address indexed from, uint256 indexed maxAmountToSwap);
     event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
 
@@ -61,7 +61,7 @@ contract BaseConvertor is BaseHealthCheck {
     uint16 public startingPriceBps;
 
     /// @notice Minimum amount required before an auction kick is allowed.
-    uint256 public minAmountToSell;
+    mapping(address => uint256) public minAmountToSell;
 
     /// @notice Management configured step decay rate applied to asset/want auctions.
     uint256 public decayRate;
@@ -97,16 +97,14 @@ contract BaseConvertor is BaseHealthCheck {
         _setStartingPriceBps(uint16(MAX_BPS + 5));
         _setMaxSlippageBps(5);
         _setOracle(_oracle);
-        // Default to no triggers until minAmountToSell is set.
-        _setMinAmountToSell(type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
                         MANAGEMENT CONFIG
     //////////////////////////////////////////////////////////////*/
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external onlyManagement {
-        _setMinAmountToSell(_minAmountToSell);
+    function setMinAmountToSell(address _from, uint256 _minAmountToSell) external onlyManagement {
+        _setMinAmountToSell(_from, _minAmountToSell);
     }
 
     function setOracle(address _oracle) external onlyManagement {
@@ -188,7 +186,7 @@ contract BaseConvertor is BaseHealthCheck {
         if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
 
         uint256 kickableAmount = kickable(_from);
-        if (kickableAmount >= minAmountToSell) {
+        if (kickableAmount != 0 && kickableAmount >= minAmountToSell[_from]) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));
         }
 
@@ -260,9 +258,12 @@ contract BaseConvertor is BaseHealthCheck {
         emit OracleSet(_oracle);
     }
 
-    function _setMinAmountToSell(uint256 _minAmountToSell) internal virtual {
-        minAmountToSell = _minAmountToSell;
-        emit MinAmountToSellSet(_minAmountToSell);
+    function _setMinAmountToSell(
+        address _from,
+        uint256 _minAmountToSell
+    ) internal virtual {
+        minAmountToSell[_from] = _minAmountToSell;
+        emit MinAmountToSellSet(_from, _minAmountToSell);
     }
 
     function _setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) internal virtual {

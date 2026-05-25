@@ -38,7 +38,7 @@ import {BaseSwapper} from "./BaseSwapper.sol";
  *   - If hooks are not desired, call `setHookFlags()` on the auction contract
  *     to avoid unnecessary gas for unused functions
  */
-contract AuctionSwapper is BaseSwapper {
+abstract contract AuctionSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
 
     event AuctionSet(address indexed auction);
@@ -51,6 +51,9 @@ contract AuctionSwapper is BaseSwapper {
     /// @dev Defaults to false but automatically set to true when setting a non-zero auction address.
     ///      Can be manually controlled via _setUseAuction() for fine-grained control.
     bool public useAuction;
+
+    /// @notice Tokens that should never be kicked into auction.
+    function protectedTokens() public view virtual returns (address[] memory);
 
     /*//////////////////////////////////////////////////////////////
                     AUCTION STARTING AND STOPPING
@@ -87,6 +90,7 @@ contract AuctionSwapper is BaseSwapper {
      * @return The total amount of `_token` available for auction (0 if auctions disabled).
      */
     function kickable(address _token) public view virtual returns (uint256) {
+        if (_isProtectedToken(_token)) return 0;
         if (!useAuction) return 0;
 
         address _auction = auction;
@@ -115,6 +119,7 @@ contract AuctionSwapper is BaseSwapper {
      * @param _from The token that was being sold.
      */
     function _kickAuction(address _from) internal virtual returns (uint256) {
+        require(!_isProtectedToken(_from), "protected token");
         require(useAuction, "useAuction is false");
         address _auction = auction;
 
@@ -148,6 +153,10 @@ contract AuctionSwapper is BaseSwapper {
      *              otherwise a descriptive error message explaining why not.
      */
     function auctionTrigger(address _from) external view virtual returns (bool shouldKick, bytes memory data) {
+        if (_isProtectedToken(_from)) {
+            return (false, bytes("protected token"));
+        }
+
         address _auction = auction;
         if (_auction == address(0)) {
             return (false, bytes("No auction set"));
@@ -164,5 +173,18 @@ contract AuctionSwapper is BaseSwapper {
         }
 
         return (false, bytes("not enough kickable"));
+    }
+
+    function _isProtectedToken(
+        address _token
+    ) internal view virtual returns (bool) {
+        address[] memory _protectedTokens = protectedTokens();
+        uint256 length = _protectedTokens.length;
+
+        for (uint256 i; i < length; ++i) {
+            if (_protectedTokens[i] == _token) return true;
+        }
+
+        return false;
     }
 }
