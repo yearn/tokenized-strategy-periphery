@@ -79,9 +79,9 @@ contract PendleSwapperTest is Setup {
 
         // Set min amount to sell higher than our amount
         vm.prank(management);
-        pendleSwapper.setMinAmountToSell(1e16);
+        pendleSwapper.setMinAmountToSell(address(mockAsset), 1e16);
 
-        assertEq(pendleSwapper.minAmountToSell(), 1e16);
+        assertEq(pendleSwapper.minAmountToSell(address(mockAsset)), 1e16);
 
         // Mint tokens to the swapper
         mockAsset.mint(address(pendleSwapper), amount);
@@ -123,7 +123,7 @@ contract PendleSwapperTest is Setup {
 
     function test_defaultMinAmountToSell() public {
         // Verify default minAmountToSell is 0
-        assertEq(pendleSwapper.minAmountToSell(), 0);
+        assertEq(pendleSwapper.minAmountToSell(address(mockAsset)), 0);
     }
 
     function test_defaultGuessMaxMultiplier() public {
@@ -338,7 +338,7 @@ contract PendleSwapperForkTest is Setup {
 
         // Set minAmountToSell higher than our swap amount
         vm.prank(management);
-        pendleSwapper.setMinAmountToSell(2000e6); // 2000 USDC minimum
+        pendleSwapper.setMinAmountToSell(address(usdc), 2000e6); // 2000 USDC minimum
 
         // Airdrop USDC to the swapper
         airdrop(usdc, address(pendleSwapper), amount);

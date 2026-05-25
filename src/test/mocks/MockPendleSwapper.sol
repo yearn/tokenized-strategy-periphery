@@ -17,8 +17,11 @@ contract MockPendleSwapper is BaseStrategy, PendleSwapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        minAmountToSell = _minAmountToSell;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
     }
 
     function setMarket(address _pt, address _market) external {
@@ -48,8 +51,11 @@ contract MockPendleSwapperWithAggregator is BaseStrategy, PendleSwapperWithAggre
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        minAmountToSell = _minAmountToSell;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
     }
 
     function setMarket(address _pt, address _market) external {
@@ -94,7 +100,10 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IPendleSwapper} from "../../swappers/interfaces/IPendleSwapper.sol";
 
 interface IMockPendleSwapper is IStrategy, IPendleSwapper {
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external;
 
     function setMarket(address _pt, address _market) external;
 

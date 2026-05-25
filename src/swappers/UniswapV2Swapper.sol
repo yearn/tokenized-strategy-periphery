@@ -41,7 +41,7 @@ contract UniswapV2Swapper is BaseSwapper {
      * @param _minAmountOut The min of `_to` to get out.
      */
     function _swapFrom(address _from, address _to, uint256 _amountIn, uint256 _minAmountOut) internal virtual {
-        if (_amountIn > minAmountToSell) {
+        if (_amountIn != 0 && _amountIn >= minAmountToSell[_from]) {
             _checkAllowance(router, _from, _amountIn);
 
             IUniswapV2Router02(router)

@@ -131,7 +131,7 @@ contract FluidSwapperTest is Setup {
         vm.assume(amount >= minUsdtAmount && amount <= maxUsdtAmount);
 
         vm.prank(management);
-        fluidSwapper.setMinAmountToSell(amount + 1);
+        fluidSwapper.setMinAmountToSell(address(asset), amount + 1);
 
         airdrop(asset, address(fluidSwapper), amount);
 

@@ -73,7 +73,7 @@ contract CurveSwapper is BaseSwapper {
         virtual
         returns (uint256 _amountOut)
     {
-        if (_amountIn != 0 && _amountIn >= minAmountToSell) {
+        if (_amountIn != 0 && _amountIn >= minAmountToSell[_from]) {
             _checkAllowance(curveRouter, _from, _amountIn);
 
             CurveRouteParams storage params = _curveRoutes[_from][_to];

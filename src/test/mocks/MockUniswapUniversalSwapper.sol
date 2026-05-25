@@ -25,8 +25,11 @@ contract MockUniswapUniversalSwapper is BaseStrategy, UniswapUniversalSwapper {
 
     // Expose internal setters for testing
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        minAmountToSell = _minAmountToSell;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
     }
 
     function setBase(address _base) external {
@@ -54,7 +57,10 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IUniswapUniversalSwapper} from "../../swappers/interfaces/IUniswapUniversalSwapper.sol";
 
 interface IMockUniswapUniversalSwapper is IStrategy, IUniswapUniversalSwapper {
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external;
 
     function setBase(address _base) external;
 

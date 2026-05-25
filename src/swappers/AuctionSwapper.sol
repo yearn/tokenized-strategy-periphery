@@ -168,7 +168,9 @@ abstract contract AuctionSwapper is BaseSwapper {
 
         uint256 kickableAmount = kickable(_from);
 
-        if (kickableAmount != 0 && kickableAmount >= minAmountToSell) {
+        if (
+            kickableAmount != 0 && kickableAmount >= minAmountToSell[_from]
+        ) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));
         }
 

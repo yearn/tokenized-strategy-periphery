@@ -31,8 +31,11 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _setUseAuction(_useAuction);
     }
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        _setMinAmountToSell(_minAmountToSell);
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
     }
 
     function protectedTokens() public view override returns (address[] memory) {
@@ -79,7 +82,10 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
 
     function setUseAuction(bool _useAuction) external;
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external;
 
     function setProtectedTokens(address[] calldata _tokens) external;
 

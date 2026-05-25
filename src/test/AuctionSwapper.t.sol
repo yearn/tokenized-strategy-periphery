@@ -589,7 +589,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(data, expectedData);
 
         // Set minAmountToSell to test the threshold
-        swapper.setMinAmountToSell(2e8); // Set higher than our balance
+        swapper.setMinAmountToSell(from, 2e8); // Set higher than our balance
 
         // Should not kick due to insufficient amount
         (shouldKick, data) = swapper.auctionTrigger(from);
@@ -597,7 +597,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(data, bytes("not enough kickable"));
 
         // Reset minAmountToSell to 0 and kick the auction
-        swapper.setMinAmountToSell(0);
+        swapper.setMinAmountToSell(from, 0);
         swapper.kickAuction(from);
 
         // Should not kick again while active with available tokens (kickable returns 0)
@@ -639,7 +639,7 @@ contract AuctionSwapperTest is Setup {
         assertEq(data, expectedData);
 
         // Set minAmountToSell higher than our balance
-        swapper.setMinAmountToSell(2e8);
+        swapper.setMinAmountToSell(from, 2e8);
 
         (shouldKick, data) = swapper.auctionTrigger(from);
         assertFalse(shouldKick);

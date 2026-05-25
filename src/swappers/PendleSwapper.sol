@@ -84,7 +84,7 @@ contract PendleSwapper is BaseSwapper {
         virtual
         returns (uint256 _amountOut)
     {
-        if (_amountIn == 0 || _amountIn < minAmountToSell) {
+        if (_amountIn == 0 || _amountIn < minAmountToSell[_from]) {
             return 0;
         }
 
