@@ -42,6 +42,9 @@ contract BaseConvertor is BaseHealthCheck {
     /// @notice Token converted to/from strategy `asset`.
     ERC20 public immutable WANT;
 
+    /// @notice Address allowed to update the oracle.
+    address public immutable GOV;
+
     /// @notice Auction selling `asset` into `want`.
     Auction public immutable SELL_ASSET_AUCTION;
 
@@ -73,8 +76,12 @@ contract BaseConvertor is BaseHealthCheck {
     /// @dev Zero means unlimited.
     mapping(address => uint256) public maxAmountToSwap;
 
-    constructor(address _asset, string memory _name, address _want, address _oracle) BaseHealthCheck(_asset, _name) {
+    constructor(address _asset, string memory _name, address _want, address _oracle, address _gov)
+        BaseHealthCheck(_asset, _name)
+    {
+        require(_gov != address(0), "ZERO ADDRESS");
         WANT = ERC20(_want);
+        GOV = _gov;
 
         AuctionFactory factory = AuctionFactory(0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e);
 
@@ -111,7 +118,12 @@ contract BaseConvertor is BaseHealthCheck {
         _setMinAmountToSell(_from, _minAmountToSell);
     }
 
-    function setOracle(address _oracle) external onlyManagement {
+    modifier onlyGov() {
+        require(msg.sender == GOV, "!gov");
+        _;
+    }
+
+    function setOracle(address _oracle) external onlyGov {
         _setOracle(_oracle);
     }
 

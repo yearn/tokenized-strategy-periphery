@@ -38,7 +38,7 @@ contract BaseConvertorTest is Setup {
         oracle = new MockConvertorOracle();
         oracle.setPrice(1e36); // 1 asset per 1 want
 
-        convertor = new BaseConvertor(address(asset), "Base Convertor", address(want), address(oracle));
+        convertor = new BaseConvertor(address(asset), "Base Convertor", address(want), address(oracle), daddy);
         convertorStrategy = IStrategy(address(convertor));
 
         convertorStrategy.setKeeper(keeper);
@@ -185,6 +185,20 @@ contract BaseConvertorTest is Setup {
 
         assertEq(convertor.minAmountToSell(address(asset)), 1);
         assertEq(convertor.minAmountToSell(address(want)), 42);
+    }
+
+    function test_setOracle_onlyGov() public {
+        MockConvertorOracle newOracle = new MockConvertorOracle();
+        newOracle.setPrice(1e36);
+
+        vm.prank(management);
+        vm.expectRevert(bytes("!gov"));
+        convertor.setOracle(address(newOracle));
+
+        vm.prank(daddy);
+        convertor.setOracle(address(newOracle));
+
+        assertEq(convertor.oracle(), address(newOracle));
     }
 
     function test_auctionTrigger_usesTokenMinAmountToSell() public {
@@ -414,8 +428,10 @@ contract BaseConvertorTest is Setup {
         vm.startPrank(management);
         convertor.setStartingPriceBps(10_000);
         convertor.setMaxSlippageBps(500);
-        convertor.setOracle(address(oracle));
         vm.stopPrank();
+
+        vm.prank(daddy);
+        convertor.setOracle(address(oracle));
 
         oracle.setPrice(2e36); // 2 assets per 1 want
 
@@ -458,7 +474,7 @@ contract BaseConvertorTest is Setup {
         oracle18.setPrice(2_000e24); // 1 WETH => 2,000 USDT
 
         BaseConvertor convertor18 =
-            new BaseConvertor(address(asset), "Base Convertor 18d", address(want18), address(oracle18));
+            new BaseConvertor(address(asset), "Base Convertor 18d", address(want18), address(oracle18), daddy);
         IStrategy convertor18Strategy = IStrategy(address(convertor18));
         convertor18Strategy.setKeeper(keeper);
         convertor18Strategy.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -558,7 +574,7 @@ contract BaseConvertorTest is Setup {
         _oracle.setPrice(_case.oraclePrice);
 
         BaseConvertor _convertor =
-            new BaseConvertor(address(_asset), "Decimal Pricing Convertor", address(_want), address(_oracle));
+            new BaseConvertor(address(_asset), "Decimal Pricing Convertor", address(_want), address(_oracle), daddy);
         IStrategy _strategy = IStrategy(address(_convertor));
         _strategy.setKeeper(keeper);
         _strategy.setPerformanceFeeRecipient(performanceFeeRecipient);

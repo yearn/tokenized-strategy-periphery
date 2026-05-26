@@ -6,6 +6,8 @@ import {IBaseHealthCheck} from "../HealthCheck/IBaseHealthCheck.sol";
 interface IBaseConvertor is IBaseHealthCheck {
     function WANT() external view returns (address);
 
+    function GOV() external view returns (address);
+
     function SELL_ASSET_AUCTION() external view returns (address);
 
     function BUY_ASSET_AUCTION() external view returns (address);

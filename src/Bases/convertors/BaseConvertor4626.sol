@@ -18,8 +18,8 @@ contract BaseConvertor4626 is BaseConvertor {
 
     IERC4626 public immutable vault;
 
-    constructor(address _asset, string memory _name, address _want, address _oracle, address _vault)
-        BaseConvertor(_asset, _name, _want, _oracle)
+    constructor(address _asset, string memory _name, address _want, address _oracle, address _vault, address _gov)
+        BaseConvertor(_asset, _name, _want, _oracle, _gov)
     {
         vault = IERC4626(_vault);
         require(vault.asset() == _want, "wrong vault");

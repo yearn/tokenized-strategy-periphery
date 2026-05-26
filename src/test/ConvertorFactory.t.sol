@@ -24,12 +24,13 @@ contract ConvertorFactoryTest is Setup {
     function test_newConvertor_deploysAndConfiguresStrategy() public {
         address want = tokenAddrs["USDC"];
 
-        address deployed = factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle));
+        address deployed = factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle), daddy);
 
         IBaseConvertor convertor = IBaseConvertor(deployed);
 
         assertEq(convertor.asset(), address(asset));
         assertEq(address(convertor.WANT()), want);
+        assertEq(convertor.GOV(), daddy);
         assertEq(convertor.oracle(), address(oracle));
         assertEq(convertor.performanceFeeRecipient(), performanceFeeRecipient);
         assertEq(convertor.keeper(), keeper);
@@ -43,10 +44,10 @@ contract ConvertorFactoryTest is Setup {
     function test_newConvertor_revertsOnDuplicateDeployment() public {
         address want = tokenAddrs["USDC"];
 
-        address deployed = factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle));
+        address deployed = factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle), daddy);
 
         vm.expectRevert(abi.encodeWithSelector(ConvertorFactory.AlreadyDeployed.selector, deployed));
-        factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle));
+        factory.newConvertor(address(asset), "Factory Base Convertor", want, address(oracle), daddy);
     }
 
     function test_setAddresses_onlyManagement() public {
