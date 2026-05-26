@@ -147,7 +147,10 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     /// @notice Management passthrough to enable an auction token.
+    /// @dev Reverts if `_from` is in `protectedTokens()` so a protected token
+    ///      can never be added to the auction's enabled set.
     function enableAuctionToken(address _from) external onlyManagement {
+        require(!_isProtectedToken(_from), "protected token");
         _auctionForToken(_from).enable(_from);
     }
 
@@ -201,7 +204,6 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     /// @notice Tokens that should never be kicked into auction.
-    /// @dev Override in subclasses to add protected tokens (e.g. vault shares).
     function protectedTokens() public view virtual returns (address[] memory) {
         return new address[](0);
     }

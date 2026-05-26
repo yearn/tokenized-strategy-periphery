@@ -287,6 +287,27 @@ contract BaseConvertor4626Test is Setup {
         assertEq(convertor.kickable(address(want)), 0);
     }
 
+    function test_enableAuctionToken_revertsForVault() public {
+        vm.prank(management);
+        vm.expectRevert("protected token");
+        convertor.enableAuctionToken(address(targetVault));
+    }
+
+    function test_enableAuctionToken_allowsNonProtectedToken() public {
+        address dai = tokenAddrs["DAI"];
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+
+        // Not yet enabled.
+        (, uint64 scalerBefore,) = sellAuction.auctions(dai);
+        assertEq(scalerBefore, 0);
+
+        vm.prank(management);
+        convertor.enableAuctionToken(dai);
+
+        (, uint64 scalerAfter,) = sellAuction.auctions(dai);
+        assertGt(scalerAfter, 0);
+    }
+
     function test_report_accountsVaultAndAuctionBalances(uint256 _amount) public {
         vm.assume(_amount > 1e8 && _amount < maxFuzzAmount);
 
