@@ -58,11 +58,9 @@ contract BaseConvertor4626 is BaseConvertor {
         return _quoteAssetFromWant(vault.convertToAssets(vault.maxRedeem(address(this))));
     }
 
-    function kickable(
-        address _from
-    ) public view virtual override returns (uint256) {
-        if (_from == address(vault)) return 0;
-        return super.kickable(_from);
+    function protectedTokens() public view virtual override returns (address[] memory _protected) {
+        _protected = new address[](1);
+        _protected[0] = address(vault);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -117,13 +115,6 @@ contract BaseConvertor4626 is BaseConvertor {
     /*//////////////////////////////////////////////////////////////
                           INTERNAL ACTIONS
     //////////////////////////////////////////////////////////////*/
-
-    function _kickAuction(
-        address _from
-    ) internal virtual override returns (uint256) {
-        require(_from != address(vault), "protected token");
-        return super._kickAuction(_from);
-    }
 
     function _deployLooseWant() internal virtual returns (uint256 _deployed) {
         _deployed = _deployableWant();

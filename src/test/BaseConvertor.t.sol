@@ -178,7 +178,7 @@ contract BaseConvertorTest is Setup {
 
     function test_setMinAmountToSell_perToken() public {
         assertEq(convertor.minAmountToSell(address(asset)), 1);
-        assertEq(convertor.minAmountToSell(address(want)), 0);
+        assertEq(convertor.minAmountToSell(address(want)), type(uint256).max);
 
         vm.prank(management);
         convertor.setMinAmountToSell(address(want), 42);

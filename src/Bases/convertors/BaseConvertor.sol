@@ -97,6 +97,10 @@ contract BaseConvertor is BaseHealthCheck {
         _setStartingPriceBps(uint16(MAX_BPS + 5));
         _setMaxSlippageBps(5);
         _setOracle(_oracle);
+
+        // Default to no triggers until minAmountToSell is set per-token.
+        _setMinAmountToSell(_asset, type(uint256).max);
+        _setMinAmountToSell(_want, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -165,6 +169,7 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function _kickAuction(address _from) internal virtual returns (uint256) {
+        require(!_isProtectedToken(_from), "protected token");
         if (_from == address(WANT)) {
             return _kickConfiguredAuction(BUY_ASSET_AUCTION, _from, type(uint256).max);
         }
@@ -172,6 +177,7 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function kickable(address _from) public view virtual returns (uint256) {
+        if (_isProtectedToken(_from)) return 0;
         if (_from == address(WANT)) {
             return _kickableFromAuction(BUY_ASSET_AUCTION, _from);
         }
@@ -181,6 +187,7 @@ contract BaseConvertor is BaseHealthCheck {
     /// @notice We use trigger to go from asset -> want.
     /// We cannot assume loose want should be converted, so it does not go back.
     function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data) {
+        if (_isProtectedToken(_from)) return (false, bytes("protected token"));
         if (_from == address(WANT)) return (false, bytes("want"));
 
         if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
@@ -191,6 +198,21 @@ contract BaseConvertor is BaseHealthCheck {
         }
 
         return (false, bytes("not enough kickable"));
+    }
+
+    /// @notice Tokens that should never be kicked into auction.
+    /// @dev Override in subclasses to add protected tokens (e.g. vault shares).
+    function protectedTokens() public view virtual returns (address[] memory) {
+        return new address[](0);
+    }
+
+    function _isProtectedToken(address _token) internal view virtual returns (bool) {
+        address[] memory _protectedTokens = protectedTokens();
+        uint256 length = _protectedTokens.length;
+        for (uint256 i; i < length; ++i) {
+            if (_protectedTokens[i] == _token) return true;
+        }
+        return false;
     }
 
     /*//////////////////////////////////////////////////////////////

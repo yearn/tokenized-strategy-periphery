@@ -59,6 +59,8 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data);
 
+    function protectedTokens() external view returns (address[] memory);
+
     function balanceOfAsset() external view returns (uint256);
 
     function balanceOfWant() external view returns (uint256);
