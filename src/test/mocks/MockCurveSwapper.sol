@@ -4,8 +4,11 @@ pragma solidity >=0.8.18;
 import {CurveSwapper} from "../../swappers/CurveSwapper.sol";
 
 contract MockCurveSwapper is CurveSwapper {
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        minAmountToSell = _minAmountToSell;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
     }
 
     function setRouter(address _router) external {

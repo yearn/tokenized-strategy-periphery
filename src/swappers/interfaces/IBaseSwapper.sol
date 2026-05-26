@@ -2,5 +2,5 @@
 pragma solidity >=0.8.18;
 
 interface IBaseSwapper {
-    function minAmountToSell() external view returns (uint256);
+    function minAmountToSell(address _token) external view returns (uint256);
 }

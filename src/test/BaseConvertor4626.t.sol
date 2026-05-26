@@ -30,7 +30,7 @@ contract BaseConvertor4626Test is Setup {
         oracle.setPrice(1e36); // 1 asset per 1 want
 
         convertor = new BaseConvertor4626(
-            address(asset), "Base Convertor 4626", address(want), address(oracle), address(targetVault)
+            address(asset), "Base Convertor 4626", address(want), address(oracle), address(targetVault), daddy
         );
         convertorInterface = IBaseConvertor4626(address(convertor));
         convertorStrategy = IStrategy(address(convertor));
@@ -43,7 +43,8 @@ contract BaseConvertor4626Test is Setup {
         convertorStrategy.acceptManagement();
 
         vm.startPrank(management);
-        convertor.setMinAmountToSell(1);
+        convertor.setMinAmountToSell(address(asset), 1);
+        convertor.setMinAmountToSell(address(want), 1);
         convertor.setDoHealthCheck(false);
         vm.stopPrank();
     }
@@ -255,6 +256,56 @@ contract BaseConvertor4626Test is Setup {
         assertEq(kicked, cap);
         assertEq(want.balanceOf(address(convertor)), amount - cap);
         assertEq(want.balanceOf(address(convertor.BUY_ASSET_AUCTION())), cap);
+    }
+
+    function test_kickAuction_blocksVaultTokenButAllowsAsset() public {
+        uint256 amount = 100 * 10 ** asset.decimals();
+
+        airdrop(asset, address(convertor), amount);
+
+        vm.prank(keeper);
+        uint256 kicked = convertor.kickAuction(address(asset));
+
+        assertEq(kicked, amount);
+        assertTrue(convertor.SELL_ASSET_AUCTION().isActive(address(asset)));
+
+        vm.prank(keeper);
+        vm.expectRevert("protected token");
+        convertor.kickAuction(address(targetVault));
+    }
+
+    function test_kickable_returnsZeroForVaultToken() public {
+        uint256 amount = 100 * 10 ** want.decimals();
+
+        airdrop(want, address(convertor), amount);
+
+        vm.prank(keeper);
+        convertor.deployLooseWant();
+
+        assertGt(convertor.balanceOfVault(), 0);
+        assertEq(convertor.kickable(address(targetVault)), 0);
+        assertEq(convertor.kickable(address(want)), 0);
+    }
+
+    function test_enableAuctionToken_revertsForVault() public {
+        vm.prank(management);
+        vm.expectRevert("protected token");
+        convertor.enableAuctionToken(address(targetVault));
+    }
+
+    function test_enableAuctionToken_allowsNonProtectedToken() public {
+        address dai = tokenAddrs["DAI"];
+        Auction sellAuction = convertor.SELL_ASSET_AUCTION();
+
+        // Not yet enabled.
+        (, uint64 scalerBefore,) = sellAuction.auctions(dai);
+        assertEq(scalerBefore, 0);
+
+        vm.prank(management);
+        convertor.enableAuctionToken(dai);
+
+        (, uint64 scalerAfter,) = sellAuction.auctions(dai);
+        assertGt(scalerAfter, 0);
     }
 
     function test_report_accountsVaultAndAuctionBalances(uint256 _amount) public {

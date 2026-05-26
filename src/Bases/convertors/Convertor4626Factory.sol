@@ -25,15 +25,19 @@ contract Convertor4626Factory {
         emergencyAdmin = _emergencyAdmin;
     }
 
-    function newConvertor4626(address _asset, string calldata _name, address _want, address _oracle, address _vault)
-        external
-        returns (address)
-    {
+    function newConvertor4626(
+        address _asset,
+        string calldata _name,
+        address _want,
+        address _oracle,
+        address _vault,
+        address _gov
+    ) external returns (address) {
         address deployed = deployments4626[_asset][_want][_vault];
         if (deployed != address(0)) revert AlreadyDeployed(deployed);
 
         IBaseConvertor4626 _newConvertor =
-            IBaseConvertor4626(address(new BaseConvertor4626(_asset, _name, _want, _oracle, _vault)));
+            IBaseConvertor4626(address(new BaseConvertor4626(_asset, _name, _want, _oracle, _vault, _gov)));
 
         _configureStrategy(_newConvertor);
 

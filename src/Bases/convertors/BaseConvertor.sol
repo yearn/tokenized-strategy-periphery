@@ -23,12 +23,17 @@ interface IMorphoOracle {
 contract BaseConvertor is BaseHealthCheck {
     using SafeERC20 for ERC20;
 
+    modifier onlyGov() {
+        require(msg.sender == GOV, "!gov");
+        _;
+    }
+
     event OracleSet(address indexed oracle);
     event MaxSlippageBpsSet(uint16 indexed maxSlippageBps);
     event StartingPriceBpsSet(uint16 indexed startingPriceBps);
     event DecayRateSet(uint256 indexed decayRate);
     event ReportBufferSet(uint16 indexed reportBuffer);
-    event MinAmountToSellSet(uint256 indexed minAmountToSell);
+    event MinAmountToSellSet(address indexed from, uint256 indexed minAmountToSell);
     event MaxAmountToSwapSet(address indexed from, uint256 indexed maxAmountToSwap);
     event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
 
@@ -41,6 +46,9 @@ contract BaseConvertor is BaseHealthCheck {
 
     /// @notice Token converted to/from strategy `asset`.
     ERC20 public immutable WANT;
+
+    /// @notice Address allowed to update the oracle.
+    address public immutable GOV;
 
     /// @notice Auction selling `asset` into `want`.
     Auction public immutable SELL_ASSET_AUCTION;
@@ -61,7 +69,7 @@ contract BaseConvertor is BaseHealthCheck {
     uint16 public startingPriceBps;
 
     /// @notice Minimum amount required before an auction kick is allowed.
-    uint256 public minAmountToSell;
+    mapping(address => uint256) public minAmountToSell;
 
     /// @notice Management configured step decay rate applied to asset/want auctions.
     uint256 public decayRate;
@@ -73,8 +81,12 @@ contract BaseConvertor is BaseHealthCheck {
     /// @dev Zero means unlimited.
     mapping(address => uint256) public maxAmountToSwap;
 
-    constructor(address _asset, string memory _name, address _want, address _oracle) BaseHealthCheck(_asset, _name) {
+    constructor(address _asset, string memory _name, address _want, address _oracle, address _gov)
+        BaseHealthCheck(_asset, _name)
+    {
+        require(_gov != address(0), "ZERO ADDRESS");
         WANT = ERC20(_want);
+        GOV = _gov;
 
         AuctionFactory factory = AuctionFactory(0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e);
 
@@ -97,19 +109,21 @@ contract BaseConvertor is BaseHealthCheck {
         _setStartingPriceBps(uint16(MAX_BPS + 5));
         _setMaxSlippageBps(5);
         _setOracle(_oracle);
-        // Default to no triggers until minAmountToSell is set.
-        _setMinAmountToSell(type(uint256).max);
+
+        // Default to no triggers until minAmountToSell is set per-token.
+        _setMinAmountToSell(_asset, type(uint256).max);
+        _setMinAmountToSell(_want, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
                         MANAGEMENT CONFIG
     //////////////////////////////////////////////////////////////*/
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external onlyManagement {
-        _setMinAmountToSell(_minAmountToSell);
+    function setMinAmountToSell(address _from, uint256 _minAmountToSell) external onlyManagement {
+        _setMinAmountToSell(_from, _minAmountToSell);
     }
 
-    function setOracle(address _oracle) external onlyManagement {
+    function setOracle(address _oracle) external onlyGov {
         _setOracle(_oracle);
     }
 
@@ -145,7 +159,10 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     /// @notice Management passthrough to enable an auction token.
+    /// @dev Reverts if `_from` is in `protectedTokens()` so a protected token
+    ///      can never be added to the auction's enabled set.
     function enableAuctionToken(address _from) external onlyManagement {
+        require(!_isProtectedToken(_from), "protected token");
         _auctionForToken(_from).enable(_from);
     }
 
@@ -167,6 +184,7 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function _kickAuction(address _from) internal virtual returns (uint256) {
+        require(!_isProtectedToken(_from), "protected token");
         if (_from == address(WANT)) {
             return _kickConfiguredAuction(BUY_ASSET_AUCTION, _from, type(uint256).max);
         }
@@ -174,6 +192,7 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function kickable(address _from) public view virtual returns (uint256) {
+        if (_isProtectedToken(_from)) return 0;
         if (_from == address(WANT)) {
             return _kickableFromAuction(BUY_ASSET_AUCTION, _from);
         }
@@ -183,16 +202,31 @@ contract BaseConvertor is BaseHealthCheck {
     /// @notice We use trigger to go from asset -> want.
     /// We cannot assume loose want should be converted, so it does not go back.
     function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data) {
+        if (_isProtectedToken(_from)) return (false, bytes("protected token"));
         if (_from == address(WANT)) return (false, bytes("want"));
 
         if (!(_isBaseFeeAcceptable())) return (false, bytes("base fee"));
 
         uint256 kickableAmount = kickable(_from);
-        if (kickableAmount >= minAmountToSell) {
+        if (kickableAmount != 0 && kickableAmount >= minAmountToSell[_from]) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));
         }
 
         return (false, bytes("not enough kickable"));
+    }
+
+    /// @notice Tokens that should never be kicked into auction.
+    function protectedTokens() public view virtual returns (address[] memory) {
+        return new address[](0);
+    }
+
+    function _isProtectedToken(address _token) internal view virtual returns (bool) {
+        address[] memory _protectedTokens = protectedTokens();
+        uint256 length = _protectedTokens.length;
+        for (uint256 i; i < length; ++i) {
+            if (_protectedTokens[i] == _token) return true;
+        }
+        return false;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -260,9 +294,12 @@ contract BaseConvertor is BaseHealthCheck {
         emit OracleSet(_oracle);
     }
 
-    function _setMinAmountToSell(uint256 _minAmountToSell) internal virtual {
-        minAmountToSell = _minAmountToSell;
-        emit MinAmountToSellSet(_minAmountToSell);
+    function _setMinAmountToSell(
+        address _from,
+        uint256 _minAmountToSell
+    ) internal virtual {
+        minAmountToSell[_from] = _minAmountToSell;
+        emit MinAmountToSellSet(_from, _minAmountToSell);
     }
 
     function _setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) internal virtual {

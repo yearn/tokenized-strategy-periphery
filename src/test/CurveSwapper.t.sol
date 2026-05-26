@@ -136,7 +136,7 @@ contract CurveSwapperTest is Setup {
         vm.assume(amount >= minWethAmount && amount <= maxWethAmount);
 
         // Set minAmountToSell above our swap amount
-        curveSwapper.setMinAmountToSell(amount + 1);
+        curveSwapper.setMinAmountToSell(address(weth), amount + 1);
 
         airdrop(weth, address(curveSwapper), amount);
 

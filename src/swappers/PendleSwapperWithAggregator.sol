@@ -50,7 +50,7 @@ contract PendleSwapperWithAggregator is PendleSwapper {
         address _tokenMintSy,
         SwapData calldata _swapData
     ) internal virtual returns (uint256 _amountOut) {
-        if (_amountIn == 0 || _amountIn < minAmountToSell) {
+        if (_amountIn == 0 || _amountIn < minAmountToSell[_tokenIn]) {
             return 0;
         }
 
@@ -94,7 +94,7 @@ contract PendleSwapperWithAggregator is PendleSwapper {
         address _tokenRedeemSy,
         SwapData calldata _swapData
     ) internal virtual returns (uint256 _amountOut) {
-        if (_amountIn == 0 || _amountIn < minAmountToSell) {
+        if (_amountIn == 0 || _amountIn < minAmountToSell[_pt]) {
             return 0;
         }
 

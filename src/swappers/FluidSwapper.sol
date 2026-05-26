@@ -99,7 +99,7 @@ contract FluidSwapper is BaseSwapper {
         virtual
         returns (uint256 _amountOut)
     {
-        if (_amountIn != 0 && _amountIn >= minAmountToSell) {
+        if (_amountIn != 0 && _amountIn >= minAmountToSell[_from]) {
             if (_from == WETH) {
                 IWETH(WETH).withdraw(_amountIn);
             }

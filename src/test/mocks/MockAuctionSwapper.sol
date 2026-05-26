@@ -11,6 +11,8 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
 
     uint256 public letKick;
 
+    address[] internal _protectedTokens;
+
     constructor(address _asset) BaseStrategy(_asset, "Mock Uni V3") {}
 
     function _deployFunds(uint256) internal override {}
@@ -29,16 +31,34 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _setUseAuction(_useAuction);
     }
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external {
-        _setMinAmountToSell(_minAmountToSell);
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external {
+        _setMinAmountToSell(_token, _minAmountToSell);
+    }
+
+    function protectedTokens() public view override returns (address[] memory) {
+        return _protectedTokens;
+    }
+
+    function setProtectedTokens(address[] calldata _tokens) external {
+        delete _protectedTokens;
+
+        uint256 length = _tokens.length;
+        for (uint256 i; i < length; ++i) {
+            _protectedTokens.push(_tokens[i]);
+        }
     }
 
     function kickable(address _token) public view override returns (uint256) {
+        if (_isProtectedToken(_token)) return 0;
         if (useDefault) return super.kickable(_token);
         return letKick;
     }
 
     function kickAuction(address _token) external override returns (uint256) {
+        require(!_isProtectedToken(_token), "protected token");
         if (useDefault) return _kickAuction(_token);
 
         ERC20(_token).safeTransfer(auction, letKick);
@@ -62,7 +82,12 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
 
     function setUseAuction(bool _useAuction) external;
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _token,
+        uint256 _minAmountToSell
+    ) external;
+
+    function setProtectedTokens(address[] calldata _tokens) external;
 
     function useDefault() external view returns (bool);
 

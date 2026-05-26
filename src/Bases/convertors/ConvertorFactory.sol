@@ -24,14 +24,14 @@ contract ConvertorFactory {
         emergencyAdmin = _emergencyAdmin;
     }
 
-    function newConvertor(address _asset, string calldata _name, address _want, address _oracle)
+    function newConvertor(address _asset, string calldata _name, address _want, address _oracle, address _gov)
         external
         returns (address)
     {
         address deployed = deployments[_asset][_want];
         if (deployed != address(0)) revert AlreadyDeployed(deployed);
 
-        IBaseConvertor _newConvertor = IBaseConvertor(address(new BaseConvertor(_asset, _name, _want, _oracle)));
+        IBaseConvertor _newConvertor = IBaseConvertor(address(new BaseConvertor(_asset, _name, _want, _oracle, _gov)));
 
         _configureStrategy(_newConvertor);
 

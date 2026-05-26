@@ -69,7 +69,7 @@ contract UniswapV3Swapper is BaseSwapper {
         virtual
         returns (uint256 _amountOut)
     {
-        if (_amountIn != 0 && _amountIn >= minAmountToSell) {
+        if (_amountIn != 0 && _amountIn >= minAmountToSell[_from]) {
             _checkAllowance(router, _from, _amountIn);
             if (_from == base || _to == base) {
                 ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams(
@@ -125,7 +125,7 @@ contract UniswapV3Swapper is BaseSwapper {
         virtual
         returns (uint256 _amountIn)
     {
-        if (_maxAmountFrom != 0 && _maxAmountFrom >= minAmountToSell) {
+        if (_maxAmountFrom != 0 && _maxAmountFrom >= minAmountToSell[_from]) {
             _checkAllowance(router, _from, _maxAmountFrom);
             if (_from == base || _to == base) {
                 ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams(

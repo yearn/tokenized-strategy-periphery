@@ -11,6 +11,8 @@ interface IAuctionSwapper is IBaseSwapper {
 
     function useAuction() external view returns (bool);
 
+    function protectedTokens() external view returns (address[] memory);
+
     function kickable(address _fromToken) external view returns (uint256);
 
     function kickAuction(address _from) external returns (uint256);

@@ -36,7 +36,7 @@ contract UniswapUniversalSwapperTest is Setup {
     }
 
     function test_defaultMinAmountToSell() public {
-        assertEq(swapper.minAmountToSell(), 0);
+        assertEq(swapper.minAmountToSell(address(asset)), 0);
     }
 
     function test_setUniFees() public {
@@ -94,7 +94,7 @@ contract UniswapUniversalSwapperTest is Setup {
         swapper.setUniFees(address(asset), WETH, 3000);
 
         vm.prank(management);
-        swapper.setMinAmountToSell(1e18);
+        swapper.setMinAmountToSell(address(asset), 1e18);
 
         uint256 amount = 1e15;
         airdrop(asset, address(swapper), amount);

@@ -137,7 +137,7 @@ contract UniswapUniversalSwapper is BaseSwapper {
         virtual
         returns (uint256 _amountOut)
     {
-        if (_amountIn == 0 || _amountIn < minAmountToSell) return 0;
+        if (_amountIn == 0 || _amountIn < minAmountToSell[_from]) return 0;
 
         bytes memory commands;
         bytes[] memory inputs;

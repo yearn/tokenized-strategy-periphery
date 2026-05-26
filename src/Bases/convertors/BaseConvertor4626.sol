@@ -18,8 +18,8 @@ contract BaseConvertor4626 is BaseConvertor {
 
     IERC4626 public immutable vault;
 
-    constructor(address _asset, string memory _name, address _want, address _oracle, address _vault)
-        BaseConvertor(_asset, _name, _want, _oracle)
+    constructor(address _asset, string memory _name, address _want, address _oracle, address _vault, address _gov)
+        BaseConvertor(_asset, _name, _want, _oracle, _gov)
     {
         vault = IERC4626(_vault);
         require(vault.asset() == _want, "wrong vault");
@@ -56,6 +56,11 @@ contract BaseConvertor4626 is BaseConvertor {
     /// @notice Asset-denominated max withdrawable value from vault.
     function vaultsMaxWithdraw() public view virtual returns (uint256) {
         return _quoteAssetFromWant(vault.convertToAssets(vault.maxRedeem(address(this))));
+    }
+
+    function protectedTokens() public view virtual override returns (address[] memory _protected) {
+        _protected = new address[](1);
+        _protected[0] = address(vault);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -96,7 +101,7 @@ contract BaseConvertor4626 is BaseConvertor {
 
     function _tendTrigger() internal view virtual override returns (bool) {
         if (!(_isBaseFeeAcceptable())) return false;
-        return _deployableWant() > minAmountToSell;
+        return _deployableWant() > minAmountToSell[address(WANT)];
     }
 
     function totalWant() public view virtual override returns (uint256) {

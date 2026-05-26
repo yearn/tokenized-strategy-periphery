@@ -6,6 +6,8 @@ import {IBaseHealthCheck} from "../HealthCheck/IBaseHealthCheck.sol";
 interface IBaseConvertor is IBaseHealthCheck {
     function WANT() external view returns (address);
 
+    function GOV() external view returns (address);
+
     function SELL_ASSET_AUCTION() external view returns (address);
 
     function BUY_ASSET_AUCTION() external view returns (address);
@@ -20,7 +22,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function reportBuffer() external view returns (uint16);
 
-    function minAmountToSell() external view returns (uint256);
+    function minAmountToSell(address _from) external view returns (uint256);
 
     function maxAmountToSwap(address _from) external view returns (uint256);
 
@@ -28,7 +30,10 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function setOracle(address _oracle) external;
 
-    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function setMinAmountToSell(
+        address _from,
+        uint256 _minAmountToSell
+    ) external;
 
     function setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) external;
 
@@ -55,6 +60,8 @@ interface IBaseConvertor is IBaseHealthCheck {
     function kickable(address _from) external view returns (uint256);
 
     function auctionTrigger(address _from) external view returns (bool shouldKick, bytes memory data);
+
+    function protectedTokens() external view returns (address[] memory);
 
     function balanceOfAsset() external view returns (uint256);
 
