@@ -23,6 +23,11 @@ interface IMorphoOracle {
 contract BaseConvertor is BaseHealthCheck {
     using SafeERC20 for ERC20;
 
+    modifier onlyGov() {
+        require(msg.sender == GOV, "!gov");
+        _;
+    }
+
     event OracleSet(address indexed oracle);
     event MaxSlippageBpsSet(uint16 indexed maxSlippageBps);
     event StartingPriceBpsSet(uint16 indexed startingPriceBps);
@@ -116,11 +121,6 @@ contract BaseConvertor is BaseHealthCheck {
 
     function setMinAmountToSell(address _from, uint256 _minAmountToSell) external onlyManagement {
         _setMinAmountToSell(_from, _minAmountToSell);
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == GOV, "!gov");
-        _;
     }
 
     function setOracle(address _oracle) external onlyGov {
