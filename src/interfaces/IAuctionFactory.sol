@@ -18,7 +18,7 @@ interface IAuctionFactory is IClonableCreate2 {
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice The amount to start the auction with.
+    /// @notice The amount to start the auction with, scaled to 1e18.
     function DEFAULT_STARTING_PRICE() external pure returns (uint256);
 
     /*//////////////////////////////////////////////////////////////
@@ -77,8 +77,8 @@ interface IAuctionFactory is IClonableCreate2 {
      * @param _want Address of the token users will bid with.
      * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
-     * @param _startingPrice Starting price for the auction (no decimals).
-     *  NOTE: The starting price should be without decimals (1k == 1_000).
+     * @param _startingPrice Starting price for the auction, scaled to 1e18.
+     *  NOTE: The starting price should be scaled (1 == 1e18).
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(address _want, address _receiver, address _governance, uint256 _startingPrice)
@@ -90,7 +90,7 @@ interface IAuctionFactory is IClonableCreate2 {
      * @param _want Address of the token users will bid with.
      * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
-     * @param _startingPrice Starting price for the auction (no decimals).
+     * @param _startingPrice Starting price for the auction, scaled to 1e18.
      * @param _salt The salt to use for deterministic deployment.
      * @return _newAuction Address of the newly created auction contract.
      */

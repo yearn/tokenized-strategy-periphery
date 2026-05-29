@@ -38,8 +38,10 @@ contract BaseConvertor is BaseHealthCheck {
     event MaxGasPriceToTendSet(uint256 indexed maxGasPriceToTend);
 
     uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
-    uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000;
+    uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000 * 1e18;
     uint256 internal constant DEFAULT_AUCTION_DECAY_RATE = 50;
+    /// @notice Deterministic AuctionFactory v1.0.5 address from DeployAuction.
+    address internal constant AUCTION_FACTORY = 0x6F8CfD7aC6bfD55dDcE8b3521c22c8ebD1470fBC;
 
     /// @notice The Merkl Distributor contract for claiming rewards
     IMerklDistributor public constant MERKL_DISTRIBUTOR = IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
@@ -88,7 +90,7 @@ contract BaseConvertor is BaseHealthCheck {
         WANT = ERC20(_want);
         GOV = _gov;
 
-        AuctionFactory factory = AuctionFactory(0xbA7FCb508c7195eE5AE823F37eE2c11D7ED52F8e);
+        AuctionFactory factory = AuctionFactory(AUCTION_FACTORY);
 
         Auction _sellAssetAuction = Auction(factory.createNewAuction(_want, address(this), address(this)));
         _sellAssetAuction.enable(_asset);
@@ -294,10 +296,7 @@ contract BaseConvertor is BaseHealthCheck {
         emit OracleSet(_oracle);
     }
 
-    function _setMinAmountToSell(
-        address _from,
-        uint256 _minAmountToSell
-    ) internal virtual {
+    function _setMinAmountToSell(address _from, uint256 _minAmountToSell) internal virtual {
         minAmountToSell[_from] = _minAmountToSell;
         emit MinAmountToSellSet(_from, _minAmountToSell);
     }
@@ -425,8 +424,8 @@ contract BaseConvertor is BaseHealthCheck {
         uint256 targetPrice = _targetAuctionPrice(_from);
         uint256 startUnitPrice = Math.mulDiv(targetPrice, uint256(startingPriceBps), MAX_BPS, Math.Rounding.Up);
 
-        // Auction starting price is a lot size, so we need to adjust for amount.
-        _startingPrice = Math.mulDiv(_amount, startUnitPrice, fromScaler * 1e18, Math.Rounding.Up);
+        // Auction starting price is a scaled lot size, so we need to adjust for amount.
+        _startingPrice = Math.mulDiv(_amount, startUnitPrice, fromScaler, Math.Rounding.Up);
         if (_startingPrice == 0) _startingPrice = 1;
 
         _minimumPrice = Math.mulDiv(targetPrice, uint256(MAX_BPS) - uint256(maxSlippageBps), MAX_BPS);

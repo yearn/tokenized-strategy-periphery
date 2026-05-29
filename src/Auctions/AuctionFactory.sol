@@ -9,8 +9,8 @@ import {ClonableCreate2} from "../utils/ClonableCreate2.sol";
 contract AuctionFactory is ClonableCreate2 {
     event DeployedNewAuction(address indexed auction, address indexed want);
 
-    /// @notice The amount to start the auction with.
-    uint256 public constant DEFAULT_STARTING_PRICE = 1_000_000;
+    /// @notice The amount to start the auction with, scaled to 1e18.
+    uint256 public constant DEFAULT_STARTING_PRICE = 1_000_000 * 1e18;
 
     /// @notice Full array of all auctions deployed through this factory.
     address[] public auctions;
@@ -21,7 +21,7 @@ contract AuctionFactory is ClonableCreate2 {
     }
 
     function version() external pure returns (string memory) {
-        return "1.0.4";
+        return "1.0.5";
     }
 
     /**
@@ -59,8 +59,8 @@ contract AuctionFactory is ClonableCreate2 {
      * @param _want Address of the token users will bid with.
      * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
-     * @param _startingPrice Starting price for the auction (no decimals).
-     *  NOTE: The starting price should be without decimals (1k == 1_000).
+     * @param _startingPrice Starting price for the auction, scaled to 1e18.
+     *  NOTE: The starting price should be scaled (1 == 1e18).
      * @return _newAuction Address of the newly created auction contract.
      */
     function createNewAuction(address _want, address _receiver, address _governance, uint256 _startingPrice)
@@ -75,7 +75,7 @@ contract AuctionFactory is ClonableCreate2 {
      * @param _want Address of the token users will bid with.
      * @param _receiver Address that will receive the funds in the auction.
      * @param _governance Address allowed to enable and disable auctions.
-     * @param _startingPrice Starting price for the auction (no decimals).
+     * @param _startingPrice Starting price for the auction, scaled to 1e18.
      * @param _salt The salt to use for deterministic deployment.
      * @return _newAuction Address of the newly created auction contract.
      */

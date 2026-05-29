@@ -34,7 +34,7 @@ contract AuctionTest is Setup, ITaker {
     }
 
     function test_setup() public {
-        assertEq(auctionFactory.DEFAULT_STARTING_PRICE(), 1e6);
+        assertEq(auctionFactory.DEFAULT_STARTING_PRICE(), 1_000_000 * 1e18);
     }
 
     function test_defaults() public {
@@ -156,7 +156,7 @@ contract AuctionTest is Setup, ITaker {
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
         assertEq(auction.available(from), _amount);
-        uint256 startingPrice = ((auction.startingPrice() * (WAD / wantScaler)) * 1e18) / _amount / fromScaler;
+        uint256 startingPrice = (auction.startingPrice() * (WAD / wantScaler)) / _amount / fromScaler;
         assertEq(auction.price(from), startingPrice);
         assertApproxEqRel(
             auction.getAmountNeeded(from, _amount),
@@ -194,7 +194,7 @@ contract AuctionTest is Setup, ITaker {
         address from = tokenAddrs["WBTC"];
         auction = Auction(auctionFactory.createNewAuction(address(asset)));
 
-        auction.setStartingPrice((_amount * 200_000) / (10 ** ERC20(from).decimals()));
+        auction.setStartingPrice((_amount * 200_000 * 1e18) / (10 ** ERC20(from).decimals()));
         auction.setMinimumPrice(100_000 * 1e18);
 
         fromScaler = WAD / 10 ** ERC20(from).decimals();
@@ -624,6 +624,38 @@ contract AuctionTest is Setup, ITaker {
         skip(auction.auctionLength() + 1);
         auction.setStepDecayRate(75);
         assertEq(auction.stepDecayRate(), 75);
+    }
+
+    function test_scaledStartingPriceOneMeansOneWant() public {
+        address from = tokenAddrs["WBTC"];
+        uint256 amount = 1e8;
+
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+        auction.setStartingPrice(1e18);
+        auction.enable(from);
+
+        airdrop(ERC20(from), address(auction), amount);
+        auction.kick(from);
+
+        assertEq(auction.startingPrice(), 1e18);
+        assertEq(auction.price(from), 1e6);
+        assertEq(auction.getAmountNeeded(from, amount), 1e6);
+    }
+
+    function test_scaledStartingPriceSupportsFractions() public {
+        address from = tokenAddrs["WBTC"];
+        uint256 amount = 1e8;
+
+        auction = Auction(auctionFactory.createNewAuction(address(asset)));
+        auction.setStartingPrice(5e17);
+        auction.enable(from);
+
+        airdrop(ERC20(from), address(auction), amount);
+        auction.kick(from);
+
+        assertEq(auction.startingPrice(), 5e17);
+        assertEq(auction.price(from), 5e5);
+        assertEq(auction.getAmountNeeded(from, amount), 5e5);
     }
 
     function test_stepDecayRateAffectsPrice(uint256 _amount) public {

@@ -153,7 +153,7 @@ contract BaseAuctioneerTest is Setup {
         (_kicked,, _initialAvailable) = auctioneer.auctions(from);
         assertEq(_kicked, block.timestamp);
         assertEq(_initialAvailable, _amount);
-        uint256 startingPrice = ((auctioneer.startingPrice() * (WAD / wantScaler)) * 1e18) / _amount / fromScaler;
+        uint256 startingPrice = (auctioneer.startingPrice() * (WAD / wantScaler)) / _amount / fromScaler;
         assertEq(auctioneer.price(from), startingPrice);
         assertApproxEqRel(
             auctioneer.getAmountNeeded(from, _amount),

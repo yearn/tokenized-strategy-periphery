@@ -15,6 +15,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
+import {AuctionFactory} from "../../Auctions/AuctionFactory.sol";
 import {Clonable} from "../../utils/Clonable.sol";
 
 contract Setup is Test, Clonable {
@@ -52,6 +53,8 @@ contract Setup is Test, Clonable {
 
     // Default profit max unlock time is set for 10 days
     uint256 public profitMaxUnlockTime = 10 days;
+
+    address internal constant AUCTION_FACTORY = 0x6F8CfD7aC6bfD55dDcE8b3521c22c8ebD1470fBC;
 
     function setUp() public virtual {
         _setTokenAddrs();
@@ -163,6 +166,12 @@ contract Setup is Test, Clonable {
     function airdrop(ERC20 _asset, address _to, uint256 _amount) public {
         uint256 balanceBefore = _asset.balanceOf(_to);
         deal(address(_asset), _to, balanceBefore + _amount);
+    }
+
+    function _etchAuctionFactory() internal {
+        AuctionFactory factory = new AuctionFactory();
+        vm.etch(AUCTION_FACTORY, address(factory).code);
+        vm.store(AUCTION_FACTORY, bytes32(0), bytes32(uint256(uint160(factory.original()))));
     }
 
     function setFees(uint16 _protocolFee, uint16 _performanceFee) public {

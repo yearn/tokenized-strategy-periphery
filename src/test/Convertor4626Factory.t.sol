@@ -19,6 +19,8 @@ contract Convertor4626FactoryTest is Setup {
         oracle = new MockConvertorOracle();
         oracle.setPrice(1e36);
 
+        _etchAuctionFactory();
+
         factory = new Convertor4626Factory(management, performanceFeeRecipient, keeper, EMERGENCY_ADMIN);
     }
 
@@ -26,8 +28,9 @@ contract Convertor4626FactoryTest is Setup {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed =
-            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);
+        address deployed = factory.newConvertor4626(
+            address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy
+        );
 
         IBaseConvertor4626 convertor = IBaseConvertor4626(deployed);
 
@@ -49,8 +52,9 @@ contract Convertor4626FactoryTest is Setup {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed =
-            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);
+        address deployed = factory.newConvertor4626(
+            address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy
+        );
 
         vm.expectRevert(abi.encodeWithSelector(Convertor4626Factory.AlreadyDeployed.selector, deployed));
         factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);

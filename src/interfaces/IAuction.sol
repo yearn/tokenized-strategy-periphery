@@ -70,7 +70,7 @@ interface IAuction {
     /// @notice The minimum price for the auction, scaled to 1e18.
     function minimumPrice() external view returns (uint256);
 
-    /// @notice The amount to start the auction at.
+    /// @notice The amount to start the auction at, scaled to 1e18.
     function startingPrice() external view returns (uint256);
 
     /// @notice The time period for each price step in seconds.
@@ -94,7 +94,7 @@ interface IAuction {
      * @param _want Address this auction is selling to.
      * @param _receiver Address that will receive the funds from the auction.
      * @param _governance Address of the contract governance.
-     * @param _startingPrice Starting price for each auction.
+     * @param _startingPrice Starting price for each auction, scaled to 1e18.
      */
     function initialize(address _want, address _receiver, address _governance, uint256 _startingPrice) external;
 
@@ -237,7 +237,7 @@ interface IAuction {
 
     /**
      * @notice Sets the starting price for the auction.
-     * @param _startingPrice The new starting price for the auction.
+     * @param _startingPrice The new starting price for the auction, scaled to 1e18.
      */
     function setStartingPrice(uint256 _startingPrice) external;
 
