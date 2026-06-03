@@ -221,6 +221,17 @@ contract AuctionSwapperTest is Setup {
         assertEq(ERC20(from).balanceOf(address(auction)), 0);
     }
 
+    function test_kickAuction_selfAddressRevertsWithoutProtectedTokenEntry() public {
+        address newAuction = auctionFactory.createNewAuction(address(asset), address(swapper), address(this), 1e6);
+        swapper.setAuction(newAuction);
+
+        address[] memory configuredTokens = swapper.protectedTokens();
+        assertEq(configuredTokens.length, 0);
+
+        vm.expectRevert("protected token");
+        swapper.kickAuction(address(swapper));
+    }
+
     function test_kickAuction_default(uint256 _amount) public {
         vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
 
