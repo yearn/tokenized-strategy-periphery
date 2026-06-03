@@ -119,7 +119,7 @@ abstract contract AuctionSwapper is BaseSwapper {
      * @param _from The token that was being sold.
      */
     function _kickAuction(address _from) internal virtual returns (uint256) {
-        require(!_isProtectedToken(_from), "protected token");
+        require(_from != address(this) && !_isProtectedToken(_from), "protected token");
         require(useAuction, "useAuction is false");
         address _auction = auction;
 
