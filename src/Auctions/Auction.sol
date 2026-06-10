@@ -118,7 +118,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     function initialize(address _want, address _receiver, address _governance, uint256 _startingPrice) public virtual {
         require(stepDecayRate == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
-        require(_startingPrice != 0, "starting price");
+        require(_startingPrice > 1e9, "starting price");
         require(_receiver != address(0), "receiver");
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_want).decimals();
@@ -451,7 +451,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _startingPrice The new starting price for the auction, scaled to 1e18.
      */
     function setStartingPrice(uint256 _startingPrice) external virtual onlyGovernance {
-        require(_startingPrice != 0, "starting price");
+        require(_startingPrice > 1e9, "starting price");
 
         // Don't change the price when an auction is active.
         require(!isAnActiveAuction(), "active auction");
