@@ -18,8 +18,6 @@ contract ConvertorFactoryTest is Setup {
         oracle = new MockConvertorOracle();
         oracle.setPrice(1e36);
 
-        _etchAuctionFactory();
-
         factory = new ConvertorFactory(management, performanceFeeRecipient, keeper, EMERGENCY_ADMIN);
     }
 

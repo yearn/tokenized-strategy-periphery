@@ -29,8 +29,6 @@ contract BaseConvertor4626Test is Setup {
         oracle = new MockConvertorOracle();
         oracle.setPrice(1e36); // 1 asset per 1 want
 
-        _etchAuctionFactory();
-
         convertor = new BaseConvertor4626(
             address(asset), "Base Convertor 4626", address(want), address(oracle), address(targetVault), daddy
         );

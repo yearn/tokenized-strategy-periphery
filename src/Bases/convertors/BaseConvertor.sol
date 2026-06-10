@@ -40,8 +40,6 @@ contract BaseConvertor is BaseHealthCheck {
     uint256 internal constant ORACLE_PRICE_SCALE = 1e36;
     uint256 internal constant DEFAULT_AUCTION_STARTING_PRICE = 1_000_000 * 1e18;
     uint256 internal constant DEFAULT_AUCTION_DECAY_RATE = 50;
-    /// @notice Deterministic AuctionFactory v1.0.5 address from DeployAuction.
-    address internal constant AUCTION_FACTORY = 0x6F8CfD7aC6bfD55dDcE8b3521c22c8ebD1470fBC;
 
     /// @notice The Merkl Distributor contract for claiming rewards
     IMerklDistributor public constant MERKL_DISTRIBUTOR = IMerklDistributor(0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae);
@@ -90,7 +88,7 @@ contract BaseConvertor is BaseHealthCheck {
         WANT = ERC20(_want);
         GOV = _gov;
 
-        AuctionFactory factory = AuctionFactory(AUCTION_FACTORY);
+        AuctionFactory factory = AuctionFactory(0x6332e101A0c50894d4A1a4bd62caEBe0182D4633);
 
         Auction _sellAssetAuction = Auction(factory.createNewAuction(_want, address(this), address(this)));
         _sellAssetAuction.enable(_asset);
@@ -223,6 +221,8 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     function _isProtectedToken(address _token) internal view virtual returns (bool) {
+        if (_token == address(this)) return true;
+
         address[] memory _protectedTokens = protectedTokens();
         uint256 length = _protectedTokens.length;
         for (uint256 i; i < length; ++i) {

@@ -18,10 +18,7 @@ contract MockFluidSwapper is BaseStrategy, FluidSwapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external {
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {
         _setMinAmountToSell(_token, _minAmountToSell);
     }
 
@@ -53,10 +50,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IFluidSwapper} from "../../swappers/interfaces/IFluidSwapper.sol";
 
 interface IMockFluidSwapper is IStrategy, IFluidSwapper {
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external;
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external;
 
     function setBase(address _base) external;
 

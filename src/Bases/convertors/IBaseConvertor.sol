@@ -30,10 +30,7 @@ interface IBaseConvertor is IBaseHealthCheck {
 
     function setOracle(address _oracle) external;
 
-    function setMinAmountToSell(
-        address _from,
-        uint256 _minAmountToSell
-    ) external;
+    function setMinAmountToSell(address _from, uint256 _minAmountToSell) external;
 
     function setMaxAmountToSwap(address _from, uint256 _maxAmountToSwap) external;
 

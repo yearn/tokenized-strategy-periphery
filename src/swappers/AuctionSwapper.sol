@@ -168,18 +168,14 @@ abstract contract AuctionSwapper is BaseSwapper {
 
         uint256 kickableAmount = kickable(_from);
 
-        if (
-            kickableAmount != 0 && kickableAmount >= minAmountToSell[_from]
-        ) {
+        if (kickableAmount != 0 && kickableAmount >= minAmountToSell[_from]) {
             return (true, abi.encodeCall(this.kickAuction, (_from)));
         }
 
         return (false, bytes("not enough kickable"));
     }
 
-    function _isProtectedToken(
-        address _token
-    ) internal view virtual returns (bool) {
+    function _isProtectedToken(address _token) internal view virtual returns (bool) {
         address[] memory _protectedTokens = protectedTokens();
         uint256 length = _protectedTokens.length;
 
