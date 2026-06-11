@@ -31,12 +31,6 @@ import {BaseSwapper} from "./BaseSwapper.sol";
  *   - Implements `auctionTrigger()` for integration with CommonAuctionTrigger
  *   - Returns encoded calldata for `kickAuction()` when conditions are met
  *   - Provides smart logic to prevent duplicate auctions and handle edge cases
- *
- *   HOOKS:
- *   - The contract can act as a `hook` contract for the auction with the
- *     ability to override functions to implement custom hooks
- *   - If hooks are not desired, call `setHookFlags()` on the auction contract
- *     to avoid unnecessary gas for unused functions
  */
 abstract contract AuctionSwapper is BaseSwapper {
     using SafeERC20 for ERC20;
