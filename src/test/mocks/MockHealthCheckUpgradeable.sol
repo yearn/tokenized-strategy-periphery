@@ -39,10 +39,14 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         }
     }
 
-    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
+    function _harvestAndReport() internal override returns (uint256 _reportedAssets) {
         // Simple mock - just return the balance
         // This matches the non-upgradeable MockHealthCheck behavior
-        _totalAssets = asset.balanceOf(address(this));
+        _reportedAssets = asset.balanceOf(address(this));
+    }
+
+    function _strategyTotalAssets() internal view override returns (uint256) {
+        return asset.balanceOf(address(this));
     }
 
     // Upgrade function to initialize health check values when upgrading from a non-health check strategy

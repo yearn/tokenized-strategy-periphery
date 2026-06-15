@@ -282,6 +282,43 @@ contract HealthCheckTest is Setup {
         assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
+    function test_strategyTotalAssets_clampsProfitView() public {
+        uint256 amount = 1_000 * 10 ** decimals;
+        uint256 profitLimit = 1_000;
+
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, amount);
+
+        vm.prank(management);
+        healthCheck.setProfitLimitRatio(profitLimit);
+
+        airdrop(asset, address(healthCheck), amount);
+        skip(1);
+
+        uint256 expected = amount + (amount * profitLimit) / MAX_BPS;
+
+        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should clamp profit");
+        assertEq(healthCheck.totalAssets(), expected, "totalAssets should use clamped profit");
+    }
+
+    function test_strategyTotalAssets_clampsLossView() public {
+        uint256 amount = 1_000 * 10 ** decimals;
+        uint256 lossLimit = 500;
+
+        mintAndDepositIntoStrategy(IStrategy(address(healthCheck)), user, amount);
+
+        vm.prank(management);
+        healthCheck.setLossLimitRatio(lossLimit);
+
+        vm.prank(address(healthCheck));
+        asset.safeTransfer(management, amount / 2);
+        skip(1);
+
+        uint256 expected = amount - (amount * lossLimit) / MAX_BPS;
+
+        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should clamp loss");
+        assertEq(healthCheck.totalAssets(), expected, "totalAssets should use clamped loss");
+    }
+
     function test_depositorWhitelist_openOrAllowed() public {
         // Defaults open.
         assertTrue(healthCheck.open());

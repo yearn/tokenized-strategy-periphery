@@ -3,6 +3,7 @@ pragma solidity >=0.8.18;
 
 import {Hooks} from "./Hooks.sol";
 import {BaseHealthCheck, ERC20} from "../HealthCheck/BaseHealthCheck.sol";
+import {ITokenizedStrategy} from "@tokenized-strategy/interfaces/ITokenizedStrategy.sol";
 
 /**
  *   @title Base Hooks
@@ -12,6 +13,8 @@ import {BaseHealthCheck, ERC20} from "../HealthCheck/BaseHealthCheck.sol";
  *   or transfer hooks in their strategy.
  */
 abstract contract BaseHooks is BaseHealthCheck, Hooks {
+    ITokenizedStrategy private constant SELECTORS = ITokenizedStrategy(address(0));
+
     // Deposit
     function deposit(uint256 assets, address receiver) external virtual returns (uint256 shares) {
         if (assets == type(uint256).max) {
@@ -19,14 +22,14 @@ abstract contract BaseHooks is BaseHealthCheck, Hooks {
         }
 
         _preDepositHook(assets, shares, receiver);
-        shares = abi.decode(_delegateCall(abi.encodeCall(TokenizedStrategy.deposit, (assets, receiver))), (uint256));
+        shares = abi.decode(_delegateCall(abi.encodeCall(SELECTORS.deposit, (assets, receiver))), (uint256));
         _postDepositHook(assets, shares, receiver);
     }
 
     // Mint
     function mint(uint256 shares, address receiver) external virtual returns (uint256 assets) {
         _preDepositHook(assets, shares, receiver);
-        assets = abi.decode(_delegateCall(abi.encodeCall(TokenizedStrategy.mint, (shares, receiver))), (uint256));
+        assets = abi.decode(_delegateCall(abi.encodeCall(SELECTORS.mint, (shares, receiver))), (uint256));
         _postDepositHook(assets, shares, receiver);
     }
 
@@ -76,20 +79,20 @@ abstract contract BaseHooks is BaseHealthCheck, Hooks {
     // Transfer
     function transferFrom(address from, address to, uint256 amount) public virtual returns (bool success) {
         _preTransferHook(from, to, amount);
-        success = abi.decode(_delegateCall(abi.encodeCall(TokenizedStrategy.transferFrom, (from, to, amount))), (bool));
+        success = abi.decode(_delegateCall(abi.encodeCall(SELECTORS.transferFrom, (from, to, amount))), (bool));
         _postTransferHook(from, to, amount, success);
     }
 
     // Transfer from
     function transfer(address to, uint256 amount) external virtual returns (bool success) {
         _preTransferHook(msg.sender, to, amount);
-        success = abi.decode(_delegateCall(abi.encodeCall(TokenizedStrategy.transfer, (to, amount))), (bool));
+        success = abi.decode(_delegateCall(abi.encodeCall(SELECTORS.transfer, (to, amount))), (bool));
         _postTransferHook(msg.sender, to, amount, success);
     }
 
     function report() external virtual returns (uint256 profit, uint256 loss) {
         _preReportHook();
-        (profit, loss) = abi.decode(_delegateCall(abi.encodeCall(TokenizedStrategy.report, ())), (uint256, uint256));
+        (profit, loss) = abi.decode(_delegateCall(abi.encodeCall(SELECTORS.report, ())), (uint256, uint256));
         _postReportHook(profit, loss);
     }
 }

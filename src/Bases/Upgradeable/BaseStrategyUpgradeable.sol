@@ -28,8 +28,8 @@ import {ITokenizedStrategy} from "@tokenized-strategy/interfaces/ITokenizedStrat
  *  `fallback` function to delegatecall the implementation so that strategists
  *  can only be concerned with writing their strategy specific code.
  *
- *  This contract should be inherited and the three main abstract methods
- *  `_deployFunds`, `_freeFunds` and `_harvestAndReport` implemented to adapt
+ *  This contract should be inherited and the four main abstract methods
+ *  `_deployFunds`, `_freeFunds`, `_strategyTotalAssets` and `_harvestAndReport` implemented to adapt
  *  the Strategy to the particular needs it has to generate yield. There are
  *  other optional methods that can be implemented to further customize
  *  the strategy if desired.
@@ -104,7 +104,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * This address should be the same for every strategy, never be adjusted
      * and always be checked before any integration with the Strategy.
      */
-    address public constant tokenizedStrategyAddress = 0xD377919FA87120584B21279a491F82D5265A139c;
+    address public constant tokenizedStrategyAddress = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
@@ -247,28 +247,33 @@ abstract contract BaseStrategyUpgradeable is Initializable {
     function _freeFunds(uint256 _amount) internal virtual;
 
     /**
-     * @dev Internal function to harvest all rewards, redeploy any idle
-     * funds and return an accurate accounting of all funds currently
-     * held by the Strategy.
-     *
-     * This should do any needed harvesting, rewards selling, accrual,
-     * redepositing etc. to get the most accurate view of current assets.
+     * @dev Internal function to return an accurate accounting of all funds
+     * currently held by the Strategy.
      *
      * NOTE: All applicable assets including loose assets should be
      * accounted for in this function.
      *
-     * Care should be taken when relying on oracles or swap values rather
-     * than actual amounts as all Strategy profit/loss accounting will
-     * be done based on this returned value.
+     * This function is used by ERC4626 view methods whenever the current block
+     * is not already latched, and by normal state changing accounting syncs
+     * when they refresh. It must be strictly read only and should not harvest,
+     * claim or otherwise mutate state.
      *
-     * This can still be called post a shutdown, a strategist can check
-     * `TokenizedStrategy.isShutdown()` to decide if funds should be
-     * redeployed or simply realize any profits/losses.
-     *
-     * @return _totalAssets A trusted and accurate account for the total
+     * @return _strategyTotalAssets A trusted and accurate account for the total
      * amount of 'asset' the strategy currently holds including idle funds.
      */
-    function _harvestAndReport() internal virtual returns (uint256 _totalAssets);
+    function _strategyTotalAssets() internal view virtual returns (uint256);
+
+    /**
+     * @dev Internal hook used by explicit {report()} accounting syncs.
+     *
+     * This can harvest rewards, claim fees, realize external position changes
+     * or perform any other mutable work needed before returning the strategy's
+     * up-to-date total assets.
+     *
+     * @return _reportedAssets A trusted and accurate account for the total
+     * amount of 'asset' the strategy currently holds including idle funds.
+     */
+    function _harvestAndReport() internal virtual returns (uint256 _reportedAssets);
 
     /*//////////////////////////////////////////////////////////////
                     OPTIONAL TO OVERRIDE BY STRATEGIST
@@ -426,6 +431,14 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      */
     function deployFunds(uint256 _amount) external virtual onlySelf {
         _deployFunds(_amount);
+    }
+
+    /**
+     * @notice Returns the strategies best current estimate for total assets.
+     * @dev Read-only callback for the TokenizedStrategy.
+     */
+    function strategyTotalAssets() external view virtual returns (uint256) {
+        return _strategyTotalAssets();
     }
 
     /**

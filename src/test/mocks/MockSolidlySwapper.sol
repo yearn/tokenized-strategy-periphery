@@ -11,8 +11,12 @@ contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
 
     function _freeFunds(uint256) internal override {}
 
-    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
-        _totalAssets = asset.balanceOf(address(this));
+    function _harvestAndReport() internal override returns (uint256 _reportedAssets) {
+        _reportedAssets = asset.balanceOf(address(this));
+    }
+
+    function _strategyTotalAssets() internal view override returns (uint256) {
+        return asset.balanceOf(address(this));
     }
 
     function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {

@@ -13,12 +13,44 @@ import {Roles} from "@yearn-vaults/interfaces/Roles.sol";
 import {IVault} from "@yearn-vaults/interfaces/IVault.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";
+import {TokenizedStrategy} from "@tokenized-strategy/TokenizedStrategy.sol";
 
 import {MockStrategy} from "../mocks/MockStrategy.sol";
 import {Clonable} from "../../utils/Clonable.sol";
 
+contract MockVaultFactory {
+    address public immutable governance;
+    uint16 public protocolFeeBps;
+    address public protocolFeeRecipient;
+
+    constructor(address _governance) {
+        governance = _governance;
+    }
+
+    function protocol_fee_config() external view returns (uint16, address) {
+        return (protocolFeeBps, protocolFeeRecipient);
+    }
+
+    function protocol_fee_config(address) external view returns (uint16, address) {
+        return (protocolFeeBps, protocolFeeRecipient);
+    }
+
+    function set_protocol_fee_bps(uint16 _protocolFeeBps) external {
+        require(msg.sender == governance, "!governance");
+        protocolFeeBps = _protocolFeeBps;
+    }
+
+    function set_protocol_fee_recipient(address _protocolFeeRecipient) external {
+        require(msg.sender == governance, "!governance");
+        protocolFeeRecipient = _protocolFeeRecipient;
+    }
+}
+
 contract Setup is Test, Clonable {
     using SafeERC20 for ERC20;
+
+    address internal constant TOKENIZED_STRATEGY = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
+    address internal constant MOCK_VAULT_FACTORY = address(0x310);
 
     VyperDeployer public vyperDeployer = new VyperDeployer();
 
@@ -29,6 +61,8 @@ contract Setup is Test, Clonable {
     // Vault contracts to test with.
     IVault public vault;
     IVaultFactory public vaultFactory;
+    MockVaultFactory public mockVaultFactory;
+    TokenizedStrategy public tokenizedStrategyImplementation;
 
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
@@ -62,6 +96,8 @@ contract Setup is Test, Clonable {
         // Set decimals
         decimals = asset.decimals();
 
+        _deployTokenizedStrategyImplementation();
+
         mockStrategy = setUpStrategy();
 
         vaultFactory = IVaultFactory(mockStrategy.FACTORY());
@@ -75,7 +111,22 @@ contract Setup is Test, Clonable {
         vm.label(address(mockStrategy), "strategy");
         vm.label(vaultManagement, "vault management");
         vm.label(address(vaultFactory), " vault factory");
+        vm.label(TOKENIZED_STRATEGY, "tokenized strategy");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
+    }
+
+    function _deployTokenizedStrategyImplementation() internal {
+        MockVaultFactory mockVaultFactoryImplementation = new MockVaultFactory(daddy);
+
+        vm.etch(MOCK_VAULT_FACTORY, address(mockVaultFactoryImplementation).code);
+        mockVaultFactory = MockVaultFactory(MOCK_VAULT_FACTORY);
+
+        vm.prank(daddy);
+        mockVaultFactory.set_protocol_fee_recipient(protocolFeeRecipient);
+
+        tokenizedStrategyImplementation = new TokenizedStrategy(address(mockVaultFactory));
+
+        vm.etch(TOKENIZED_STRATEGY, address(tokenizedStrategyImplementation).code);
     }
 
     function setUpVault() public returns (IVault) {

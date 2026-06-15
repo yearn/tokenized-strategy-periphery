@@ -77,6 +77,7 @@ contract Base4626CompounderTest is Setup {
     function test_profitableReport(uint256 _amount, uint16 _profitFactor) public {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
         _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS - 100));
+        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
 
         // Deposit into compounder
         mintAndDepositIntoStrategy(compounder, user, _amount);
@@ -87,7 +88,6 @@ contract Base4626CompounderTest is Setup {
         skip(1 days);
 
         // TODO: implement logic to simulate earning interest.
-        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
         airdrop(asset, address(compounder), toAirdrop);
 
         // Report profit
@@ -95,8 +95,9 @@ contract Base4626CompounderTest is Setup {
         (uint256 profit, uint256 loss) = compounder.report();
 
         // Check return Values
-        assertGe(profit, toAirdrop, "!profit");
+        assertEq(profit, 0, "!profit");
         assertEq(loss, 0, "!loss");
+        assertEq(compounder.totalAssets(), _amount + toAirdrop, "!totalAssets");
 
         skip(compounder.profitMaxUnlockTime());
 
@@ -112,6 +113,9 @@ contract Base4626CompounderTest is Setup {
     function test_profitableReport_withFees(uint256 _amount, uint16 _profitFactor) public virtual {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
         _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS - 100));
+        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
+        uint256 expectedShares = _expectedFeeShares(_amount, toAirdrop, 1_000);
+        vm.assume(expectedShares > 0);
 
         // Set protocol fee to 0 and perf fee to 10%
         setFees(0, 1_000);
@@ -125,7 +129,6 @@ contract Base4626CompounderTest is Setup {
         skip(1 days);
 
         // TODO: implement logic to simulate earning interest.
-        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
         airdrop(asset, address(compounder), toAirdrop);
 
         // Report profit
@@ -133,13 +136,11 @@ contract Base4626CompounderTest is Setup {
         (uint256 profit, uint256 loss) = compounder.report();
 
         // Check return Values
-        assertGe(profit, toAirdrop, "!profit");
+        assertEq(profit, 0, "!profit");
         assertEq(loss, 0, "!loss");
+        assertEq(compounder.totalAssets(), _amount + toAirdrop, "!totalAssets");
 
         skip(compounder.profitMaxUnlockTime());
-
-        // Get the expected fee
-        uint256 expectedShares = (profit * 1_000) / MAX_BPS;
 
         assertEq(compounder.balanceOf(performanceFeeRecipient), expectedShares);
 
@@ -194,5 +195,14 @@ contract Base4626CompounderTest is Setup {
 
         (trigger,) = compounder.tendTrigger();
         assertTrue(!trigger);
+    }
+
+    function _expectedFeeShares(uint256 _supply, uint256 _profit, uint256 _performanceFee)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 totalFees = (_profit * _performanceFee) / MAX_BPS;
+        return (totalFees * _supply) / (_supply + _profit - totalFees);
     }
 }
