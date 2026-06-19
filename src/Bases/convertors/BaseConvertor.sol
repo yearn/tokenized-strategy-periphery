@@ -249,10 +249,6 @@ contract BaseConvertor is BaseHealthCheck {
         _reportedAssets = estimatedTotalAssets();
     }
 
-    function _strategyTotalAssets() internal view virtual override returns (uint256) {
-        return estimatedTotalAssets();
-    }
-
     function estimatedTotalAssets() public view virtual returns (uint256) {
         uint256 wantValueInAsset = (_quoteAssetFromWant(totalWant()) * (MAX_BPS - reportBuffer)) / MAX_BPS;
 
