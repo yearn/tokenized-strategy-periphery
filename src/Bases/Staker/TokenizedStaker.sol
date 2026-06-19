@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {BaseHooks, ERC20, BaseHealthCheck} from "../Hooks/BaseHooks.sol";
+import {TokenizedStrategyLib as TokenizedStrategy} from "@tokenized-strategy/libraries/TokenizedStrategyLib.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IVaultFactory} from "@yearn-vaults/interfaces/IVaultFactory.sol";

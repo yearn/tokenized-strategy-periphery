@@ -20,6 +20,8 @@ import {Clonable} from "../../utils/Clonable.sol";
 contract Setup is Test, Clonable {
     using SafeERC20 for ERC20;
 
+    address internal constant TOKENIZED_STRATEGY = 0x310f5Db015E9d6E542fd41bd4542640790791e76;
+
     VyperDeployer public vyperDeployer = new VyperDeployer();
 
     // Contract instances that we will use repeatedly.
@@ -75,6 +77,7 @@ contract Setup is Test, Clonable {
         vm.label(address(mockStrategy), "strategy");
         vm.label(vaultManagement, "vault management");
         vm.label(address(vaultFactory), " vault factory");
+        vm.label(TOKENIZED_STRATEGY, "tokenized strategy");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 
