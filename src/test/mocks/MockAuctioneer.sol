@@ -14,8 +14,8 @@ contract MockAuctioneer is BaseAuctioneer {
 
     function _freeFunds(uint256) internal override {}
 
-    function _harvestAndReport() internal override returns (uint256 _reportedAssets) {
-        _reportedAssets = asset.balanceOf(address(this));
+    function _harvestAndReport() internal override returns (uint256 _totalAssets) {
+        _totalAssets = asset.balanceOf(address(this));
     }
 }
 

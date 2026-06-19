@@ -100,15 +100,15 @@ contract Base4626Compounder is BaseHealthCheck {
      * `TokenizedStrategy.isShutdown()` to decide if funds should be
      * redeployed or simply realize any profits/losses.
      *
-     * @return _reportedAssets A trusted and accurate account for the total
+     * @return _totalAssets A trusted and accurate account for the total
      * amount of 'asset' the strategy currently holds including idle funds.
      */
-    function _harvestAndReport() internal virtual override returns (uint256 _reportedAssets) {
+    function _harvestAndReport() internal virtual override returns (uint256 _totalAssets) {
         // Claim and sell any rewards.
         _claimAndSellRewards();
 
         // Return total balance
-        _reportedAssets = balanceOfAsset() + valueOfVault();
+        _totalAssets = balanceOfAsset() + valueOfVault();
     }
 
     function _strategyTotalAssets() internal view virtual override returns (uint256) {

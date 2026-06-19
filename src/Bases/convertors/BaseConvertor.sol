@@ -243,10 +243,10 @@ contract BaseConvertor is BaseHealthCheck {
         _kickConfiguredAuction(BUY_ASSET_AUCTION, address(WANT), _wantAmount);
     }
 
-    function _harvestAndReport() internal virtual override returns (uint256 _reportedAssets) {
+    function _harvestAndReport() internal virtual override returns (uint256 _totalAssets) {
         _claimAndSellRewards();
 
-        _reportedAssets = estimatedTotalAssets();
+        _totalAssets = estimatedTotalAssets();
     }
 
     function estimatedTotalAssets() public view virtual returns (uint256) {

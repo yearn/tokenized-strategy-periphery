@@ -255,10 +255,10 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * or perform any other mutable work needed before returning the strategy's
      * up-to-date total assets.
      *
-     * @return _reportedAssets A trusted and accurate account for the total
+     * @return _totalAssets A trusted and accurate account for the total
      * amount of 'asset' the strategy currently holds including idle funds.
      */
-    function _harvestAndReport() internal virtual returns (uint256 _reportedAssets);
+    function _harvestAndReport() internal virtual returns (uint256 _totalAssets);
 
     /*//////////////////////////////////////////////////////////////
                     OPTIONAL TO OVERRIDE BY STRATEGIST
