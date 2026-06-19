@@ -68,10 +68,6 @@ contract MockHooksUpgradeable is BaseHooksUpgradeable, HookEvents {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     // Upgrade function to initialize health check values when upgrading from a non-health check strategy
     // Hooks inherits from HealthCheck, so we need to ensure health check values are set
     function initializeHealthCheck() external onlyManagement {

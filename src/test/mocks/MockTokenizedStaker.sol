@@ -14,10 +14,6 @@ contract MockTokenizedStaker is TokenizedStaker {
     function _harvestAndReport() internal override returns (uint256 _reportedAssets) {
         _reportedAssets = asset.balanceOf(address(this));
     }
-
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
 }
 
 interface IMockTokenizedStaker is ITokenizedStaker {}

@@ -222,7 +222,7 @@ contract TokenizedStakerTest is Setup {
 
         // Check reward token accrual for fee recipients
         uint256 totalFeeAssets = (profit * performanceFee) / MAX_BPS;
-        uint256 totalFeeShares = (totalFeeAssets * amount) / (amount + profit - totalFeeAssets);
+        uint256 totalFeeShares = totalFeeAssets;
         uint256 expectedProtocolFeeShares = (totalFeeShares * protocolFee) / MAX_BPS;
         uint256 expectedPerformanceFeeShares = totalFeeShares - expectedProtocolFeeShares;
 
@@ -322,8 +322,6 @@ contract TokenizedStakerTestLowerDecimals is TokenizedStakerTest {
 
         // Set decimals
         decimals = asset.decimals();
-
-        _deployTokenizedStrategyImplementation();
 
         mockStrategy = setUpStrategy();
 

@@ -16,10 +16,6 @@ contract MockStrategy is BaseStrategy {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     function _tendTrigger() internal view override returns (bool) {
         return tendStatus;
     }

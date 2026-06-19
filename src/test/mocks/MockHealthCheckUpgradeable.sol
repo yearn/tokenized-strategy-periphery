@@ -45,10 +45,6 @@ contract MockHealthCheckUpgradeable is BaseHealthCheckUpgradeable {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     // Upgrade function to initialize health check values when upgrading from a non-health check strategy
     function initializeHealthCheck() external onlyManagement {
         // Initialize health check variables if they haven't been set

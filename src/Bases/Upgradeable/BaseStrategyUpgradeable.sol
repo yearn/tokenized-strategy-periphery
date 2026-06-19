@@ -14,7 +14,7 @@ import {ITokenizedStrategy} from "@tokenized-strategy/interfaces/ITokenizedStrat
  *  BaseStrategyUpgradeable implements all of the required functionality to
  *  seamlessly integrate with the `TokenizedStrategy` implementation contract
  *  allowing anyone to easily build a fully permissionless ERC-4626 compliant
- *  Vault by inheriting this contract and overriding three simple functions.
+ *  Vault by inheriting this contract and overriding three required functions.
  *
  *  This is an upgradeable version of Yearn V3's BaseStrategy that works
  *  with upgradeable proxy patterns. The main changes are:
@@ -28,11 +28,13 @@ import {ITokenizedStrategy} from "@tokenized-strategy/interfaces/ITokenizedStrat
  *  `fallback` function to delegatecall the implementation so that strategists
  *  can only be concerned with writing their strategy specific code.
  *
- *  This contract should be inherited and the four main abstract methods
- *  `_deployFunds`, `_freeFunds`, `_strategyTotalAssets` and `_harvestAndReport` implemented to adapt
- *  the Strategy to the particular needs it has to generate yield. There are
- *  other optional methods that can be implemented to further customize
- *  the strategy if desired.
+ *  This contract should be inherited and the three main abstract methods
+ *  `_deployFunds`, `_freeFunds` and `_harvestAndReport` implemented to adapt
+ *  the Strategy to the particular needs it has to generate yield. Optional
+ *  methods can be implemented to further customize the strategy if desired.
+ *  `_strategyTotalAssets` defaults to `lastTotalAssets()` to preserve v3.0.4
+ *  report-boundary accounting and should only be overridden for read-only
+ *  live accounting.
  *
  *  All default storage for the strategy is controlled and updated by the
  *  `TokenizedStrategy`. The implementation holds a storage struct that
@@ -104,7 +106,7 @@ abstract contract BaseStrategyUpgradeable is Initializable {
      * This address should be the same for every strategy, never be adjusted
      * and always be checked before any integration with the Strategy.
      */
-    address public constant tokenizedStrategyAddress = 0x2e234DAe75C793f67A35089C9d99245E1C58470b;
+    address public constant tokenizedStrategyAddress = 0x310f5Db015E9d6E542fd41bd4542640790791e76;
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
@@ -247,23 +249,6 @@ abstract contract BaseStrategyUpgradeable is Initializable {
     function _freeFunds(uint256 _amount) internal virtual;
 
     /**
-     * @dev Internal function to return an accurate accounting of all funds
-     * currently held by the Strategy.
-     *
-     * NOTE: All applicable assets including loose assets should be
-     * accounted for in this function.
-     *
-     * This function is used by ERC4626 view methods whenever the current block
-     * is not already latched, and by normal state changing accounting syncs
-     * when they refresh. It must be strictly read only and should not harvest,
-     * claim or otherwise mutate state.
-     *
-     * @return _strategyTotalAssets A trusted and accurate account for the total
-     * amount of 'asset' the strategy currently holds including idle funds.
-     */
-    function _strategyTotalAssets() internal view virtual returns (uint256);
-
-    /**
      * @dev Internal hook used by explicit {report()} accounting syncs.
      *
      * This can harvest rewards, claim fees, realize external position changes
@@ -278,6 +263,22 @@ abstract contract BaseStrategyUpgradeable is Initializable {
     /*//////////////////////////////////////////////////////////////
                     OPTIONAL TO OVERRIDE BY STRATEGIST
     //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Internal function to return the Strategy's current asset estimate.
+     *
+     * The default returns `TokenizedStrategy.lastTotalAssets()`, preserving
+     * v3.0.4 report-boundary accounting. Strategies that want live accounting
+     * should override this with a strictly read-only estimate of all assets,
+     * including loose funds.
+     *
+     * NOTE: An override must not harvest, claim or otherwise mutate state.
+     *
+     * @return _totalAssets The strategy's current asset estimate.
+     */
+    function _strategyTotalAssets() internal view virtual returns (uint256 _totalAssets) {
+        return TokenizedStrategy.lastTotalAssets();
+    }
 
     /**
      * @dev Optional function for strategist to override that can

@@ -23,10 +23,6 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     function setAuction(address _auction) external onlyManagement {
         _setAuction(_auction);
     }

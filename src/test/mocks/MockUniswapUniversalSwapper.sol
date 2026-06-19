@@ -23,10 +23,6 @@ contract MockUniswapUniversalSwapper is BaseStrategy, UniswapUniversalSwapper {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     // Expose internal setters for testing
 
     function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {

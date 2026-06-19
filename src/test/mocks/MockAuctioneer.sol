@@ -17,10 +17,6 @@ contract MockAuctioneer is BaseAuctioneer {
     function _harvestAndReport() internal override returns (uint256 _reportedAssets) {
         _reportedAssets = asset.balanceOf(address(this));
     }
-
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
 }
 
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";

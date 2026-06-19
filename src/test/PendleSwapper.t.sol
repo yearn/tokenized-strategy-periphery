@@ -28,8 +28,6 @@ contract PendleSwapperTest is Setup {
     address public constant MOCK_UNDERLYING = address(0x3333);
 
     function setUp() public override {
-        _deployTokenizedStrategyImplementation();
-
         // Deploy mock token for testing
         mockAsset = new MockToken("Mock Asset", "MOCK", 18);
 
@@ -172,8 +170,6 @@ contract PendleSwapperForkTest is Setup {
     uint256 public maxUsdcAmount = 100_000e6; // 100,000 USDC
 
     function setUp() public override {
-        _deployTokenizedStrategyImplementation();
-
         usdc = ERC20(USDC_ADDRESS);
 
         // Get PT address from market

@@ -18,10 +18,6 @@ contract MockFluidSwapper is BaseStrategy, FluidSwapper {
         _reportedAssets = asset.balanceOf(address(this));
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this));
-    }
-
     function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {
         _setMinAmountToSell(_token, _minAmountToSell);
     }

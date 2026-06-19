@@ -282,7 +282,7 @@ contract HealthCheckTest is Setup {
         assertEq(healthCheck.doHealthCheck(), true, "doHealthCheck should be true");
     }
 
-    function test_strategyTotalAssets_clampsProfitView() public {
+    function test_strategyTotalAssets_keepsReportBoundaryProfitView() public {
         uint256 amount = 1_000 * 10 ** decimals;
         uint256 profitLimit = 1_000;
 
@@ -294,13 +294,13 @@ contract HealthCheckTest is Setup {
         airdrop(asset, address(healthCheck), amount);
         skip(1);
 
-        uint256 expected = amount + (amount * profitLimit) / MAX_BPS;
+        uint256 expected = amount;
 
-        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should clamp profit");
-        assertEq(healthCheck.totalAssets(), expected, "totalAssets should use clamped profit");
+        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should stay report-boundary");
+        assertEq(healthCheck.totalAssets(), expected, "totalAssets should stay report-boundary");
     }
 
-    function test_strategyTotalAssets_clampsLossView() public {
+    function test_strategyTotalAssets_keepsReportBoundaryLossView() public {
         uint256 amount = 1_000 * 10 ** decimals;
         uint256 lossLimit = 500;
 
@@ -313,10 +313,10 @@ contract HealthCheckTest is Setup {
         asset.safeTransfer(management, amount / 2);
         skip(1);
 
-        uint256 expected = amount - (amount * lossLimit) / MAX_BPS;
+        uint256 expected = amount;
 
-        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should clamp loss");
-        assertEq(healthCheck.totalAssets(), expected, "totalAssets should use clamped loss");
+        assertEq(healthCheck.strategyTotalAssets(), expected, "strategyTotalAssets should stay report-boundary");
+        assertEq(healthCheck.totalAssets(), expected, "totalAssets should stay report-boundary");
     }
 
     function test_depositorWhitelist_openOrAllowed() public {

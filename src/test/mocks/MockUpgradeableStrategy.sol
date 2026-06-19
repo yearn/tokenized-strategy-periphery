@@ -40,10 +40,6 @@ contract MockUpgradeableStrategy is BaseStrategyUpgradeable {
         return asset.balanceOf(address(this)) + deployedFunds;
     }
 
-    function _strategyTotalAssets() internal view override returns (uint256) {
-        return asset.balanceOf(address(this)) + deployedFunds;
-    }
-
     function _emergencyWithdraw(uint256 _amount) internal override {
         uint256 toWithdraw = _amount > deployedFunds ? deployedFunds : _amount;
         deployedFunds -= toWithdraw;
@@ -88,10 +84,6 @@ contract MockUpgradeableStrategyV2 is BaseStrategyUpgradeable {
     function _harvestAndReport() internal override returns (uint256) {
         // Return the total - both idle (in contract) and deployed
         // For testing purposes, deployedFunds represents funds that are "deployed"
-        return asset.balanceOf(address(this)) + deployedFunds;
-    }
-
-    function _strategyTotalAssets() internal view override returns (uint256) {
         return asset.balanceOf(address(this)) + deployedFunds;
     }
 
