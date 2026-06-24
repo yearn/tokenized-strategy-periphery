@@ -2,8 +2,8 @@
 pragma solidity >=0.8.18;
 
 import "./BaseScript.s.sol";
-import {ConvertorFactory} from "../src/Bases/convertors/ConvertorFactory.sol";
-import {Convertor4626Factory} from "../src/Bases/convertors/Convertor4626Factory.sol";
+import {ConvertorFactory} from "../src/Bases/Convertors/ConvertorFactory.sol";
+import {Convertor4626Factory} from "../src/Bases/Convertors/Convertor4626Factory.sol";
 
 /// @notice Deploy both convertor factories.
 contract DeployConvertor is BaseScript {

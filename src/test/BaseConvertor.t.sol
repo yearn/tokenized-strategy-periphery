@@ -4,7 +4,7 @@ pragma solidity >=0.8.18;
 import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {BaseConvertor} from "../Bases/convertors/BaseConvertor.sol";
+import {BaseConvertor} from "../Bases/Convertors/BaseConvertor.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
 import {MockToken} from "./mocks/MockToken.sol";
 import {Auction} from "../Auctions/Auction.sol";
