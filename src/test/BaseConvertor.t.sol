@@ -161,10 +161,32 @@ contract BaseConvertorTest is Setup {
         uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
 
         vm.prank(management);
-        convertor.sweepAuctionToken(address(otherToken));
+        convertor.sweepAuctionToken(address(sellAuction), address(otherToken));
 
         assertEq(otherToken.balanceOf(address(sellAuction)), 0);
         assertEq(otherToken.balanceOf(address(convertor)), strategyBalBefore + _amount);
+    }
+
+    function test_sweepAuctionToken_usesExplicitAuction(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        ERC20 otherToken = ERC20(tokenAddrs["DAI"]);
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
+
+        airdrop(otherToken, address(buyAuction), _amount);
+        uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
+
+        vm.prank(management);
+        convertor.sweepAuctionToken(address(buyAuction), address(otherToken));
+
+        assertEq(otherToken.balanceOf(address(buyAuction)), 0);
+        assertEq(otherToken.balanceOf(address(convertor)), strategyBalBefore + _amount);
+    }
+
+    function test_sweepAuctionToken_revertsForInvalidAuction() public {
+        vm.prank(management);
+        vm.expectRevert("invalid auction");
+        convertor.sweepAuctionToken(address(0xBEEF), address(asset));
     }
 
     function test_setMaxAmountToSwap() public {

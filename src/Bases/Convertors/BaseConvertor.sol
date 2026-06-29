@@ -167,8 +167,9 @@ contract BaseConvertor is BaseHealthCheck {
     }
 
     /// @notice Management passthrough to sweep the auction token back to strategy.
-    function sweepAuctionToken(address _from) external onlyManagement {
-        _auctionForToken(_from).sweep(_from);
+    function sweepAuctionToken(address _auction, address _from) external onlyManagement {
+        require(_auction == address(SELL_ASSET_AUCTION) || _auction == address(BUY_ASSET_AUCTION), "invalid auction");
+        Auction(_auction).sweep(_from);
     }
 
     /*//////////////////////////////////////////////////////////////
