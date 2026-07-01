@@ -221,12 +221,13 @@ contract TokenizedStakerTest is Setup {
         staker.report();
 
         // Check reward token accrual for fee recipients
-        uint256 expectedPerformanceFeeShares = (profit * performanceFee) / MAX_BPS;
-        uint256 expectedProtocolFeeShares = (expectedPerformanceFeeShares * protocolFee) / MAX_BPS;
-        expectedPerformanceFeeShares = expectedPerformanceFeeShares - expectedProtocolFeeShares;
+        uint256 totalFeeAssets = (profit * performanceFee) / MAX_BPS;
+        uint256 totalFeeShares = totalFeeAssets;
+        uint256 expectedProtocolFeeShares = (totalFeeShares * protocolFee) / MAX_BPS;
+        uint256 expectedPerformanceFeeShares = totalFeeShares - expectedProtocolFeeShares;
 
         // Get the effective totalSupply minus locked profit shares
-        uint256 realShares = amount + expectedPerformanceFeeShares + expectedProtocolFeeShares;
+        uint256 realShares = amount + totalFeeShares;
 
         assertEq(staker.balanceOf(performanceFeeRecipient), expectedPerformanceFeeShares);
         assertEq(staker.balanceOf(protocolFeeRecipient), expectedProtocolFeeShares);
@@ -243,9 +244,8 @@ contract TokenizedStakerTest is Setup {
         // Skip the rest of the reward period
         skip(duration / 2);
 
-        uint256 expectedPerformanceFeeReward =
-            (((rewardAmount * WAD) / 2) * expectedPerformanceFeeShares) / realShares / WAD;
-        uint256 expectedProtocolFeeReward = (((rewardAmount * WAD) / 2) * expectedProtocolFeeShares) / realShares / WAD;
+        uint256 expectedPerformanceFeeReward = _expectedReward(rewardAmount, expectedPerformanceFeeShares, realShares);
+        uint256 expectedProtocolFeeReward = _expectedReward(rewardAmount, expectedProtocolFeeShares, realShares);
 
         assertApproxEqRel(
             staker.earned(performanceFeeRecipient, address(rewardToken)),
@@ -298,6 +298,15 @@ contract TokenizedStakerTest is Setup {
 
         // All rewards should be gone minus precision loss. Allow 0.01% tolerance.
         assertLt(rewardToken.balanceOf(address(staker)), rewardAmount / 10_000);
+    }
+
+    function _expectedReward(uint256 _rewardAmount, uint256 _shares, uint256 _realShares)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 remainingReward = _rewardAmount / 2;
+        return (remainingReward * _shares) / _realShares;
     }
 }
 

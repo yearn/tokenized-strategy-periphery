@@ -4,7 +4,7 @@ pragma solidity >=0.8.18;
 import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-import {BaseConvertor} from "../Bases/convertors/BaseConvertor.sol";
+import {BaseConvertor} from "../Bases/Convertors/BaseConvertor.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
 import {MockToken} from "./mocks/MockToken.sol";
 import {Auction} from "../Auctions/Auction.sol";
@@ -161,10 +161,32 @@ contract BaseConvertorTest is Setup {
         uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
 
         vm.prank(management);
-        convertor.sweepAuctionToken(address(otherToken));
+        convertor.sweepAuctionToken(address(sellAuction), address(otherToken));
 
         assertEq(otherToken.balanceOf(address(sellAuction)), 0);
         assertEq(otherToken.balanceOf(address(convertor)), strategyBalBefore + _amount);
+    }
+
+    function test_sweepAuctionToken_usesExplicitAuction(uint256 _amount) public {
+        vm.assume(_amount >= minFuzzAmount && _amount <= maxFuzzAmount);
+
+        ERC20 otherToken = ERC20(tokenAddrs["DAI"]);
+        Auction buyAuction = convertor.BUY_ASSET_AUCTION();
+
+        airdrop(otherToken, address(buyAuction), _amount);
+        uint256 strategyBalBefore = otherToken.balanceOf(address(convertor));
+
+        vm.prank(management);
+        convertor.sweepAuctionToken(address(buyAuction), address(otherToken));
+
+        assertEq(otherToken.balanceOf(address(buyAuction)), 0);
+        assertEq(otherToken.balanceOf(address(convertor)), strategyBalBefore + _amount);
+    }
+
+    function test_sweepAuctionToken_revertsForInvalidAuction() public {
+        vm.prank(management);
+        vm.expectRevert("invalid auction");
+        convertor.sweepAuctionToken(address(0xBEEF), address(asset));
     }
 
     function test_setMaxAmountToSwap() public {
@@ -213,9 +235,7 @@ contract BaseConvertorTest is Setup {
         convertor.setMinAmountToSell(address(want), 1);
         vm.stopPrank();
 
-        (bool shouldKick, bytes memory data) = convertor.auctionTrigger(
-            address(asset)
-        );
+        (bool shouldKick, bytes memory data) = convertor.auctionTrigger(address(asset));
 
         assertFalse(shouldKick);
         assertEq(data, bytes("not enough kickable"));
@@ -439,14 +459,14 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor.kickAuction(address(asset));
 
-        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 50);
+        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 50e18);
         assertEq(convertor.SELL_ASSET_AUCTION().minimumPrice(), 475_000_000_000_000_000);
 
         airdrop(want, address(convertor), amount);
         vm.prank(keeper);
         convertor.kickAuction(address(want));
 
-        assertEq(convertor.BUY_ASSET_AUCTION().startingPrice(), 200);
+        assertEq(convertor.BUY_ASSET_AUCTION().startingPrice(), 200e18);
         assertEq(convertor.BUY_ASSET_AUCTION().minimumPrice(), 1_900_000_000_000_000_000);
     }
 
@@ -463,7 +483,7 @@ contract BaseConvertorTest is Setup {
 
         assertEq(kicked, _amount);
         assertTrue(convertor.SELL_ASSET_AUCTION().isActive(address(otherToken)));
-        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 1_000_000);
+        assertEq(convertor.SELL_ASSET_AUCTION().startingPrice(), 1_000_000 * 1e18);
         assertEq(convertor.SELL_ASSET_AUCTION().minimumPrice(), 0);
         assertEq(convertor.SELL_ASSET_AUCTION().stepDecayRate(), 50);
     }
@@ -496,7 +516,7 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor18.kickAuction(address(asset));
 
-        assertEq(convertor18.SELL_ASSET_AUCTION().startingPrice(), 1_000);
+        assertEq(convertor18.SELL_ASSET_AUCTION().startingPrice(), 1_000e18);
         assertEq(convertor18.SELL_ASSET_AUCTION().minimumPrice(), 475_000_000_000_000);
 
         uint256 wantAmount = 10 * 10 ** want18.decimals();
@@ -505,7 +525,7 @@ contract BaseConvertorTest is Setup {
         vm.prank(keeper);
         convertor18.kickAuction(address(want18));
 
-        assertEq(convertor18.BUY_ASSET_AUCTION().startingPrice(), 20_000);
+        assertEq(convertor18.BUY_ASSET_AUCTION().startingPrice(), 20_000e18);
         assertEq(convertor18.BUY_ASSET_AUCTION().minimumPrice(), 1_900_000_000_000_000_000_000);
     }
 
@@ -672,7 +692,7 @@ contract BaseConvertorTest is Setup {
         returns (uint256)
     {
         uint256 unitStartPrice = Math.mulDiv(_targetPrice, uint256(_startingBps), 10_000, Math.Rounding.Up);
-        uint256 _startingPrice = Math.mulDiv(_amount, unitStartPrice, (10 ** _fromDecimals) * 1e18, Math.Rounding.Up);
+        uint256 _startingPrice = Math.mulDiv(_amount, unitStartPrice, 10 ** _fromDecimals, Math.Rounding.Up);
         return _startingPrice == 0 ? 1 : _startingPrice;
     }
 

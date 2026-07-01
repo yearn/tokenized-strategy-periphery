@@ -2,6 +2,8 @@
 pragma solidity >=0.8.18;
 
 import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
+import {TokenizedStrategyLib as TokenizedStrategy} from "@tokenized-strategy/libraries/TokenizedStrategyLib.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  *   @title Base Health Check
@@ -16,7 +18,7 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
  *   the limit ratios to the desired amounts and then
  *   override `_harvestAndReport()` just as they otherwise
  *  would. If the profit or loss that would be recorded is
- *   outside the acceptable bounds the tx will revert.
+ *   outside the acceptable limits the tx will revert.
  *
  *   The healthcheck does not prevent a strategy from reporting
  *   losses, but rather can make sure manual intervention is
@@ -142,8 +144,16 @@ abstract contract BaseHealthCheck is BaseStrategy {
     }
 
     /**
+     * @notice Returns the strategy's current total assets clamped by the health check limits.
+     * @dev Used by TokenizedStrategy views and live accrual.
+     */
+    function strategyTotalAssets() external view virtual override returns (uint256) {
+        return _clampTotalAssets(_strategyTotalAssets());
+    }
+
+    /**
      * @dev To be called during a report to make sure the profit
-     * or loss being recorded is within the acceptable bound.
+     * or loss being recorded is within the acceptable limits.
      *
      * @param _newTotalAssets The amount that will be reported.
      */
@@ -153,20 +163,23 @@ abstract contract BaseHealthCheck is BaseStrategy {
             return;
         }
 
-        // Get the current total assets from the implementation.
-        uint256 currentTotalAssets = TokenizedStrategy.totalAssets();
+        (uint256 lowerLimit, uint256 upperLimit) = _healthCheckLimits();
 
-        if (_newTotalAssets > currentTotalAssets) {
-            require(
-                ((_newTotalAssets - currentTotalAssets) <= (currentTotalAssets * uint256(_profitLimitRatio)) / MAX_BPS),
-                "healthCheck"
-            );
-        } else if (currentTotalAssets > _newTotalAssets) {
-            require(
-                (currentTotalAssets - _newTotalAssets <= ((currentTotalAssets * uint256(_lossLimitRatio)) / MAX_BPS)),
-                "healthCheck"
-            );
-        }
+        require(_newTotalAssets >= lowerLimit && _newTotalAssets <= upperLimit, "healthCheck");
+    }
+
+    function _clampTotalAssets(uint256 _totalAssets) internal view virtual returns (uint256) {
+        (uint256 lowerLimit, uint256 upperLimit) = _healthCheckLimits();
+
+        if (_totalAssets < lowerLimit) return lowerLimit;
+        if (_totalAssets > upperLimit) return upperLimit;
+        return _totalAssets;
+    }
+
+    function _healthCheckLimits() internal view virtual returns (uint256 _lowerLimit, uint256 _upperLimit) {
+        uint256 _lastTotalAssets = TokenizedStrategy.lastTotalAssets();
+        _lowerLimit = _lastTotalAssets - Math.mulDiv(_lastTotalAssets, uint256(_lossLimitRatio), MAX_BPS);
+        _upperLimit = _lastTotalAssets + Math.mulDiv(_lastTotalAssets, uint256(_profitLimitRatio), MAX_BPS);
     }
 
     /**

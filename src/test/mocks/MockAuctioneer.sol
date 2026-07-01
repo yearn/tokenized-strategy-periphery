@@ -8,7 +8,7 @@ import {BaseStrategy, ERC20} from "@tokenized-strategy/BaseStrategy.sol";
 contract MockAuctioneer is BaseAuctioneer {
     using SafeERC20 for ERC20;
 
-    constructor(address _asset) BaseAuctioneer(_asset, "Mock Auctioneer", msg.sender, 1e7) {}
+    constructor(address _asset) BaseAuctioneer(_asset, "Mock Auctioneer", msg.sender, 1e7 * 1e18) {}
 
     function _deployFunds(uint256) internal override {}
 

@@ -16,10 +16,7 @@ contract BaseSwapper {
      * @param _token Token to set the minimum for.
      * @param _minAmountToSell Minimum amount of tokens needed to execute a swap.
      */
-    function _setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) internal virtual {
+    function _setMinAmountToSell(address _token, uint256 _minAmountToSell) internal virtual {
         minAmountToSell[_token] = _minAmountToSell;
     }
 }

@@ -129,19 +129,19 @@ contract BaseConvertor4626 is BaseConvertor {
         super._freeWant(_wantAmount);
     }
 
-    function _freeWantFromVault(uint256 _wantAmount) internal virtual returns (uint256) {
+    function _freeWantFromVault(uint256 _wantAmount) internal virtual {
         uint256 wantBalance = balanceOfWant();
 
-        if (wantBalance >= _wantAmount) return _wantAmount;
+        if (wantBalance >= _wantAmount) return;
 
         _wantAmount -= wantBalance;
 
         uint256 shares = Math.min(
-            vault.previewWithdraw(vault.balanceOf(address(this))), Math.min(_wantAmount, vault.maxRedeem(address(this)))
+            vault.previewWithdraw(_wantAmount), vault.maxRedeem(address(this))
         );
 
-        if (shares == 0) return 0;
+        if (shares == 0) return;
 
-        return vault.redeem(shares, address(this), address(this));
+        vault.redeem(shares, address(this), address(this));
     }
 }

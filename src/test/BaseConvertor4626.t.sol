@@ -5,8 +5,8 @@ import {Setup, ERC20, IStrategy} from "./utils/Setup.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {MockStrategy} from "./mocks/MockStrategy.sol";
-import {BaseConvertor4626} from "../Bases/convertors/BaseConvertor4626.sol";
-import {IBaseConvertor4626} from "../Bases/convertors/IBaseConvertor4626.sol";
+import {BaseConvertor4626} from "../Bases/Convertors/BaseConvertor4626.sol";
+import {IBaseConvertor4626} from "../Bases/Convertors/IBaseConvertor4626.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
 import {Auction} from "../Auctions/Auction.sol";
 

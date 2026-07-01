@@ -31,10 +31,7 @@ contract MockAuctionSwapper is BaseStrategy, AuctionSwapper {
         _setUseAuction(_useAuction);
     }
 
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external {
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {
         _setMinAmountToSell(_token, _minAmountToSell);
     }
 
@@ -82,10 +79,7 @@ interface IMockAuctionSwapper is IStrategy, IAuctionSwapper {
 
     function setUseAuction(bool _useAuction) external;
 
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external;
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external;
 
     function setProtectedTokens(address[] calldata _tokens) external;
 

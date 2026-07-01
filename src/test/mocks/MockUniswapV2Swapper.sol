@@ -15,10 +15,7 @@ contract MockUniswapV2Swapper is BaseStrategy, UniswapV2Swapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external {
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {
         _setMinAmountToSell(_token, _minAmountToSell);
     }
 
@@ -39,10 +36,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IUniswapV2Swapper} from "../../swappers/interfaces/IUniswapV2Swapper.sol";
 
 interface IMockUniswapV2Swapper is IStrategy, IUniswapV2Swapper {
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external;
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external;
 
     function setRouter(address _router) external;
 

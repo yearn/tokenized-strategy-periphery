@@ -111,6 +111,10 @@ contract Base4626Compounder is BaseHealthCheck {
         _totalAssets = balanceOfAsset() + valueOfVault();
     }
 
+    function _strategyTotalAssets() internal view virtual override returns (uint256) {
+        return balanceOfAsset() + valueOfVault();
+    }
+
     /**
      * @dev Override to stake loose vault tokens after they
      *   are deposited to the `vault`.

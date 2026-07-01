@@ -3,8 +3,8 @@ pragma solidity >=0.8.18;
 
 import {Setup} from "./utils/Setup.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
-import {ConvertorFactory} from "../Bases/convertors/ConvertorFactory.sol";
-import {IBaseConvertor} from "../Bases/convertors/IBaseConvertor.sol";
+import {ConvertorFactory} from "../Bases/Convertors/ConvertorFactory.sol";
+import {IBaseConvertor} from "../Bases/Convertors/IBaseConvertor.sol";
 
 contract ConvertorFactoryTest is Setup {
     ConvertorFactory public factory;

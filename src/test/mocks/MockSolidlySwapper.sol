@@ -15,10 +15,7 @@ contract MockSolidlySwapper is BaseStrategy, SolidlySwapper {
         _totalAssets = asset.balanceOf(address(this));
     }
 
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external {
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external {
         _setMinAmountToSell(_token, _minAmountToSell);
     }
 
@@ -43,10 +40,7 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {ISolidlySwapper} from "../../swappers/interfaces/ISolidlySwapper.sol";
 
 interface IMockSolidlySwapper is IStrategy, ISolidlySwapper {
-    function setMinAmountToSell(
-        address _token,
-        uint256 _minAmountToSell
-    ) external;
+    function setMinAmountToSell(address _token, uint256 _minAmountToSell) external;
 
     function setRouter(address _router) external;
 

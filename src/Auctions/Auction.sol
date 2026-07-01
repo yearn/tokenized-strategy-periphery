@@ -89,8 +89,8 @@ contract Auction is Governance2Step, ReentrancyGuard {
     /// @dev Default is 0 (i.e. no minimum).
     uint256 public minimumPrice;
 
-    /// @notice The amount to start the auction at.
-    /// @dev This is an unscaled "lot size" essentially to start the pricing in "want".
+    /// @notice The amount to start the auction at, scaled to 1e18.
+    /// @dev This is a scaled "lot size" essentially to start the pricing in "want".
     ///   The kicked amount of _from is divided by this to get the per auction initial price.
     uint256 public startingPrice;
 
@@ -113,12 +113,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _want Address this auction is selling to.
      * @param _receiver Address that will receive the funds from the auction.
      * @param _governance Address of the contract governance.
-     * @param _startingPrice Starting price for each auction.
+     * @param _startingPrice Starting price for each auction, scaled to 1e18.
      */
     function initialize(address _want, address _receiver, address _governance, uint256 _startingPrice) public virtual {
         require(stepDecayRate == 0, "initialized");
         require(_want != address(0), "ZERO ADDRESS");
-        require(_startingPrice != 0, "starting price");
+        require(_startingPrice > 1e9, "starting price");
         require(_receiver != address(0), "receiver");
         // Cannot have more than 18 decimals.
         uint256 decimals = ERC20(_want).decimals();
@@ -145,7 +145,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function version() external pure returns (string memory) {
-        return "1.0.4";
+        return "1.0.5";
     }
 
     /**
@@ -280,7 +280,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @return . The price of the auction.
      */
     function price(address _from, uint256 _timestamp) public view virtual returns (uint256) {
-        // Get unscaled price and scale it down.
+        // Get scaled price and scale it down to want decimals.
         return _price(auctions[_from].kicked, auctions[_from].initialAvailable * auctions[_from].scaler, _timestamp)
             / wantInfo.scaler;
     }
@@ -310,7 +310,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
         uint256 decayMultiplier = Maths.rpow(rayMultiplier, steps);
 
         // Calculate initial price per token
-        uint256 initialPrice = Maths.wdiv(startingPrice * 1e18, _available);
+        uint256 initialPrice = Maths.wdiv(startingPrice, _available);
 
         // Apply the decay to get the current price
         uint256 currentPrice = Maths.rmul(initialPrice, decayMultiplier);
@@ -446,12 +446,12 @@ contract Auction is Governance2Step, ReentrancyGuard {
 
     /**
      * @notice Sets the starting price for the auction.
-     * @dev This is an unscaled "lot size" essentially to start the pricing in "want".
+     * @dev This is a scaled "lot size" essentially to start the pricing in "want".
      *   The kicked amount of _from is divided by this to get the per auction initial price.
-     * @param _startingPrice The new starting price for the auction.
+     * @param _startingPrice The new starting price for the auction, scaled to 1e18.
      */
     function setStartingPrice(uint256 _startingPrice) external virtual onlyGovernance {
-        require(_startingPrice != 0, "starting price");
+        require(_startingPrice > 1e9, "starting price");
 
         // Don't change the price when an auction is active.
         require(!isAnActiveAuction(), "active auction");
@@ -659,7 +659,7 @@ contract Auction is Governance2Step, ReentrancyGuard {
      * @param _from The address of the token to be auctioned.
      */
     function settle(address _from) external virtual {
-        require(isActive(_from), "!active");
+        require(auctions[_from].kicked != 0, "!kicked");
         require(ERC20(_from).balanceOf(address(this)) == 0, "!empty");
 
         auctions[_from].kicked = uint64(0);

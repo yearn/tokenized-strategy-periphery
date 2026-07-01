@@ -4,8 +4,8 @@ pragma solidity >=0.8.18;
 import {Setup} from "./utils/Setup.sol";
 import {MockStrategy} from "./mocks/MockStrategy.sol";
 import {MockConvertorOracle} from "./mocks/MockConvertorOracle.sol";
-import {Convertor4626Factory} from "../Bases/convertors/Convertor4626Factory.sol";
-import {IBaseConvertor4626} from "../Bases/convertors/IBaseConvertor4626.sol";
+import {Convertor4626Factory} from "../Bases/Convertors/Convertor4626Factory.sol";
+import {IBaseConvertor4626} from "../Bases/Convertors/IBaseConvertor4626.sol";
 
 contract Convertor4626FactoryTest is Setup {
     Convertor4626Factory public factory;
@@ -26,8 +26,9 @@ contract Convertor4626FactoryTest is Setup {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed =
-            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);
+        address deployed = factory.newConvertor4626(
+            address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy
+        );
 
         IBaseConvertor4626 convertor = IBaseConvertor4626(deployed);
 
@@ -49,8 +50,9 @@ contract Convertor4626FactoryTest is Setup {
         address want = tokenAddrs["USDC"];
         MockStrategy vault = new MockStrategy(want);
 
-        address deployed =
-            factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);
+        address deployed = factory.newConvertor4626(
+            address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy
+        );
 
         vm.expectRevert(abi.encodeWithSelector(Convertor4626Factory.AlreadyDeployed.selector, deployed));
         factory.newConvertor4626(address(asset), "Factory 4626 Convertor", want, address(oracle), address(vault), daddy);
