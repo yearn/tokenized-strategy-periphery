@@ -88,7 +88,7 @@ contract BaseConvertor is BaseHealthCheck {
         WANT = ERC20(_want);
         GOV = _gov;
 
-        AuctionFactory factory = AuctionFactory(0x6332e101A0c50894d4A1a4bd62caEBe0182D4633);
+        AuctionFactory factory = AuctionFactory(0x55B3830B4D85e6868c73f00A2e857e9AdbF89568);
 
         Auction _sellAssetAuction = Auction(factory.createNewAuction(_want, address(this), address(this)));
         _sellAssetAuction.enable(_asset);
