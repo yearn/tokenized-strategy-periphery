@@ -9,7 +9,7 @@
 [submodule "lib/tokenized-strategy"]
 	path = lib/tokenized-strategy
 	url = https://github.com/yearn/tokenized-strategy
-	release = v3.1.0
+	release = v3.1.1
 [submodule "lib/yearn-vaults-v3"]
 	path = lib/yearn-vaults-v3
 	url = https://github.com/yearn/yearn-vaults-v3

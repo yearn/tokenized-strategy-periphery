@@ -183,7 +183,7 @@ contract BaseStrategyUpgradeableTest is UpgradeableSetup {
         // Call a function that doesn't exist in BaseStrategyUpgradeable
         // but exists in TokenizedStrategy (e.g., apiVersion)
         string memory version = strategy.apiVersion();
-        assertEq(bytes(version).length > 0, true);
+        assertEq(version, "3.1.1");
     }
 
     function test_emergencyFunctions() public {
